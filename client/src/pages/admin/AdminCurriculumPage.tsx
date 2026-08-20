@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Course, Module, Lesson, LessonType } from '../../types';
 import { api } from '../../lib/api';
-import { FALLBACK_COURSES } from '../../data/fallbackData';
+import { getPersistentCourses, savePersistentCourses } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   Layers,
@@ -24,7 +24,7 @@ import {
 export const AdminCurriculumPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const [course, setCourse] = useState<Course | null>(() => {
-    return FALLBACK_COURSES.find((c) => c.id === courseId) || FALLBACK_COURSES[0];
+    return getPersistentCourses().find((c) => c.id === courseId || c.slug === courseId) || getPersistentCourses()[0];
   });
   const [loading, setLoading] = useState(false);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
@@ -57,11 +57,22 @@ export const AdminCurriculumPage: React.FC = () => {
     if (courseId) fetchCourseData();
   }, [courseId]);
 
+  const updateAndPersistCourse = (updater: (prev: Course) => Course) => {
+    setCourse((prev) => {
+      if (!prev) return prev;
+      const updated = updater(prev);
+      const allCourses = getPersistentCourses();
+      const newAll = allCourses.map((c) => (c.id === updated.id ? updated : c));
+      savePersistentCourses(newAll);
+      return updated;
+    });
+  };
+
   const fetchCourseData = async () => {
     try {
       const res = await api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all');
       if (res.success && res.courses && res.courses.length > 0) {
-        const found = res.courses.find((c) => c.id === courseId);
+        const found = res.courses.find((c) => c.id === courseId || c.slug === courseId);
         if (found) {
           setCourse(found);
           const expanded: Record<string, boolean> = {};
@@ -73,7 +84,7 @@ export const AdminCurriculumPage: React.FC = () => {
         }
       }
     } catch {
-      const fallback = FALLBACK_COURSES.find((c) => c.id === courseId) || FALLBACK_COURSES[0];
+      const fallback = getPersistentCourses().find((c) => c.id === courseId || c.slug === courseId) || getPersistentCourses()[0];
       if (fallback) {
         setCourse(fallback);
         const expanded: Record<string, boolean> = {};
@@ -118,15 +129,12 @@ export const AdminCurriculumPage: React.FC = () => {
       fetchCourseData();
     } catch {
       if (editingModule) {
-        setCourse((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            modules: prev.modules?.map((m) =>
-              m.id === editingModule.id ? { ...m, title: moduleTitle } : m
-            ),
-          };
-        });
+        updateAndPersistCourse((prev) => ({
+          ...prev,
+          modules: prev.modules?.map((m) =>
+            m.id === editingModule.id ? { ...m, title: moduleTitle } : m
+          ),
+        }));
       } else {
         const newMod: Module = {
           id: `mod_${Date.now()}`,
@@ -135,7 +143,10 @@ export const AdminCurriculumPage: React.FC = () => {
           courseId: course.id,
           lessons: [],
         };
-        setCourse((prev) => (prev ? { ...prev, modules: [...(prev.modules || []), newMod] } : prev));
+        updateAndPersistCourse((prev) => ({
+          ...prev,
+          modules: [...(prev.modules || []), newMod],
+        }));
         setExpandedModules((prev) => ({ ...prev, [newMod.id]: true }));
       }
     } finally {
@@ -146,13 +157,10 @@ export const AdminCurriculumPage: React.FC = () => {
 
   const handleDeleteModule = async (modId: string, title: string) => {
     if (!window.confirm(`Delete module "${title}" and all its lessons?`)) return;
-    setCourse((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        modules: prev.modules?.filter((m) => m.id !== modId),
-      };
-    });
+    updateAndPersistCourse((prev) => ({
+      ...prev,
+      modules: prev.modules?.filter((m) => m.id !== modId),
+    }));
     try {
       await api.delete(`/modules/${modId}`);
     } catch {
@@ -216,29 +224,26 @@ export const AdminCurriculumPage: React.FC = () => {
       }
       fetchCourseData();
     } catch {
-      setCourse((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          modules: prev.modules?.map((m) => {
-            if (m.id !== targetModuleId) return m;
-            if (editingLesson) {
-              return {
-                ...m,
-                lessons: m.lessons.map((l) =>
-                  l.id === editingLesson.id ? { ...l, ...payload } : l
-                ),
-              };
-            }
-            const newLesson: Lesson = {
-              id: `les_${Date.now()}`,
-              order: (m.lessons.length || 0) + 1,
-              ...payload,
+      updateAndPersistCourse((prev) => ({
+        ...prev,
+        modules: prev.modules?.map((m) => {
+          if (m.id !== targetModuleId) return m;
+          if (editingLesson) {
+            return {
+              ...m,
+              lessons: m.lessons.map((l) =>
+                l.id === editingLesson.id ? { ...l, ...payload } : l
+              ),
             };
-            return { ...m, lessons: [...m.lessons, newLesson] };
-          }),
-        };
-      });
+          }
+          const newLesson: Lesson = {
+            id: `les_${Date.now()}`,
+            order: (m.lessons.length || 0) + 1,
+            ...payload,
+          };
+          return { ...m, lessons: [...m.lessons, newLesson] };
+        }),
+      }));
     } finally {
       setLessonModalOpen(false);
       setLessonLoading(false);
@@ -247,16 +252,13 @@ export const AdminCurriculumPage: React.FC = () => {
 
   const handleDeleteLesson = async (lessonId: string, title: string) => {
     if (!window.confirm(`Delete lesson "${title}"?`)) return;
-    setCourse((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        modules: prev.modules?.map((m) => ({
-          ...m,
-          lessons: m.lessons.filter((l) => l.id !== lessonId),
-        })),
-      };
-    });
+    updateAndPersistCourse((prev) => ({
+      ...prev,
+      modules: prev.modules?.map((m) => ({
+        ...m,
+        lessons: m.lessons.filter((l) => l.id !== lessonId),
+      })),
+    }));
     try {
       await api.delete(`/lessons/${lessonId}`);
     } catch {

@@ -265,3 +265,39 @@ export const FALLBACK_ADMIN_STATS: AdminStats = {
   totalRevenue: 84920.0,
   publishedCoursesCount: 4,
 };
+
+// LocalStorage Persistence Helpers across page refreshes
+export function getPersistentCourses(): Course[] {
+  try {
+    const saved = localStorage.getItem('scalora_courses_data');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return FALLBACK_COURSES;
+}
+
+export function savePersistentCourses(courses: Course[]): void {
+  try {
+    localStorage.setItem('scalora_courses_data', JSON.stringify(courses));
+  } catch {}
+}
+
+export function getPersistentEnrollments(): any[] {
+  try {
+    const saved = localStorage.getItem('scalora_enrollments_data');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return FALLBACK_ENROLLMENTS;
+}
+
+export function savePersistentEnrollments(enrollments: any[]): void {
+  try {
+    localStorage.setItem('scalora_enrollments_data', JSON.stringify(enrollments));
+  } catch {}
+}
+

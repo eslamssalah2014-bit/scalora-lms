@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson } from '../types';
 import { api } from '../lib/api';
-import { FALLBACK_COURSES } from '../data/fallbackData';
+import { getPersistentCourses } from '../data/fallbackData';
 import { useAuth } from '../context/AuthContext';
 import { CheckoutModal } from '../components/CheckoutModal';
 import {
@@ -29,15 +29,16 @@ export const CourseDetailsPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [course, setCourse] = useState<Course | null>(() => {
+    return getPersistentCourses().find((c) => c.slug === slug || c.id === slug) || getPersistentCourses()[0];
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
-      setLoading(true);
       try {
         const res = await api.get<{ success: boolean; course: Course }>(`/courses/details/${slug}`);
         if (res.success && res.course) {
@@ -50,7 +51,8 @@ export const CourseDetailsPage: React.FC = () => {
           return;
         }
       } catch {
-        const fallback = FALLBACK_COURSES.find((c) => c.slug === slug) || FALLBACK_COURSES[0];
+        const allCourses = getPersistentCourses();
+        const fallback = allCourses.find((c) => c.slug === slug || c.id === slug) || allCourses[0];
         if (fallback) {
           setCourse(fallback);
           const initialExpanded: Record<string, boolean> = {};

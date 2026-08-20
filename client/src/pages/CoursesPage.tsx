@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
-import { FALLBACK_COURSES } from '../data/fallbackData';
+import { getPersistentCourses } from '../data/fallbackData';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { Search, Filter, BookOpen, Sparkles, Layers } from 'lucide-react';
@@ -19,7 +19,7 @@ export const CoursesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
 
-  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -46,8 +46,8 @@ export const CoursesPage: React.FC = () => {
         return;
       }
     } catch {
-      // Filter fallback courses locally
-      let filtered = [...FALLBACK_COURSES];
+      // Filter persistent courses locally
+      let filtered = getPersistentCourses();
       if (selectedCategory !== 'All') {
         filtered = filtered.filter((c) => c.category === selectedCategory);
       }

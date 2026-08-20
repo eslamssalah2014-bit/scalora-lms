@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { api } from '../../lib/api';
-import { FALLBACK_COURSES } from '../../data/fallbackData';
+import { getPersistentCourses, savePersistentCourses } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   BookOpen,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const AdminCoursesPage: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -49,9 +49,10 @@ export const AdminCoursesPage: React.FC = () => {
       const res = await api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all');
       if (res.success && res.courses && res.courses.length > 0) {
         setCourses(res.courses);
+        savePersistentCourses(res.courses);
       }
     } catch {
-      setCourses(FALLBACK_COURSES);
+      setCourses(getPersistentCourses());
     } finally {
       setLoading(false);
     }
@@ -110,11 +111,13 @@ export const AdminCoursesPage: React.FC = () => {
       fetchCourses();
       setModalOpen(false);
     } catch {
-      // Optimistic local state update for live Vercel demo
+      // Optimistic persistent update for live Vercel demo
       if (editingCourse) {
-        setCourses((prev) =>
-          prev.map((c) => (c.id === editingCourse.id ? { ...c, ...payload } : c))
-        );
+        setCourses((prev) => {
+          const updated = prev.map((c) => (c.id === editingCourse.id ? { ...c, ...payload } : c));
+          savePersistentCourses(updated);
+          return updated;
+        });
       } else {
         const newCourse: Course = {
           id: `course_${Date.now()}`,
@@ -128,7 +131,11 @@ export const AdminCoursesPage: React.FC = () => {
           quizzes: [],
           createdAt: new Date().toISOString(),
         };
-        setCourses((prev) => [newCourse, ...prev]);
+        setCourses((prev) => {
+          const updated = [newCourse, ...prev];
+          savePersistentCourses(updated);
+          return updated;
+        });
       }
       setModalOpen(false);
     } finally {
@@ -137,9 +144,11 @@ export const AdminCoursesPage: React.FC = () => {
   };
 
   const togglePublish = async (courseId: string) => {
-    setCourses((prev) =>
-      prev.map((c) => (c.id === courseId ? { ...c, isPublished: !c.isPublished } : c))
-    );
+    setCourses((prev) => {
+      const updated = prev.map((c) => (c.id === courseId ? { ...c, isPublished: !c.isPublished } : c));
+      savePersistentCourses(updated);
+      return updated;
+    });
     try {
       await api.patch(`/courses/${courseId}/publish`);
     } catch {
@@ -151,7 +160,11 @@ export const AdminCoursesPage: React.FC = () => {
     if (!window.confirm(`Are you sure you want to permanently delete "${courseTitle}"?`)) {
       return;
     }
-    setCourses((prev) => prev.filter((c) => c.id !== courseId));
+    setCourses((prev) => {
+      const updated = prev.filter((c) => c.id !== courseId);
+      savePersistentCourses(updated);
+      return updated;
+    });
     try {
       await api.delete(`/courses/${courseId}`);
     } catch {
