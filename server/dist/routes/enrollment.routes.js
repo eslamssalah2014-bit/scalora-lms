@@ -5,6 +5,7 @@ const enrollment_controller_js_1 = require("../controllers/enrollment.controller
 const auth_middleware_js_1 = require("../middleware/auth.middleware.js");
 const router = (0, express_1.Router)();
 router.get('/my', auth_middleware_js_1.authenticate, enrollment_controller_js_1.getMyEnrollments);
+router.get('/my-courses', auth_middleware_js_1.authenticate, enrollment_controller_js_1.getMyEnrollments);
 router.get('/admin/all', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, enrollment_controller_js_1.getAllEnrollmentsAdmin);
 router.post('/admin/manual', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, enrollment_controller_js_1.manualEnroll);
 exports.default = router;
