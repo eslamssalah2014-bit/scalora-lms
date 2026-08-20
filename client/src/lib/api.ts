@@ -1,4 +1,11 @@
-const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+export const getApiBase = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/$/, '');
+  }
+  // Default to Render backend if no VITE_API_URL is configured
+  return 'https://scalora-lms.onrender.com/api';
+};
 
 export class ApiError extends Error {
   status: number;
@@ -14,6 +21,9 @@ export class ApiError extends Error {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('scalora_token');
+  const apiBase = getApiBase();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const targetUrl = `${apiBase}${cleanEndpoint}`;
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -24,7 +34,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(targetUrl, {
     ...options,
     headers,
   });
