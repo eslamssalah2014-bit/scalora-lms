@@ -1,0 +1,204 @@
+// Production-Ready PostgreSQL Prisma Schema for Scalora LMS Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  password       String
+  name           String
+  role           String           @default("STUDENT") // "ADMIN" | "STUDENT"
+  avatar         String?
+  bio            String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  enrollments    Enrollment[]
+  quizResults    QuizResult[]
+  lessonProgress LessonProgress[]
+  payments       Payment[]
+  certificates   Certificate[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String
+  thumbnail   String?
+  price       Float         @default(0.0)
+  instructor  String
+  category    String
+  level       String        @default("All Levels")
+  isPublished Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  modules     Module[]
+  quizzes     Quiz[]
+  enrollments Enrollment[]
+  payments    Payment[]
+  certificates Certificate[]
+
+  @@map("courses")
+}
+
+model Module {
+  id        String    @id @default(cuid())
+  title     String
+  order     Int       @default(0)
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  lessons   Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id          String           @id @default(cuid())
+  title       String
+  type        String           // "YOUTUBE" | "PDF" | "DOWNLOAD" | "TEXT"
+  content     String?          // Rich Markdown or text content
+  videoUrl    String?          // YouTube video embed / watch URL
+  fileUrl     String?          // PDF or Downloadable resource link
+  fileName    String?          // Name of the attachment file
+  fileSize    String?          // Human readable size e.g. "4.2 MB"
+  duration    String?          // e.g. "15 min"
+  order       Int              @default(0)
+  moduleId    String
+  module      Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  progress    LessonProgress[]
+
+  @@map("lessons")
+}
+
+model Quiz {
+  id           String         @id @default(cuid())
+  title        String
+  description  String?
+  passingScore Int            @default(70) // Passing percentage (e.g. 70)
+  courseId     String
+  course       Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  moduleId     String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  questions    QuizQuestion[]
+  results      QuizResult[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  question      String
+  options       String   // JSON string of string array: ["Option 1", "Option 2", ...]
+  correctAnswer Int      // 0-indexed index of correct option
+  explanation   String?
+  order         Int      @default(0)
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("quiz_questions")
+}
+
+model QuizResult {
+  id        String   @id @default(cuid())
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Float    // Percentage scored
+  passed    Boolean
+  answers   String   // JSON string of user choices: { questionId: selectedIndex }
+  createdAt DateTime @default(now())
+
+  @@map("quiz_results")
+}
+
+model Payment {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  amount        Float        @default(0.0)
+  currency      String       @default("USD") // "USD" | "EGP" | "EUR"
+  status        String       @default("COMPLETED") // "COMPLETED" | "PENDING" | "FAILED" | "REFUNDED"
+  provider      String       // "MOCK" | "STRIPE" | "PAYMOB"
+  transactionId String       @unique
+  metadata      String?      // Optional metadata JSON
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  enrollments   Enrollment[]
+
+  @@map("payments")
+}
+
+model Certificate {
+  id                String   @id @default(cuid())
+  certificateNumber String   @unique // e.g. "SCL-K8S-ALEX-2026"
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId          String
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentName       String
+  courseTitle       String
+  instructorName    String
+  issueDate         DateTime @default(now())
+  verificationUrl   String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
+
+model Enrollment {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status    String    @default("ACTIVE") // "ACTIVE" | "COMPLETED" | "CANCELLED"
+  paymentId String?
+  payment   Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  amount    Float     @default(0.0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}

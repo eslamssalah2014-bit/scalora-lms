@@ -1,0 +1,280 @@
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import {
+  GraduationCap,
+  BookOpen,
+  LayoutDashboard,
+  LogOut,
+  User,
+  Menu,
+  X,
+  ChevronDown,
+  Shield,
+  Sparkles,
+} from 'lucide-react';
+
+export const Navbar: React.FC = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    setUserDropdownOpen(false);
+  };
+
+  const isActive = (path: string) => location.pathname === path;
+
+  return (
+    <header className="sticky top-0 z-50 bg-[#04152D]/85 backdrop-blur-md border-b border-scalora-blue/15">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center space-x-3 group">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-scalora-navy via-scalora-blue to-scalora-accent p-0.5 shadow-glow-blue transition-transform group-hover:scale-105">
+              <div className="w-full h-full bg-[#04152D] rounded-[10px] flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-scalora-blue group-hover:text-scalora-accent transition-colors" />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
+                Scalora <span className="w-2 h-2 rounded-full bg-scalora-accent animate-pulse" />
+              </span>
+              <span className="text-[10px] tracking-widest uppercase font-semibold text-scalora-blue/80 -mt-1">
+                Enterprise LMS
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            <Link
+              to="/"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/')
+                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Home
+            </Link>
+            <Link
+              to="/courses"
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/courses')
+                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Explore Courses
+            </Link>
+            <a
+              href="/#why-scalora"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              Why Scalora
+            </a>
+            <a
+              href="/#testimonials"
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              Testimonials
+            </a>
+          </nav>
+
+          {/* User / Auth CTA */}
+          <div className="hidden md:flex items-center space-x-3">
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-scalora-navy/60 hover:bg-scalora-navy border border-scalora-blue/20 transition-all focus:outline-none"
+                >
+                  <img
+                    src={
+                      user.avatar ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        user.name
+                      )}&background=2D8CFF&color=fff`
+                    }
+                    alt={user.name}
+                    className="w-8 h-8 rounded-lg object-cover border border-scalora-blue/30"
+                  />
+                  <div className="text-left hidden lg:block">
+                    <div className="text-sm font-semibold text-white leading-none">{user.name}</div>
+                    <div className="text-[11px] font-medium text-scalora-blue/90 mt-0.5 uppercase tracking-wide">
+                      {user.role}
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-slate-400" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {userDropdownOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-56 rounded-2xl glass-panel py-2 shadow-2xl border border-scalora-blue/30 animate-in fade-in zoom-in-95 duration-150"
+                    onClick={() => setUserDropdownOpen(false)}
+                  >
+                    <div className="px-4 py-2.5 border-b border-scalora-blue/15">
+                      <p className="text-xs text-slate-400">Signed in as</p>
+                      <p className="text-sm font-semibold text-white truncate">{user.email}</p>
+                    </div>
+
+                    {user.role === 'ADMIN' ? (
+                      <Link
+                        to="/admin"
+                        className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
+                      >
+                        <Shield className="w-4 h-4 text-scalora-accent" />
+                        <span>Admin Console</span>
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-scalora-blue" />
+                        <span>Student Dashboard</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4 text-emerald-400" />
+                      <span>My Enrolled Courses</span>
+                    </Link>
+
+                    <div className="border-t border-scalora-blue/15 my-1" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center space-x-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-semibold text-slate-200 hover:text-white transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-sm font-semibold shadow-glow-blue hover:opacity-95 transition-all transform hover:-translate-y-0.5 flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Get Started</span>
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Button */}
+          <div className="flex md:hidden items-center space-x-2">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2.5 rounded-xl bg-scalora-navy/50 text-slate-300 hover:text-white border border-scalora-blue/20"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6 text-scalora-blue" />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-scalora-blue/15 bg-[#04152D]/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-3">
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
+          >
+            Home
+          </Link>
+          <Link
+            to="/courses"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
+          >
+            Explore Courses
+          </Link>
+
+          {user ? (
+            <div className="pt-4 border-t border-scalora-blue/15 space-y-2">
+              <div className="px-3 py-2 bg-scalora-navy/40 rounded-xl flex items-center gap-3">
+                <img
+                  src={
+                    user.avatar ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      user.name
+                    )}&background=2D8CFF&color=fff`
+                  }
+                  alt={user.name}
+                  className="w-10 h-10 rounded-lg object-cover"
+                />
+                <div>
+                  <div className="font-semibold text-white">{user.name}</div>
+                  <div className="text-xs text-scalora-blue">{user.email}</div>
+                </div>
+              </div>
+
+              {user.role === 'ADMIN' ? (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2.5 rounded-lg text-base font-semibold text-scalora-accent bg-scalora-accent/10"
+                >
+                  Admin Console
+                </Link>
+              ) : (
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2.5 rounded-lg text-base font-semibold text-scalora-blue bg-scalora-blue/10"
+                >
+                  Student Dashboard
+                </Link>
+              )}
+
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2 rounded-lg text-rose-400 font-medium hover:bg-rose-500/10"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="pt-4 border-t border-scalora-blue/15 grid grid-cols-2 gap-3">
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2.5 text-center rounded-xl bg-scalora-navy border border-scalora-blue/20 text-white font-medium text-sm"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-2.5 text-center rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-semibold text-sm shadow-glow-blue"
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </header>
+  );
+};
