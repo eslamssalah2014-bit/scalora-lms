@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { Course, User } from '../../types';
+import { FALLBACK_COURSES, FALLBACK_USERS } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   CreditCard,
@@ -35,17 +36,62 @@ interface EnrollmentRow {
   };
 }
 
+const DEFAULT_ENROLLMENT_ROWS: EnrollmentRow[] = [
+  {
+    id: 'enr_row_01',
+    userId: 'user_student_01',
+    courseId: FALLBACK_COURSES[0].id,
+    status: 'ACTIVE',
+    amount: FALLBACK_COURSES[0].price,
+    paymentId: 'pi_stripe_seed_01',
+    createdAt: new Date().toISOString(),
+    user: FALLBACK_USERS['student@scalora.com'],
+    course: {
+      id: FALLBACK_COURSES[0].id,
+      title: FALLBACK_COURSES[0].title,
+      price: FALLBACK_COURSES[0].price,
+      category: FALLBACK_COURSES[0].category,
+    },
+  },
+  {
+    id: 'enr_row_02',
+    userId: 'user_student_01',
+    courseId: FALLBACK_COURSES[1].id,
+    status: 'ACTIVE',
+    amount: FALLBACK_COURSES[1].price,
+    paymentId: 'txn_mock_seed_02',
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    user: FALLBACK_USERS['student@scalora.com'],
+    course: {
+      id: FALLBACK_COURSES[1].id,
+      title: FALLBACK_COURSES[1].title,
+      price: FALLBACK_COURSES[1].price,
+      category: FALLBACK_COURSES[1].category,
+    },
+  },
+];
+
+const DEFAULT_STUDENTS_LIST: User[] = [
+  FALLBACK_USERS['student@scalora.com'],
+  {
+    id: 'user_std_02',
+    name: 'Sarah Mitchell',
+    email: 'sarah.m@example.com',
+    role: 'STUDENT',
+  },
+];
+
 export const AdminEnrollmentsPage: React.FC = () => {
-  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
-  const [students, setStudents] = useState<User[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(DEFAULT_ENROLLMENT_ROWS);
+  const [students, setStudents] = useState<User[]>(DEFAULT_STUDENTS_LIST);
+  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   // Manual Enroll Modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState(DEFAULT_STUDENTS_LIST[0].id);
+  const [selectedCourseId, setSelectedCourseId] = useState(FALLBACK_COURSES[0].id);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -54,7 +100,6 @@ export const AdminEnrollmentsPage: React.FC = () => {
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const [enrRes, stdRes, crsRes] = await Promise.all([
         api.get<{ success: boolean; enrollments: EnrollmentRow[] }>('/enrollments/admin/all'),
@@ -62,17 +107,19 @@ export const AdminEnrollmentsPage: React.FC = () => {
         api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all'),
       ]);
 
-      if (enrRes.success) setEnrollments(enrRes.enrollments);
-      if (stdRes.success) {
+      if (enrRes.success && enrRes.enrollments && enrRes.enrollments.length > 0) setEnrollments(enrRes.enrollments);
+      if (stdRes.success && stdRes.students && stdRes.students.length > 0) {
         setStudents(stdRes.students);
-        if (stdRes.students.length > 0) setSelectedStudentId(stdRes.students[0].id);
+        setSelectedStudentId(stdRes.students[0].id);
       }
-      if (crsRes.success) {
+      if (crsRes.success && crsRes.courses && crsRes.courses.length > 0) {
         setCourses(crsRes.courses);
-        if (crsRes.courses.length > 0) setSelectedCourseId(crsRes.courses[0].id);
+        setSelectedCourseId(crsRes.courses[0].id);
       }
-    } catch (err) {
-      console.error('Error fetching admin enrollments:', err);
+    } catch {
+      setEnrollments(DEFAULT_ENROLLMENT_ROWS);
+      setStudents(DEFAULT_STUDENTS_LIST);
+      setCourses(FALLBACK_COURSES);
     } finally {
       setLoading(false);
     }

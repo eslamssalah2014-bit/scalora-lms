@@ -224,24 +224,36 @@ export const FALLBACK_COURSES: Course[] = [
   },
 ];
 
-export const FALLBACK_ENROLLMENTS: Enrollment[] = [
+export const FALLBACK_ENROLLMENTS: any[] = [
   {
     id: 'enr_01',
     enrolledAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
     status: 'ACTIVE',
     progressPercent: 40,
     completedCount: 2,
     totalLessons: 5,
+    amount: 89.99,
     nextLessonId: 'les_03',
+    user: FALLBACK_USERS['student@scalora.com'],
     course: FALLBACK_COURSES[0],
   },
   {
     id: 'enr_02',
     enrolledAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
     status: 'ACTIVE',
     progressPercent: 15,
     completedCount: 1,
     totalLessons: 4,
+    amount: 129.99,
+    user: {
+      id: 'user_std_02',
+      name: 'Sarah Mitchell',
+      email: 'sarah.m@example.com',
+      role: 'STUDENT',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+    },
     course: FALLBACK_COURSES[1],
   },
 ];

@@ -29,6 +29,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new ApiError('Received non-JSON response from server', response.status || 404);
+  }
+
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {

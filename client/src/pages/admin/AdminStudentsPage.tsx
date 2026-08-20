@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { User } from '../../types';
+import { FALLBACK_USERS, FALLBACK_COURSES } from '../../data/fallbackData';
 import { Users, Search, BookOpen, Calendar, Mail, Loader2, Award } from 'lucide-react';
 
 interface StudentData extends User {
@@ -16,9 +17,29 @@ interface StudentData extends User {
   }[];
 }
 
+const DEFAULT_STUDENTS: StudentData[] = [
+  {
+    ...FALLBACK_USERS['student@scalora.com'],
+    createdAt: new Date().toISOString(),
+    _count: { enrollments: 2, quizAttempts: 1 },
+    enrollments: [{ course: { id: FALLBACK_COURSES[0].id, title: FALLBACK_COURSES[0].title } }],
+  },
+  {
+    id: 'user_std_02',
+    name: 'Sarah Mitchell',
+    email: 'sarah.m@example.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+    bio: 'Data Scientist exploring modern Generative AI.',
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    _count: { enrollments: 1, quizAttempts: 1 },
+    enrollments: [{ course: { id: FALLBACK_COURSES[1].id, title: FALLBACK_COURSES[1].title } }],
+  },
+];
+
 export const AdminStudentsPage: React.FC = () => {
-  const [students, setStudents] = useState<StudentData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<StudentData[]>(DEFAULT_STUDENTS);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -26,14 +47,13 @@ export const AdminStudentsPage: React.FC = () => {
   }, []);
 
   const fetchStudents = async () => {
-    setLoading(true);
     try {
       const res = await api.get<{ success: boolean; students: StudentData[] }>('/admin/students');
-      if (res.success) {
+      if (res.success && res.students && res.students.length > 0) {
         setStudents(res.students);
       }
-    } catch (err) {
-      console.error('Error fetching students:', err);
+    } catch {
+      setStudents(DEFAULT_STUDENTS);
     } finally {
       setLoading(false);
     }

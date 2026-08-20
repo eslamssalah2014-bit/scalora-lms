@@ -90,7 +90,7 @@ export const AdminLayout: React.FC = () => {
               <Shield className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-bold text-white truncate">{user?.name}</div>
+              <div className="text-xs font-bold text-white truncate">{user?.name || 'Eslam Salah (Admin)'}</div>
               <div className="text-[10px] text-scalora-blue font-medium">Administrator</div>
             </div>
           </div>

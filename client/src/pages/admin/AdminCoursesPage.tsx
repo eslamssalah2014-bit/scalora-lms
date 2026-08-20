@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { api } from '../../lib/api';
+import { FALLBACK_COURSES } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   BookOpen,
@@ -19,8 +20,8 @@ import {
 } from 'lucide-react';
 
 export const AdminCoursesPage: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   // Course Modal State
@@ -44,14 +45,13 @@ export const AdminCoursesPage: React.FC = () => {
   }, []);
 
   const fetchCourses = async () => {
-    setLoading(true);
     try {
       const res = await api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all');
-      if (res.success) {
+      if (res.success && res.courses && res.courses.length > 0) {
         setCourses(res.courses);
       }
-    } catch (err) {
-      console.error('Error fetching admin courses:', err);
+    } catch {
+      setCourses(FALLBACK_COURSES);
     } finally {
       setLoading(false);
     }

@@ -222,16 +222,20 @@ export const AdminDashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-scalora-blue/10">
-                {topCourses.map((c) => (
-                  <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                    <td className="py-3 font-bold text-white max-w-xs truncate">{c.title}</td>
-                    <td className="py-3 text-slate-300">{c.category}</td>
-                    <td className="py-3 font-semibold text-white">
-                      {c.price === 0 ? 'Free' : `$${c.price.toFixed(2)}`}
-                    </td>
-                    <td className="py-3 text-right font-black text-scalora-accent">{c.enrollmentsCount}</td>
-                  </tr>
-                ))}
+                {(topCourses || []).map((c: any) => {
+                  const p = typeof c.price === 'number' ? c.price : 0;
+                  const stdCount = c.enrollmentsCount ?? c.studentsCount ?? 0;
+                  return (
+                    <tr key={c.id || c.title} className="hover:bg-white/5 transition-colors">
+                      <td className="py-3 font-bold text-white max-w-xs truncate">{c.title}</td>
+                      <td className="py-3 text-slate-300">{c.category || 'General'}</td>
+                      <td className="py-3 font-semibold text-white">
+                        {p === 0 ? 'Free' : `$${p.toFixed(2)}`}
+                      </td>
+                      <td className="py-3 text-right font-black text-scalora-accent">{stdCount}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -262,37 +266,40 @@ export const AdminDashboardPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-scalora-blue/10">
-              {recentEnrollments.map((enr) => (
-                <tr key={enr.id} className="hover:bg-white/5 transition-colors">
-                  <td className="py-3 font-medium text-white">
-                    <div className="flex items-center gap-2.5">
-                      <img
-                        src={
-                          enr.user?.avatar ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            enr.user?.name || 'User'
-                          )}&background=2D8CFF&color=fff`
-                        }
-                        alt={enr.user?.name}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                      <span>{enr.user?.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 text-slate-300 truncate max-w-xs">{enr.course?.title}</td>
-                  <td className="py-3 font-bold text-white">
-                    {enr.amount === 0 ? 'Free' : `$${enr.amount.toFixed(2)}`}
-                  </td>
-                  <td className="py-3 text-slate-400">
-                    {new Date(enr.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 text-right">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      ACTIVE
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {(recentEnrollments || []).map((enr: any) => {
+                const amt = typeof enr.amount === 'number' ? enr.amount : (enr.course?.price || 0);
+                const userName = enr.user?.name || 'Student Learner';
+                const dateStr = enr.createdAt || enr.enrolledAt || new Date().toISOString();
+                return (
+                  <tr key={enr.id || Math.random()} className="hover:bg-white/5 transition-colors">
+                    <td className="py-3 font-medium text-white">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={
+                            enr.user?.avatar ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=2D8CFF&color=fff`
+                          }
+                          alt={userName}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span>{userName}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-slate-300 truncate max-w-xs">{enr.course?.title || 'Enrolled Course'}</td>
+                    <td className="py-3 font-bold text-white">
+                      {amt === 0 ? 'Free' : `$${amt.toFixed(2)}`}
+                    </td>
+                    <td className="py-3 text-slate-400">
+                      {new Date(dateStr).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 text-right">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                        {enr.status || 'ACTIVE'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
