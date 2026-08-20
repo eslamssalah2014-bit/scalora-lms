@@ -324,6 +324,17 @@ export const DEFAULT_STUDENTS_REGISTRY: any[] = [
     _count: { enrollments: 1, quizAttempts: 1, certificates: 0 },
     enrollments: [{ course: { id: 'course_02', title: 'Generative AI & LLM Application Engineering in Production' } }],
   },
+  {
+    id: 'cmt1zcs6w00007ag0b1seslbc',
+    name: 'Khaled Amar',
+    email: 'khaled.amar@example.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+    bio: 'Scalora Academy Learner',
+    createdAt: new Date().toISOString(),
+    _count: { enrollments: 0, quizAttempts: 0, certificates: 0 },
+    enrollments: [],
+  },
 ];
 
 export function getPersistentStudents(): any[] {
