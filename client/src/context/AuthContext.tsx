@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '../types';
 import { api } from '../lib/api';
-import { FALLBACK_USERS } from '../data/fallbackData';
+import { FALLBACK_USERS, savePersistentStudent } from '../data/fallbackData';
 
 interface AuthContextType {
   user: User | null;
@@ -116,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.success && response.token) {
         localStorage.setItem('scalora_token', response.token);
         localStorage.setItem('scalora_user', JSON.stringify(response.user));
+        savePersistentStudent(response.user);
         setToken(response.token);
         setUser(response.user);
         return;
@@ -133,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const demoToken = `demo_token_${role}`;
       localStorage.setItem('scalora_token', demoToken);
       localStorage.setItem('scalora_user', JSON.stringify(newUser));
+      savePersistentStudent(newUser);
       setToken(demoToken);
       setUser(newUser);
     } finally {

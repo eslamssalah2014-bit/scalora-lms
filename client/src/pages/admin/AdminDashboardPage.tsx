@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { AdminStats } from '../../types';
-import { FALLBACK_ADMIN_STATS, FALLBACK_COURSES, FALLBACK_ENROLLMENTS } from '../../data/fallbackData';
+import {
+  getPersistentCourses,
+  getPersistentStudents,
+  getPersistentEnrollments,
+} from '../../data/fallbackData';
 import {
   BookOpen,
   Users,
@@ -18,23 +22,54 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export const AdminDashboardPage: React.FC = () => {
-  const [data, setData] = useState<{
-    stats: AdminStats;
-    categoryDistribution: { category: string; count: number }[];
-    topCourses: any[];
-    recentEnrollments: any[];
-  } | null>({
-    stats: FALLBACK_ADMIN_STATS,
-    categoryDistribution: [
+interface DashboardData {
+  stats: AdminStats;
+  categoryDistribution: { category: string; count: number }[];
+  topCourses: any[];
+  recentEnrollments: any[];
+}
+
+const computeDynamicDashboardData = (): DashboardData => {
+  const allCourses = getPersistentCourses();
+  const allStudents = getPersistentStudents();
+  const allEnrollments = getPersistentEnrollments();
+
+  const totalRevenue = allEnrollments.reduce(
+    (sum, e) => sum + (Number(e.amount) || Number(e.course?.price) || 0),
+    0
+  );
+
+  // Category counts
+  const categoryMap: Record<string, number> = {};
+  allCourses.forEach((c) => {
+    categoryMap[c.category] = (categoryMap[c.category] || 0) + 1;
+  });
+  const categoryDistribution = Object.entries(categoryMap).map(([category, count]) => ({
+    category,
+    count,
+  }));
+
+  const stats: AdminStats = {
+    totalCourses: allCourses.length,
+    totalStudents: allStudents.length,
+    totalEnrollments: allEnrollments.length,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    publishedCoursesCount: allCourses.filter((c) => c.isPublished).length,
+  };
+
+  return {
+    stats,
+    categoryDistribution: categoryDistribution.length > 0 ? categoryDistribution : [
       { category: 'Cloud Architecture', count: 1 },
       { category: 'AI & Data Science', count: 1 },
-      { category: 'Software Engineering', count: 1 },
-      { category: 'DevOps & Cloud', count: 1 },
     ],
-    topCourses: FALLBACK_COURSES.slice(0, 3),
-    recentEnrollments: FALLBACK_ENROLLMENTS,
-  });
+    topCourses: allCourses.slice(0, 4),
+    recentEnrollments: allEnrollments.slice(0, 6),
+  };
+};
+
+export const AdminDashboardPage: React.FC = () => {
+  const [data, setData] = useState<DashboardData>(() => computeDynamicDashboardData());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -55,17 +90,7 @@ export const AdminDashboardPage: React.FC = () => {
         setData(res);
       }
     } catch {
-      setData({
-        stats: FALLBACK_ADMIN_STATS,
-        categoryDistribution: [
-          { category: 'Cloud Architecture', count: 1 },
-          { category: 'AI & Data Science', count: 1 },
-          { category: 'Software Engineering', count: 1 },
-          { category: 'DevOps & Cloud', count: 1 },
-        ],
-        topCourses: FALLBACK_COURSES.slice(0, 3),
-        recentEnrollments: FALLBACK_ENROLLMENTS,
-      });
+      setData(computeDynamicDashboardData());
     } finally {
       setLoading(false);
     }

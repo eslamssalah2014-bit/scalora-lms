@@ -301,3 +301,66 @@ export function savePersistentEnrollments(enrollments: any[]): void {
   } catch {}
 }
 
+export const DEFAULT_STUDENTS_REGISTRY: any[] = [
+  {
+    id: 'user_student_01',
+    name: 'Eslam Salah',
+    email: 'student@scalora.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+    bio: 'Software Engineer specializing in Cloud Native and Full-Stack Systems.',
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+    _count: { enrollments: 2, quizAttempts: 1, certificates: 1 },
+    enrollments: [{ course: { id: 'course_01', title: 'Cloud-Native Microservices Architecture with Node.js & Kubernetes' } }],
+  },
+  {
+    id: 'user_std_02',
+    name: 'Sarah Mitchell',
+    email: 'sarah.m@example.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=80',
+    bio: 'Data Scientist exploring modern Generative AI.',
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    _count: { enrollments: 1, quizAttempts: 1, certificates: 0 },
+    enrollments: [{ course: { id: 'course_02', title: 'Generative AI & LLM Application Engineering in Production' } }],
+  },
+];
+
+export function getPersistentStudents(): any[] {
+  try {
+    const saved = localStorage.getItem('scalora_students_data');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return DEFAULT_STUDENTS_REGISTRY;
+}
+
+export function savePersistentStudents(students: any[]): void {
+  try {
+    localStorage.setItem('scalora_students_data', JSON.stringify(students));
+  } catch {}
+}
+
+export function savePersistentStudent(student: any): void {
+  try {
+    const current = getPersistentStudents();
+    const existingIndex = current.findIndex((s) => s.email?.toLowerCase() === student.email?.toLowerCase() || s.id === student.id);
+    let updated: any[];
+    if (existingIndex >= 0) {
+      updated = current.map((s, idx) => (idx === existingIndex ? { ...s, ...student } : s));
+    } else {
+      const newEntry = {
+        ...student,
+        createdAt: student.createdAt || new Date().toISOString(),
+        _count: student._count || { enrollments: 0, quizAttempts: 0, certificates: 0 },
+        enrollments: student.enrollments || [],
+      };
+      updated = [newEntry, ...current];
+    }
+    savePersistentStudents(updated);
+  } catch {}
+}
+
+

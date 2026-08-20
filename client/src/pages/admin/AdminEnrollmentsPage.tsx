@@ -5,6 +5,8 @@ import {
   getPersistentCourses,
   getPersistentEnrollments,
   savePersistentEnrollments,
+  getPersistentStudents,
+  savePersistentStudents,
 } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
@@ -40,37 +42,16 @@ interface EnrollmentRow {
   };
 }
 
-const DEFAULT_STUDENTS_LIST: User[] = [
-  {
-    id: 'user_student_01',
-    name: 'Eslam Salah',
-    email: 'student@scalora.com',
-    role: 'STUDENT',
-  },
-  {
-    id: 'user_std_02',
-    name: 'Sarah Mitchell',
-    email: 'sarah.m@example.com',
-    role: 'STUDENT',
-  },
-  {
-    id: 'user_std_03',
-    name: 'Alexandre Dubois',
-    email: 'alex.dubois@enterprise.io',
-    role: 'STUDENT',
-  },
-];
-
 export const AdminEnrollmentsPage: React.FC = () => {
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(() => getPersistentEnrollments());
-  const [students, setStudents] = useState<User[]>(DEFAULT_STUDENTS_LIST);
+  const [students, setStudents] = useState<User[]>(() => getPersistentStudents());
   const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   // Manual Enroll Modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState(DEFAULT_STUDENTS_LIST[0].id);
+  const [selectedStudentId, setSelectedStudentId] = useState(() => getPersistentStudents()[0]?.id || '');
   const [selectedCourseId, setSelectedCourseId] = useState(() => getPersistentCourses()[0]?.id || '');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -94,6 +75,7 @@ export const AdminEnrollmentsPage: React.FC = () => {
       if (stdRes.success && stdRes.students && stdRes.students.length > 0) {
         setStudents(stdRes.students);
         setSelectedStudentId(stdRes.students[0].id);
+        savePersistentStudents(stdRes.students);
       }
       if (crsRes.success && crsRes.courses && crsRes.courses.length > 0) {
         setCourses(crsRes.courses);
@@ -101,7 +83,11 @@ export const AdminEnrollmentsPage: React.FC = () => {
       }
     } catch {
       setEnrollments(getPersistentEnrollments());
-      setStudents(DEFAULT_STUDENTS_LIST);
+      const storedStudents = getPersistentStudents();
+      setStudents(storedStudents);
+      if (storedStudents.length > 0) {
+        setSelectedStudentId(storedStudents[0].id);
+      }
       const allCourses = getPersistentCourses();
       setCourses(allCourses);
       if (allCourses.length > 0) {
