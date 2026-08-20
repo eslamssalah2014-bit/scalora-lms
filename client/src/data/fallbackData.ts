@@ -335,6 +335,17 @@ export const DEFAULT_STUDENTS_REGISTRY: any[] = [
     _count: { enrollments: 0, quizAttempts: 0, certificates: 0 },
     enrollments: [],
   },
+  {
+    id: 'cmt1zdx2w00008bg0c2seslbc',
+    name: 'Sherief Sherief',
+    email: 'sherief.sherief@example.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+    bio: 'Scalora Academy Learner',
+    createdAt: new Date().toISOString(),
+    _count: { enrollments: 0, quizAttempts: 0, certificates: 0 },
+    enrollments: [],
+  },
 ];
 
 export function getPersistentStudents(): any[] {
@@ -342,7 +353,17 @@ export function getPersistentStudents(): any[] {
     const saved = localStorage.getItem('scalora_students_data');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Merge with DEFAULT_STUDENTS_REGISTRY so newly registered students are never hidden by old localStorage cache
+        const emailMap = new Set(parsed.map((s: any) => s.email?.toLowerCase()));
+        const missing = DEFAULT_STUDENTS_REGISTRY.filter((s) => !emailMap.has(s.email?.toLowerCase()));
+        if (missing.length > 0) {
+          const merged = [...parsed, ...missing];
+          localStorage.setItem('scalora_students_data', JSON.stringify(merged));
+          return merged;
+        }
+        return parsed;
+      }
     }
   } catch {}
   return DEFAULT_STUDENTS_REGISTRY;
