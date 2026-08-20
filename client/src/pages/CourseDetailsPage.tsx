@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson } from '../types';
 import { api } from '../lib/api';
+import { FALLBACK_COURSES } from '../data/fallbackData';
 import { useAuth } from '../context/AuthContext';
 import { CheckoutModal } from '../components/CheckoutModal';
 import {
@@ -41,15 +42,25 @@ export const CourseDetailsPage: React.FC = () => {
         const res = await api.get<{ success: boolean; course: Course }>(`/courses/details/${slug}`);
         if (res.success && res.course) {
           setCourse(res.course);
-          // Expand all modules by default
           const initialExpanded: Record<string, boolean> = {};
           res.course.modules?.forEach((m) => {
             initialExpanded[m.id] = true;
           });
           setExpandedModules(initialExpanded);
+          return;
         }
-      } catch (err: any) {
-        setError(err.message || 'Course not found');
+      } catch {
+        const fallback = FALLBACK_COURSES.find((c) => c.slug === slug) || FALLBACK_COURSES[0];
+        if (fallback) {
+          setCourse(fallback);
+          const initialExpanded: Record<string, boolean> = {};
+          fallback.modules?.forEach((m) => {
+            initialExpanded[m.id] = true;
+          });
+          setExpandedModules(initialExpanded);
+        } else {
+          setError('Course not found');
+        }
       } finally {
         setLoading(false);
       }

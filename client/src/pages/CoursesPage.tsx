@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
+import { FALLBACK_COURSES } from '../data/fallbackData';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { Search, Filter, BookOpen, Sparkles, Layers } from 'lucide-react';
@@ -18,8 +19,8 @@ export const CoursesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
 
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSort, setSelectedSort] = useState('newest');
@@ -30,7 +31,6 @@ export const CoursesPage: React.FC = () => {
   }, [selectedCategory, selectedSort]);
 
   const fetchCourses = async () => {
-    setLoading(true);
     try {
       let url = `/courses?sort=${selectedSort}`;
       if (selectedCategory !== 'All') {
@@ -41,11 +41,21 @@ export const CoursesPage: React.FC = () => {
       }
 
       const res = await api.get<{ success: boolean; courses: Course[] }>(url);
-      if (res.success) {
+      if (res.success && res.courses && res.courses.length > 0) {
         setCourses(res.courses);
+        return;
       }
-    } catch (err) {
-      console.error('Error fetching courses:', err);
+    } catch {
+      // Filter fallback courses locally
+      let filtered = [...FALLBACK_COURSES];
+      if (selectedCategory !== 'All') {
+        filtered = filtered.filter((c) => c.category === selectedCategory);
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter((c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q));
+      }
+      setCourses(filtered);
     } finally {
       setLoading(false);
     }

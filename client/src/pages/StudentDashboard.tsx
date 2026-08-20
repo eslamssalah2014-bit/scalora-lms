@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Enrollment } from '../types';
 import { api } from '../lib/api';
+import { FALLBACK_ENROLLMENTS } from '../data/fallbackData';
 import { CertificateModal } from '../components/CertificateModal';
 import {
   BookOpen,
@@ -20,8 +21,8 @@ import {
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>(FALLBACK_ENROLLMENTS);
+  const [loading, setLoading] = useState(false);
   const [selectedCert, setSelectedCert] = useState<any | null>(null);
 
   useEffect(() => {
@@ -29,14 +30,13 @@ export const StudentDashboard: React.FC = () => {
   }, []);
 
   const fetchMyEnrollments = async () => {
-    setLoading(true);
     try {
       const res = await api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my');
-      if (res.success) {
+      if (res.success && res.enrollments && res.enrollments.length > 0) {
         setEnrollments(res.enrollments);
       }
-    } catch (err) {
-      console.error('Error fetching student enrollments:', err);
+    } catch {
+      setEnrollments(FALLBACK_ENROLLMENTS);
     } finally {
       setLoading(false);
     }

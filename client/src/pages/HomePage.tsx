@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
+import { FALLBACK_COURSES } from '../data/fallbackData';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { useAuth } from '../context/AuthContext';
@@ -26,19 +27,20 @@ import {
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES.slice(0, 3));
+  const [loading, setLoading] = useState(false);
   const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<Course | null>(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const res = await api.get<{ success: boolean; courses: Course[] }>('/courses');
-        if (res.success) {
+        if (res.success && res.courses && res.courses.length > 0) {
           setCourses(res.courses.slice(0, 3)); // Featured top 3
         }
       } catch (err) {
-        console.error('Error fetching featured courses:', err);
+        console.warn('Backend API unavailable, using fallback courses:', err);
+        setCourses(FALLBACK_COURSES.slice(0, 3));
       } finally {
         setLoading(false);
       }

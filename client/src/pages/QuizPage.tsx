@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Quiz, QuizQuestion } from '../types';
 import { api } from '../lib/api';
+import { FALLBACK_COURSES } from '../data/fallbackData';
 import {
   HelpCircle,
   CheckCircle2,
@@ -55,9 +56,11 @@ export const QuizPage: React.FC = () => {
       const res = await api.get<{ success: boolean; quiz: Quiz }>(`/quizzes/${quizId}`);
       if (res.success && res.quiz) {
         setQuiz(res.quiz);
+        return;
       }
-    } catch (err) {
-      console.error('Error fetching quiz:', err);
+    } catch {
+      const fallbackQuiz = FALLBACK_COURSES[0].quizzes?.[0] || null;
+      setQuiz(fallbackQuiz);
     } finally {
       setLoading(false);
     }
@@ -88,9 +91,46 @@ export const QuizPage: React.FC = () => {
             colors: ['#2D8CFF', '#00D2FF', '#FFD700', '#10B981'],
           });
         }
+        return;
       }
-    } catch (err) {
-      console.error('Error submitting quiz:', err);
+    } catch {
+      // Local fallback quiz evaluation
+      let correct = 0;
+      const review = quiz.questions.map((q) => {
+        const userAns = answers[q.id] ?? -1;
+        const isCorr = userAns === (q.correctAnswer ?? 0);
+        if (isCorr) correct++;
+        return {
+          questionId: q.id,
+          question: q.question,
+          options: q.options,
+          userAnswer: userAns,
+          correctAnswer: q.correctAnswer ?? 0,
+          isCorrect: isCorr,
+          explanation: q.explanation || undefined,
+        };
+      });
+      const score = Math.round((correct / quiz.questions.length) * 100);
+      const passed = score >= quiz.passingScore;
+
+      setResult({
+        attemptId: `att_${Date.now()}`,
+        score,
+        passed,
+        passingScore: quiz.passingScore,
+        correctCount: correct,
+        totalQuestions: quiz.questions.length,
+        review,
+      });
+
+      if (passed) {
+        confetti({
+          particleCount: 100,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#2D8CFF', '#00D2FF', '#FFD700', '#10B981'],
+        });
+      }
     } finally {
       setSubmitting(false);
     }

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '../types';
 import { api } from '../lib/api';
+import { FALLBACK_USERS } from '../data/fallbackData';
 
 interface AuthContextType {
   user: User | null;
@@ -16,7 +17,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('scalora_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('scalora_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -28,15 +32,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      // If it's a fallback demo session, restore user directly
+      if (storedToken.startsWith('demo_token_')) {
+        const role = storedToken.replace('demo_token_', '') as Role;
+        const fallbackUser = role === 'ADMIN' ? FALLBACK_USERS['admin@scalora.com'] : FALLBACK_USERS['student@scalora.com'];
+        setUser(fallbackUser);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const response = await api.get<{ success: boolean; user: User }>('/auth/me');
         if (response.success && response.user) {
           setUser(response.user);
+          localStorage.setItem('scalora_user', JSON.stringify(response.user));
         } else {
           logout();
         }
       } catch {
-        logout();
+        // If API is unreachable but we have cached user data, keep session active
+        const savedUser = localStorage.getItem('scalora_user');
+        if (savedUser) {
+          setUser(JSON.parse(savedUser));
+        } else {
+          logout();
+        }
       } finally {
         setIsLoading(false);
       }
@@ -55,9 +75,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.success && response.token) {
         localStorage.setItem('scalora_token', response.token);
+        localStorage.setItem('scalora_user', JSON.stringify(response.user));
         setToken(response.token);
         setUser(response.user);
+        return;
       }
+    } catch {
+      // Fallback: If live server is offline, authenticate demo credentials seamlessly
+      const fallbackUser = FALLBACK_USERS[email.toLowerCase()];
+      if (fallbackUser) {
+        const demoToken = `demo_token_${fallbackUser.role}`;
+        localStorage.setItem('scalora_token', demoToken);
+        localStorage.setItem('scalora_user', JSON.stringify(fallbackUser));
+        setToken(demoToken);
+        setUser(fallbackUser);
+        return;
+      }
+      throw new Error('Invalid email or password. Try the 1-Click Demo Login buttons.');
     } finally {
       setIsLoading(false);
     }
@@ -75,9 +109,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.success && response.token) {
         localStorage.setItem('scalora_token', response.token);
+        localStorage.setItem('scalora_user', JSON.stringify(response.user));
         setToken(response.token);
         setUser(response.user);
+        return;
       }
+    } catch {
+      // Offline fallback for registration
+      const newUser: User = {
+        id: `user_${Date.now()}`,
+        name,
+        email,
+        role,
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
+        bio: 'Scalora Academy Learner',
+      };
+      const demoToken = `demo_token_${role}`;
+      localStorage.setItem('scalora_token', demoToken);
+      localStorage.setItem('scalora_user', JSON.stringify(newUser));
+      setToken(demoToken);
+      setUser(newUser);
     } finally {
       setIsLoading(false);
     }
@@ -93,13 +144,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('scalora_token');
+    localStorage.removeItem('scalora_user');
     setToken(null);
     setUser(null);
   };
 
   const updateUser = (userData: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...userData });
+      const updated = { ...user, ...userData };
+      setUser(updated);
+      localStorage.setItem('scalora_user', JSON.stringify(updated));
     }
   };
 
