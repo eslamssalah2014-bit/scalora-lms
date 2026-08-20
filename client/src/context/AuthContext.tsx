@@ -18,11 +18,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('scalora_user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    try {
+      const savedUser = localStorage.getItem('scalora_user');
+      if (!savedUser || savedUser === 'undefined' || savedUser === 'null') return null;
+      const parsed = JSON.parse(savedUser);
+      return (parsed && typeof parsed === 'object' && parsed.role) ? parsed : null;
+    } catch {
+      return null;
+    }
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('scalora_token'));
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
