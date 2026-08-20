@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { Course, User } from '../../types';
-import { FALLBACK_COURSES, FALLBACK_USERS } from '../../data/fallbackData';
+import {
+  getPersistentCourses,
+  getPersistentEnrollments,
+  savePersistentEnrollments,
+} from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   CreditCard,
@@ -36,62 +40,38 @@ interface EnrollmentRow {
   };
 }
 
-const DEFAULT_ENROLLMENT_ROWS: EnrollmentRow[] = [
-  {
-    id: 'enr_row_01',
-    userId: 'user_student_01',
-    courseId: FALLBACK_COURSES[0].id,
-    status: 'ACTIVE',
-    amount: FALLBACK_COURSES[0].price,
-    paymentId: 'pi_stripe_seed_01',
-    createdAt: new Date().toISOString(),
-    user: FALLBACK_USERS['student@scalora.com'],
-    course: {
-      id: FALLBACK_COURSES[0].id,
-      title: FALLBACK_COURSES[0].title,
-      price: FALLBACK_COURSES[0].price,
-      category: FALLBACK_COURSES[0].category,
-    },
-  },
-  {
-    id: 'enr_row_02',
-    userId: 'user_student_01',
-    courseId: FALLBACK_COURSES[1].id,
-    status: 'ACTIVE',
-    amount: FALLBACK_COURSES[1].price,
-    paymentId: 'txn_mock_seed_02',
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    user: FALLBACK_USERS['student@scalora.com'],
-    course: {
-      id: FALLBACK_COURSES[1].id,
-      title: FALLBACK_COURSES[1].title,
-      price: FALLBACK_COURSES[1].price,
-      category: FALLBACK_COURSES[1].category,
-    },
-  },
-];
-
 const DEFAULT_STUDENTS_LIST: User[] = [
-  FALLBACK_USERS['student@scalora.com'],
+  {
+    id: 'user_student_01',
+    name: 'Eslam Salah',
+    email: 'student@scalora.com',
+    role: 'STUDENT',
+  },
   {
     id: 'user_std_02',
     name: 'Sarah Mitchell',
     email: 'sarah.m@example.com',
     role: 'STUDENT',
   },
+  {
+    id: 'user_std_03',
+    name: 'Alexandre Dubois',
+    email: 'alex.dubois@enterprise.io',
+    role: 'STUDENT',
+  },
 ];
 
 export const AdminEnrollmentsPage: React.FC = () => {
-  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(DEFAULT_ENROLLMENT_ROWS);
+  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(() => getPersistentEnrollments());
   const [students, setStudents] = useState<User[]>(DEFAULT_STUDENTS_LIST);
-  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
+  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   // Manual Enroll Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(DEFAULT_STUDENTS_LIST[0].id);
-  const [selectedCourseId, setSelectedCourseId] = useState(FALLBACK_COURSES[0].id);
+  const [selectedCourseId, setSelectedCourseId] = useState(() => getPersistentCourses()[0]?.id || '');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -107,7 +87,10 @@ export const AdminEnrollmentsPage: React.FC = () => {
         api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all'),
       ]);
 
-      if (enrRes.success && enrRes.enrollments && enrRes.enrollments.length > 0) setEnrollments(enrRes.enrollments);
+      if (enrRes.success && enrRes.enrollments && enrRes.enrollments.length > 0) {
+        setEnrollments(enrRes.enrollments);
+        savePersistentEnrollments(enrRes.enrollments);
+      }
       if (stdRes.success && stdRes.students && stdRes.students.length > 0) {
         setStudents(stdRes.students);
         setSelectedStudentId(stdRes.students[0].id);
@@ -117,9 +100,13 @@ export const AdminEnrollmentsPage: React.FC = () => {
         setSelectedCourseId(crsRes.courses[0].id);
       }
     } catch {
-      setEnrollments(DEFAULT_ENROLLMENT_ROWS);
+      setEnrollments(getPersistentEnrollments());
       setStudents(DEFAULT_STUDENTS_LIST);
-      setCourses(FALLBACK_COURSES);
+      const allCourses = getPersistentCourses();
+      setCourses(allCourses);
+      if (allCourses.length > 0) {
+        setSelectedCourseId(allCourses[0].id);
+      }
     } finally {
       setLoading(false);
     }
@@ -163,7 +150,11 @@ export const AdminEnrollmentsPage: React.FC = () => {
             category: targetCourse.category,
           },
         };
-        setEnrollments((prev) => [newEnrollment, ...prev]);
+        setEnrollments((prev) => {
+          const updated = [newEnrollment, ...prev];
+          savePersistentEnrollments(updated);
+          return updated;
+        });
       }
       setModalOpen(false);
     } finally {

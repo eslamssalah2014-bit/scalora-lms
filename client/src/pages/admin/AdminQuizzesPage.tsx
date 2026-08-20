@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Quiz, Course } from '../../types';
 import { api } from '../../lib/api';
-import { FALLBACK_COURSES } from '../../data/fallbackData';
+import { getPersistentCourses } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   HelpCircle,
@@ -24,13 +24,16 @@ interface QuestionFormState {
   explanation: string;
 }
 
-const DEFAULT_QUIZZES = FALLBACK_COURSES.flatMap((c) =>
-  (c.quizzes || []).map((q) => ({ ...q, courseTitle: c.title }))
-);
+const getStoredQuizzesList = () => {
+  const currentCourses = getPersistentCourses();
+  return currentCourses.flatMap((c) =>
+    (c.quizzes || []).map((q) => ({ ...q, courseTitle: c.title }))
+  );
+};
 
 export const AdminQuizzesPage: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>(FALLBACK_COURSES);
-  const [quizzes, setQuizzes] = useState<(Quiz & { courseTitle?: string })[]>(DEFAULT_QUIZZES);
+  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
+  const [quizzes, setQuizzes] = useState<(Quiz & { courseTitle?: string })[]>(() => getStoredQuizzesList());
   const [loading, setLoading] = useState(false);
 
   // Modal State
@@ -42,7 +45,7 @@ export const AdminQuizzesPage: React.FC = () => {
   // Form Fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [courseId, setCourseId] = useState(FALLBACK_COURSES[0].id);
+  const [courseId, setCourseId] = useState(() => getPersistentCourses()[0]?.id || '');
   const [passingScore, setPassingScore] = useState(70);
   const [questions, setQuestions] = useState<QuestionFormState[]>([
     {
@@ -72,9 +75,12 @@ export const AdminQuizzesPage: React.FC = () => {
         setCourseId(res.courses[0].id);
       }
     } catch {
-      setCourses(FALLBACK_COURSES);
-      setQuizzes(DEFAULT_QUIZZES);
-      setCourseId(FALLBACK_COURSES[0].id);
+      const stored = getPersistentCourses();
+      setCourses(stored);
+      setQuizzes(getStoredQuizzesList());
+      if (stored.length > 0) {
+        setCourseId(stored[0].id);
+      }
     } finally {
       setLoading(false);
     }
