@@ -8,12 +8,12 @@
     "server"
   ],
   "scripts": {
-    "dev:server": "npm run dev --prefix server",
-    "dev:client": "npm run dev --prefix client",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
     "build:server": "npm run build --prefix server",
     "build:client": "npm run build --prefix client",
-    "build": "npm run build:server && npm run build:client",
-    "postinstall": "prisma generate --schema=./server/prisma/schema.prisma",
+    "build": "npm run db:generate --prefix server && npm run build:server && npm run build:client",
+    "postinstall": "npm run db:generate --prefix server",
     "seed": "npm run db:seed --prefix server"
   },
   "dependencies": {
