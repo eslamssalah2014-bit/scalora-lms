@@ -1,3 +1,4 @@
+
 # Scalora LMS Platform
 
 Enterprise Learning Management System (LMS) engineered from scratch for Scalora.
@@ -106,3 +107,5 @@ npm run dev
    - Dynamic Quiz Builder: Custom multiple-choice questions, passing score, and explanations.
    - Student & Enrollment Management: Manual student enrollment and transaction ledgers.
    - Payment Abstraction Settings (Sandbox, Stripe, Paymob).
+=======
+# scalora-lms
