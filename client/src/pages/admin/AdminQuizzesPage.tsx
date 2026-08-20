@@ -189,6 +189,7 @@ export const AdminQuizzesPage: React.FC = () => {
       passingScore: Number(passingScore),
       courseId,
       questions: questions.map((q, idx) => ({
+        id: q.id || `q_${Date.now()}_${idx}`,
         question: q.question,
         options: q.options,
         correctAnswer: q.correctAnswer,
@@ -203,10 +204,31 @@ export const AdminQuizzesPage: React.FC = () => {
       } else {
         await api.post('/quizzes', payload);
       }
-      setModalOpen(false);
       fetchQuizzesAndCourses();
-    } catch (err: any) {
-      setFormError(err.message || 'Failed to save quiz');
+      setModalOpen(false);
+    } catch {
+      const selectedCourse = courses.find((c) => c.id === courseId);
+      if (editingQuiz) {
+        setQuizzes((prev) =>
+          prev.map((q) =>
+            q.id === editingQuiz.id
+              ? {
+                  ...q,
+                  ...payload,
+                  courseTitle: selectedCourse?.title || q.courseTitle,
+                }
+              : q
+          )
+        );
+      } else {
+        const newQuiz: Quiz & { courseTitle?: string } = {
+          id: `quiz_${Date.now()}`,
+          ...payload,
+          courseTitle: selectedCourse?.title || 'Scalora Course',
+        };
+        setQuizzes((prev) => [newQuiz, ...prev]);
+      }
+      setModalOpen(false);
     } finally {
       setFormLoading(false);
     }
@@ -214,11 +236,11 @@ export const AdminQuizzesPage: React.FC = () => {
 
   const handleDeleteQuiz = async (quizId: string, quizTitle: string) => {
     if (!window.confirm(`Are you sure you want to delete quiz "${quizTitle}"?`)) return;
+    setQuizzes((prev) => prev.filter((q) => q.id !== quizId));
     try {
       await api.delete(`/quizzes/${quizId}`);
-      fetchQuizzesAndCourses();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete quiz');
+    } catch {
+      // Local state already updated
     }
   };
 

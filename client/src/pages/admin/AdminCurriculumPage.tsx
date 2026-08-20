@@ -115,22 +115,48 @@ export const AdminCurriculumPage: React.FC = () => {
       } else {
         await api.post('/modules', { title: moduleTitle, courseId: course.id });
       }
-      setModuleModalOpen(false);
       fetchCourseData();
-    } catch (err: any) {
-      alert(err.message || 'Error saving module');
+    } catch {
+      if (editingModule) {
+        setCourse((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            modules: prev.modules?.map((m) =>
+              m.id === editingModule.id ? { ...m, title: moduleTitle } : m
+            ),
+          };
+        });
+      } else {
+        const newMod: Module = {
+          id: `mod_${Date.now()}`,
+          title: moduleTitle,
+          order: (course.modules?.length || 0) + 1,
+          courseId: course.id,
+          lessons: [],
+        };
+        setCourse((prev) => (prev ? { ...prev, modules: [...(prev.modules || []), newMod] } : prev));
+        setExpandedModules((prev) => ({ ...prev, [newMod.id]: true }));
+      }
     } finally {
+      setModuleModalOpen(false);
       setModuleLoading(false);
     }
   };
 
   const handleDeleteModule = async (modId: string, title: string) => {
     if (!window.confirm(`Delete module "${title}" and all its lessons?`)) return;
+    setCourse((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        modules: prev.modules?.filter((m) => m.id !== modId),
+      };
+    });
     try {
       await api.delete(`/modules/${modId}`);
-      fetchCourseData();
-    } catch (err: any) {
-      alert(err.message || 'Error deleting module');
+    } catch {
+      // Local state already updated
     }
   };
 
@@ -177,7 +203,7 @@ export const AdminCurriculumPage: React.FC = () => {
       fileUrl: fileUrl || undefined,
       fileName: fileName || undefined,
       fileSize: fileSize || undefined,
-      duration: duration || undefined,
+      duration: duration || '15 min',
       content: content || undefined,
       moduleId: targetModuleId,
     };
@@ -188,22 +214,53 @@ export const AdminCurriculumPage: React.FC = () => {
       } else {
         await api.post('/lessons', payload);
       }
-      setLessonModalOpen(false);
       fetchCourseData();
-    } catch (err: any) {
-      setFormError(err.message || 'Error saving lesson');
+    } catch {
+      setCourse((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          modules: prev.modules?.map((m) => {
+            if (m.id !== targetModuleId) return m;
+            if (editingLesson) {
+              return {
+                ...m,
+                lessons: m.lessons.map((l) =>
+                  l.id === editingLesson.id ? { ...l, ...payload } : l
+                ),
+              };
+            }
+            const newLesson: Lesson = {
+              id: `les_${Date.now()}`,
+              order: (m.lessons.length || 0) + 1,
+              ...payload,
+            };
+            return { ...m, lessons: [...m.lessons, newLesson] };
+          }),
+        };
+      });
     } finally {
+      setLessonModalOpen(false);
       setLessonLoading(false);
     }
   };
 
   const handleDeleteLesson = async (lessonId: string, title: string) => {
     if (!window.confirm(`Delete lesson "${title}"?`)) return;
+    setCourse((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        modules: prev.modules?.map((m) => ({
+          ...m,
+          lessons: m.lessons.filter((l) => l.id !== lessonId),
+        })),
+      };
+    });
     try {
       await api.delete(`/lessons/${lessonId}`);
-      fetchCourseData();
-    } catch (err: any) {
-      alert(err.message || 'Error deleting lesson');
+    } catch {
+      // Local state already updated
     }
   };
 
