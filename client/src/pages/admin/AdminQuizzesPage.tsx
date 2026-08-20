@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Quiz, Course } from '../../types';
 import { api } from '../../lib/api';
-import { getPersistentCourses } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   HelpCircle,
@@ -14,6 +13,8 @@ import {
   BookOpen,
   Award,
   Loader2,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 interface QuestionFormState {
@@ -24,17 +25,11 @@ interface QuestionFormState {
   explanation: string;
 }
 
-const getStoredQuizzesList = () => {
-  const currentCourses = getPersistentCourses();
-  return currentCourses.flatMap((c) =>
-    (c.quizzes || []).map((q) => ({ ...q, courseTitle: c.title }))
-  );
-};
-
 export const AdminQuizzesPage: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
-  const [quizzes, setQuizzes] = useState<(Quiz & { courseTitle?: string })[]>(() => getStoredQuizzesList());
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [quizzes, setQuizzes] = useState<(Quiz & { courseTitle?: string })[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -45,7 +40,7 @@ export const AdminQuizzesPage: React.FC = () => {
   // Form Fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [courseId, setCourseId] = useState(() => getPersistentCourses()[0]?.id || '');
+  const [courseId, setCourseId] = useState('');
   const [passingScore, setPassingScore] = useState(70);
   const [questions, setQuestions] = useState<QuestionFormState[]>([
     {
@@ -61,9 +56,11 @@ export const AdminQuizzesPage: React.FC = () => {
   }, []);
 
   const fetchQuizzesAndCourses = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all');
-      if (res.success && res.courses && res.courses.length > 0) {
+      if (res.success && Array.isArray(res.courses)) {
         setCourses(res.courses);
         const allQuizzes: (Quiz & { courseTitle?: string })[] = [];
         res.courses.forEach((c) => {
@@ -72,15 +69,12 @@ export const AdminQuizzesPage: React.FC = () => {
           });
         });
         setQuizzes(allQuizzes);
-        setCourseId(res.courses[0].id);
+        if (res.courses.length > 0 && !courseId) {
+          setCourseId(res.courses[0].id);
+        }
       }
-    } catch {
-      const stored = getPersistentCourses();
-      setCourses(stored);
-      setQuizzes(getStoredQuizzesList());
-      if (stored.length > 0) {
-        setCourseId(stored[0].id);
-      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load quizzes and courses from server.');
     } finally {
       setLoading(false);
     }
@@ -210,31 +204,10 @@ export const AdminQuizzesPage: React.FC = () => {
       } else {
         await api.post('/quizzes', payload);
       }
-      fetchQuizzesAndCourses();
+      await fetchQuizzesAndCourses();
       setModalOpen(false);
-    } catch {
-      const selectedCourse = courses.find((c) => c.id === courseId);
-      if (editingQuiz) {
-        setQuizzes((prev) =>
-          prev.map((q) =>
-            q.id === editingQuiz.id
-              ? {
-                  ...q,
-                  ...payload,
-                  courseTitle: selectedCourse?.title || q.courseTitle,
-                }
-              : q
-          )
-        );
-      } else {
-        const newQuiz: Quiz & { courseTitle?: string } = {
-          id: `quiz_${Date.now()}`,
-          ...payload,
-          courseTitle: selectedCourse?.title || 'Scalora Course',
-        };
-        setQuizzes((prev) => [newQuiz, ...prev]);
-      }
-      setModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save quiz to server.');
     } finally {
       setFormLoading(false);
     }
@@ -242,11 +215,11 @@ export const AdminQuizzesPage: React.FC = () => {
 
   const handleDeleteQuiz = async (quizId: string, quizTitle: string) => {
     if (!window.confirm(`Are you sure you want to delete quiz "${quizTitle}"?`)) return;
-    setQuizzes((prev) => prev.filter((q) => q.id !== quizId));
     try {
       await api.delete(`/quizzes/${quizId}`);
-    } catch {
-      // Local state already updated
+      await fetchQuizzesAndCourses();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete quiz from server.');
     }
   };
 

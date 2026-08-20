@@ -3,11 +3,6 @@ import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { AdminStats } from '../../types';
 import {
-  getPersistentCourses,
-  getPersistentStudents,
-  getPersistentEnrollments,
-} from '../../data/fallbackData';
-import {
   BookOpen,
   Users,
   CreditCard,
@@ -20,6 +15,8 @@ import {
   CheckCircle2,
   Clock,
   Sparkles,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 interface DashboardData {
@@ -29,54 +26,18 @@ interface DashboardData {
   recentEnrollments: any[];
 }
 
-const computeDynamicDashboardData = (): DashboardData => {
-  const allCourses = getPersistentCourses();
-  const allStudents = getPersistentStudents();
-  const allEnrollments = getPersistentEnrollments();
-
-  const totalRevenue = allEnrollments.reduce(
-    (sum, e) => sum + (Number(e.amount) || Number(e.course?.price) || 0),
-    0
-  );
-
-  // Category counts
-  const categoryMap: Record<string, number> = {};
-  allCourses.forEach((c) => {
-    categoryMap[c.category] = (categoryMap[c.category] || 0) + 1;
-  });
-  const categoryDistribution = Object.entries(categoryMap).map(([category, count]) => ({
-    category,
-    count,
-  }));
-
-  const stats: AdminStats = {
-    totalCourses: allCourses.length,
-    totalStudents: allStudents.length,
-    totalEnrollments: allEnrollments.length,
-    totalRevenue: Math.round(totalRevenue * 100) / 100,
-    publishedCoursesCount: allCourses.filter((c) => c.isPublished).length,
-  };
-
-  return {
-    stats,
-    categoryDistribution: categoryDistribution.length > 0 ? categoryDistribution : [
-      { category: 'Cloud Architecture', count: 1 },
-      { category: 'AI & Data Science', count: 1 },
-    ],
-    topCourses: allCourses.slice(0, 4),
-    recentEnrollments: allEnrollments.slice(0, 6),
-  };
-};
-
 export const AdminDashboardPage: React.FC = () => {
-  const [data, setData] = useState<DashboardData>(() => computeDynamicDashboardData());
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
   }, []);
 
   const fetchStats = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.get<{
         success: boolean;
@@ -88,9 +49,11 @@ export const AdminDashboardPage: React.FC = () => {
 
       if (res.success && res.stats) {
         setData(res);
+      } else {
+        setError('Failed to retrieve live platform statistics.');
       }
-    } catch {
-      setData(computeDynamicDashboardData());
+    } catch (err: any) {
+      setError(err.message || 'Failed to connect to backend server for statistics.');
     } finally {
       setLoading(false);
     }

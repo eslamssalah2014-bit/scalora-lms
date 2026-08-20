@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Quiz, QuizQuestion } from '../types';
 import { api } from '../lib/api';
-import { FALLBACK_COURSES } from '../data/fallbackData';
 import {
   HelpCircle,
   CheckCircle2,
@@ -14,6 +13,8 @@ import {
   BookOpen,
   Loader2,
   Sparkles,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -41,6 +42,7 @@ export const QuizPage: React.FC = () => {
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<QuizResult | null>(null);
@@ -51,16 +53,17 @@ export const QuizPage: React.FC = () => {
 
   const fetchQuiz = async () => {
     setLoading(true);
+    setError(null);
     setResult(null);
     try {
       const res = await api.get<{ success: boolean; quiz: Quiz }>(`/quizzes/${quizId}`);
       if (res.success && res.quiz) {
         setQuiz(res.quiz);
-        return;
+      } else {
+        setError('Quiz not found.');
       }
-    } catch {
-      const fallbackQuiz = FALLBACK_COURSES[0].quizzes?.[0] || null;
-      setQuiz(fallbackQuiz);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load assessment quiz from server.');
     } finally {
       setLoading(false);
     }

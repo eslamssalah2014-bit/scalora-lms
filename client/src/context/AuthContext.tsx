@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '../types';
-import { api } from '../lib/api';
-import { FALLBACK_USERS, savePersistentStudent } from '../data/fallbackData';
+import { api, ApiError } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -28,21 +27,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('scalora_token'));
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const storedToken = localStorage.getItem('scalora_token');
       if (!storedToken) {
-        setIsLoading(false);
-        return;
-      }
-
-      // If it's a fallback demo session, restore user directly
-      if (storedToken.startsWith('demo_token_')) {
-        const role = storedToken.replace('demo_token_', '') as Role;
-        const fallbackUser = role === 'ADMIN' ? FALLBACK_USERS['admin@scalora.com'] : FALLBACK_USERS['student@scalora.com'];
-        setUser(fallbackUser);
         setIsLoading(false);
         return;
       }
@@ -55,13 +45,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           logout();
         }
-      } catch {
-        // If API is unreachable but we have cached user data, keep session active
-        const savedUser = localStorage.getItem('scalora_user');
-        if (savedUser) {
-          setUser(JSON.parse(savedUser));
-        } else {
+      } catch (err: any) {
+        // If explicitly unauthorized (invalid token), log out. Otherwise, retain cached session for network resilience.
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
           logout();
+        } else {
+          const savedUser = localStorage.getItem('scalora_user');
+          if (savedUser) {
+            try {
+              setUser(JSON.parse(savedUser));
+            } catch {}
+          }
         }
       } finally {
         setIsLoading(false);
@@ -79,25 +73,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       });
 
-      if (response.success && response.token) {
+      if (response.success && response.token && response.user) {
         localStorage.setItem('scalora_token', response.token);
         localStorage.setItem('scalora_user', JSON.stringify(response.user));
         setToken(response.token);
         setUser(response.user);
         return;
       }
-    } catch {
-      // Fallback: If live server is offline, authenticate demo credentials seamlessly
-      const fallbackUser = FALLBACK_USERS[email.toLowerCase()];
-      if (fallbackUser) {
-        const demoToken = `demo_token_${fallbackUser.role}`;
-        localStorage.setItem('scalora_token', demoToken);
-        localStorage.setItem('scalora_user', JSON.stringify(fallbackUser));
-        setToken(demoToken);
-        setUser(fallbackUser);
-        return;
-      }
-      throw new Error('Invalid email or password. Try the 1-Click Demo Login buttons.');
+      throw new Error(response.user ? 'Login failed' : 'Invalid response from server');
+    } catch (err: any) {
+      throw new Error(err.message || 'Invalid email or password.');
     } finally {
       setIsLoading(false);
     }
@@ -113,30 +98,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
       });
 
-      if (response.success && response.token) {
+      if (response.success && response.token && response.user) {
         localStorage.setItem('scalora_token', response.token);
         localStorage.setItem('scalora_user', JSON.stringify(response.user));
-        savePersistentStudent(response.user);
         setToken(response.token);
         setUser(response.user);
         return;
       }
-    } catch {
-      // Offline fallback for registration
-      const newUser: User = {
-        id: `user_${Date.now()}`,
-        name,
-        email,
-        role,
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80',
-        bio: 'Scalora Academy Learner',
-      };
-      const demoToken = `demo_token_${role}`;
-      localStorage.setItem('scalora_token', demoToken);
-      localStorage.setItem('scalora_user', JSON.stringify(newUser));
-      savePersistentStudent(newUser);
-      setToken(demoToken);
-      setUser(newUser);
+      throw new Error('Registration failed');
+    } catch (err: any) {
+      throw new Error(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

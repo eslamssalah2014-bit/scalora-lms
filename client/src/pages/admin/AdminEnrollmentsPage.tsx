@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { Course, User } from '../../types';
-import {
-  getPersistentCourses,
-  getPersistentEnrollments,
-  savePersistentEnrollments,
-  getPersistentStudents,
-  savePersistentStudents,
-} from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   CreditCard,
@@ -18,6 +11,8 @@ import {
   DollarSign,
   Loader2,
   GraduationCap,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 interface EnrollmentRow {
@@ -43,16 +38,17 @@ interface EnrollmentRow {
 }
 
 export const AdminEnrollmentsPage: React.FC = () => {
-  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>(() => getPersistentEnrollments());
-  const [students, setStudents] = useState<User[]>(() => getPersistentStudents());
-  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
-  const [loading, setLoading] = useState(false);
+  const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([]);
+  const [students, setStudents] = useState<User[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   // Manual Enroll Modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState(() => getPersistentStudents()[0]?.id || '');
-  const [selectedCourseId, setSelectedCourseId] = useState(() => getPersistentCourses()[0]?.id || '');
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -61,6 +57,8 @@ export const AdminEnrollmentsPage: React.FC = () => {
   }, []);
 
   const fetchData = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const [enrRes, stdRes, crsRes] = await Promise.all([
         api.get<{ success: boolean; enrollments: EnrollmentRow[] }>('/enrollments/admin/all'),
@@ -68,31 +66,23 @@ export const AdminEnrollmentsPage: React.FC = () => {
         api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all'),
       ]);
 
-      if (enrRes.success && enrRes.enrollments && enrRes.enrollments.length > 0) {
+      if (enrRes.success && Array.isArray(enrRes.enrollments)) {
         setEnrollments(enrRes.enrollments);
-        savePersistentEnrollments(enrRes.enrollments);
       }
-      if (stdRes.success && stdRes.students && stdRes.students.length > 0) {
+      if (stdRes.success && Array.isArray(stdRes.students)) {
         setStudents(stdRes.students);
-        setSelectedStudentId(stdRes.students[0].id);
-        savePersistentStudents(stdRes.students);
+        if (stdRes.students.length > 0 && !selectedStudentId) {
+          setSelectedStudentId(stdRes.students[0].id);
+        }
       }
-      if (crsRes.success && crsRes.courses && crsRes.courses.length > 0) {
+      if (crsRes.success && Array.isArray(crsRes.courses)) {
         setCourses(crsRes.courses);
-        setSelectedCourseId(crsRes.courses[0].id);
+        if (crsRes.courses.length > 0 && !selectedCourseId) {
+          setSelectedCourseId(crsRes.courses[0].id);
+        }
       }
-    } catch {
-      setEnrollments(getPersistentEnrollments());
-      const storedStudents = getPersistentStudents();
-      setStudents(storedStudents);
-      if (storedStudents.length > 0) {
-        setSelectedStudentId(storedStudents[0].id);
-      }
-      const allCourses = getPersistentCourses();
-      setCourses(allCourses);
-      if (allCourses.length > 0) {
-        setSelectedCourseId(allCourses[0].id);
-      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load enrollment data from server.');
     } finally {
       setLoading(false);
     }
@@ -103,46 +93,16 @@ export const AdminEnrollmentsPage: React.FC = () => {
     setFormLoading(true);
     setFormError(null);
 
-    const targetStudent = students.find((s) => s.id === selectedStudentId);
-    const targetCourse = courses.find((c) => c.id === selectedCourseId);
-
     try {
       await api.post('/enrollments/admin/manual', {
         userId: selectedStudentId,
         courseId: selectedCourseId,
       });
 
-      fetchData();
+      await fetchData();
       setModalOpen(false);
-    } catch {
-      if (targetStudent && targetCourse) {
-        const newEnrollment: EnrollmentRow = {
-          id: `enr_${Date.now()}`,
-          userId: targetStudent.id,
-          courseId: targetCourse.id,
-          status: 'ACTIVE',
-          amount: targetCourse.price,
-          createdAt: new Date().toISOString(),
-          user: {
-            id: targetStudent.id,
-            name: targetStudent.name,
-            email: targetStudent.email,
-            role: targetStudent.role,
-          },
-          course: {
-            id: targetCourse.id,
-            title: targetCourse.title,
-            price: targetCourse.price,
-            category: targetCourse.category,
-          },
-        };
-        setEnrollments((prev) => {
-          const updated = [newEnrollment, ...prev];
-          savePersistentEnrollments(updated);
-          return updated;
-        });
-      }
-      setModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to enroll student on server.');
     } finally {
       setFormLoading(false);
     }

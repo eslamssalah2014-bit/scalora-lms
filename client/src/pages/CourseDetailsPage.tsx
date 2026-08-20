@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson } from '../types';
 import { api } from '../lib/api';
-import { getPersistentCourses } from '../data/fallbackData';
 import { useAuth } from '../context/AuthContext';
 import { CheckoutModal } from '../components/CheckoutModal';
 import {
@@ -22,6 +21,8 @@ import {
   ArrowRight,
   Sparkles,
   Users,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 export const CourseDetailsPage: React.FC = () => {
@@ -29,45 +30,35 @@ export const CourseDetailsPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [course, setCourse] = useState<Course | null>(() => {
-    return getPersistentCourses().find((c) => c.slug === slug || c.id === slug) || getPersistentCourses()[0];
-  });
-  const [loading, setLoading] = useState(false);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchCourseDetails = async () => {
-      try {
-        const res = await api.get<{ success: boolean; course: Course }>(`/courses/details/${slug}`);
-        if (res.success && res.course) {
-          setCourse(res.course);
-          const initialExpanded: Record<string, boolean> = {};
-          res.course.modules?.forEach((m) => {
-            initialExpanded[m.id] = true;
-          });
-          setExpandedModules(initialExpanded);
-          return;
-        }
-      } catch {
-        const allCourses = getPersistentCourses();
-        const fallback = allCourses.find((c) => c.slug === slug || c.id === slug) || allCourses[0];
-        if (fallback) {
-          setCourse(fallback);
-          const initialExpanded: Record<string, boolean> = {};
-          fallback.modules?.forEach((m) => {
-            initialExpanded[m.id] = true;
-          });
-          setExpandedModules(initialExpanded);
-        } else {
-          setError('Course not found');
-        }
-      } finally {
-        setLoading(false);
+  const fetchCourseDetails = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<{ success: boolean; course: Course }>(`/courses/details/${slug}`);
+      if (res.success && res.course) {
+        setCourse(res.course);
+        const initialExpanded: Record<string, boolean> = {};
+        res.course.modules?.forEach((m) => {
+          initialExpanded[m.id] = true;
+        });
+        setExpandedModules(initialExpanded);
+      } else {
+        setError('Course not found');
       }
-    };
+    } catch (err: any) {
+      setError(err.message || 'Failed to load course details from server.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (slug) fetchCourseDetails();
   }, [slug]);
 

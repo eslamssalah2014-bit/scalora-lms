@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Course, Module, Lesson, LessonType } from '../../types';
 import { api } from '../../lib/api';
-import { getPersistentCourses, savePersistentCourses } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   Layers,
@@ -19,18 +18,16 @@ import {
   ExternalLink,
   Loader2,
   CheckCircle2,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 export const AdminCurriculumPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
-  const [course, setCourse] = useState<Course | null>(() => {
-    return getPersistentCourses().find((c) => c.id === courseId || c.slug === courseId) || getPersistentCourses()[0];
-  });
-  const [loading, setLoading] = useState(false);
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({
-    mod_01: true,
-    mod_02: true,
-  });
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
   // Module Modal
   const [moduleModalOpen, setModuleModalOpen] = useState(false);
@@ -57,21 +54,12 @@ export const AdminCurriculumPage: React.FC = () => {
     if (courseId) fetchCourseData();
   }, [courseId]);
 
-  const updateAndPersistCourse = (updater: (prev: Course) => Course) => {
-    setCourse((prev) => {
-      if (!prev) return prev;
-      const updated = updater(prev);
-      const allCourses = getPersistentCourses();
-      const newAll = allCourses.map((c) => (c.id === updated.id ? updated : c));
-      savePersistentCourses(newAll);
-      return updated;
-    });
-  };
-
   const fetchCourseData = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all');
-      if (res.success && res.courses && res.courses.length > 0) {
+      if (res.success && Array.isArray(res.courses)) {
         const found = res.courses.find((c) => c.id === courseId || c.slug === courseId);
         if (found) {
           setCourse(found);
@@ -80,19 +68,12 @@ export const AdminCurriculumPage: React.FC = () => {
             expanded[m.id] = true;
           });
           setExpandedModules(expanded);
-          return;
+        } else {
+          setError('Course curriculum not found.');
         }
       }
-    } catch {
-      const fallback = getPersistentCourses().find((c) => c.id === courseId || c.slug === courseId) || getPersistentCourses()[0];
-      if (fallback) {
-        setCourse(fallback);
-        const expanded: Record<string, boolean> = {};
-        fallback.modules?.forEach((m) => {
-          expanded[m.id] = true;
-        });
-        setExpandedModules(expanded);
-      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load course curriculum from server.');
     } finally {
       setLoading(false);
     }
@@ -126,45 +107,22 @@ export const AdminCurriculumPage: React.FC = () => {
       } else {
         await api.post('/modules', { title: moduleTitle, courseId: course.id });
       }
-      fetchCourseData();
-    } catch {
-      if (editingModule) {
-        updateAndPersistCourse((prev) => ({
-          ...prev,
-          modules: prev.modules?.map((m) =>
-            m.id === editingModule.id ? { ...m, title: moduleTitle } : m
-          ),
-        }));
-      } else {
-        const newMod: Module = {
-          id: `mod_${Date.now()}`,
-          title: moduleTitle,
-          order: (course.modules?.length || 0) + 1,
-          courseId: course.id,
-          lessons: [],
-        };
-        updateAndPersistCourse((prev) => ({
-          ...prev,
-          modules: [...(prev.modules || []), newMod],
-        }));
-        setExpandedModules((prev) => ({ ...prev, [newMod.id]: true }));
-      }
-    } finally {
+      await fetchCourseData();
       setModuleModalOpen(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to save module to server.');
+    } finally {
       setModuleLoading(false);
     }
   };
 
   const handleDeleteModule = async (modId: string, title: string) => {
     if (!window.confirm(`Delete module "${title}" and all its lessons?`)) return;
-    updateAndPersistCourse((prev) => ({
-      ...prev,
-      modules: prev.modules?.filter((m) => m.id !== modId),
-    }));
     try {
       await api.delete(`/modules/${modId}`);
-    } catch {
-      // Local state already updated
+      await fetchCourseData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete module from server.');
     }
   };
 
@@ -184,8 +142,8 @@ export const AdminCurriculumPage: React.FC = () => {
     setLessonModalOpen(true);
   };
 
-  const openEditLesson = (lesson: Lesson) => {
-    setTargetModuleId(lesson.moduleId);
+  const openEditLesson = (moduleId: string, lesson: Lesson) => {
+    setTargetModuleId(moduleId);
     setEditingLesson(lesson);
     setLessonTitle(lesson.title);
     setLessonType(lesson.type);
@@ -222,47 +180,22 @@ export const AdminCurriculumPage: React.FC = () => {
       } else {
         await api.post('/lessons', payload);
       }
-      fetchCourseData();
-    } catch {
-      updateAndPersistCourse((prev) => ({
-        ...prev,
-        modules: prev.modules?.map((m) => {
-          if (m.id !== targetModuleId) return m;
-          if (editingLesson) {
-            return {
-              ...m,
-              lessons: m.lessons.map((l) =>
-                l.id === editingLesson.id ? { ...l, ...payload } : l
-              ),
-            };
-          }
-          const newLesson: Lesson = {
-            id: `les_${Date.now()}`,
-            order: (m.lessons.length || 0) + 1,
-            ...payload,
-          };
-          return { ...m, lessons: [...m.lessons, newLesson] };
-        }),
-      }));
-    } finally {
+      await fetchCourseData();
       setLessonModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save lesson to server.');
+    } finally {
       setLessonLoading(false);
     }
   };
 
   const handleDeleteLesson = async (lessonId: string, title: string) => {
     if (!window.confirm(`Delete lesson "${title}"?`)) return;
-    updateAndPersistCourse((prev) => ({
-      ...prev,
-      modules: prev.modules?.map((m) => ({
-        ...m,
-        lessons: m.lessons.filter((l) => l.id !== lessonId),
-      })),
-    }));
     try {
       await api.delete(`/lessons/${lessonId}`);
-    } catch {
-      // Local state already updated
+      await fetchCourseData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete lesson from server.');
     }
   };
 
@@ -422,7 +355,7 @@ export const AdminCurriculumPage: React.FC = () => {
 
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
-                              onClick={() => openEditLesson(lesson)}
+                              onClick={() => openEditLesson(module.id, lesson)}
                               className="p-1.5 rounded-lg bg-slate-700/40 hover:bg-slate-700 text-slate-300 hover:text-white"
                               title="Edit Lesson"
                             >

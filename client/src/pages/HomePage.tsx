@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
-import { getPersistentCourses } from '../data/fallbackData';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { useAuth } from '../context/AuthContext';
@@ -23,27 +22,33 @@ import {
   Terminal,
   Zap,
   Star,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
-  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses().slice(0, 3));
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<Course | null>(null);
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const res = await api.get<{ success: boolean; courses: Course[] }>('/courses');
-        if (res.success && res.courses && res.courses.length > 0) {
-          setCourses(res.courses.slice(0, 3)); // Featured top 3
-        }
-      } catch {
-        setCourses(getPersistentCourses().slice(0, 3));
-      } finally {
-        setLoading(false);
+  const fetchCourses = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get<{ success: boolean; courses: Course[] }>('/courses');
+      if (res.success && Array.isArray(res.courses)) {
+        setCourses(res.courses.slice(0, 3));
       }
-    };
+    } catch (err: any) {
+      setError(err.message || 'Unable to load featured courses from server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCourses();
   }, []);
 

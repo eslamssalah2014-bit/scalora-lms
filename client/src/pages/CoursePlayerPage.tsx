@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson, Quiz } from '../types';
 import { api } from '../lib/api';
-import { FALLBACK_COURSES } from '../data/fallbackData';
 import { CertificateModal } from '../components/CertificateModal';
 import {
   Video,
@@ -23,6 +22,8 @@ import {
   Sparkles,
   BookOpen,
   ArrowLeft,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -33,8 +34,9 @@ export const CoursePlayerPage: React.FC = () => {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set(['les_01', 'les_02']));
+  const [completedLessonIds, setCompletedLessonIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [completingLesson, setCompletingLesson] = useState(false);
@@ -49,19 +51,22 @@ export const CoursePlayerPage: React.FC = () => {
 
   const fetchCourseAndProgress = async () => {
     setLoading(true);
+    setError(null);
     let courseData: Course | null = null;
 
     try {
       const res = await api.get<{ success: boolean; course: Course }>(`/courses/details/${slug}`);
       if (res.success && res.course) {
         courseData = res.course;
+      } else {
+        setError('Course not found');
+        return;
       }
-    } catch {
-      courseData = FALLBACK_COURSES.find((c) => c.slug === slug) || FALLBACK_COURSES[0];
-    }
-
-    if (!courseData) {
-      courseData = FALLBACK_COURSES[0];
+    } catch (err: any) {
+      setError(err.message || 'Failed to load course from server.');
+      return;
+    } finally {
+      setLoading(false);
     }
 
     setCourse(courseData);
@@ -73,18 +78,18 @@ export const CoursePlayerPage: React.FC = () => {
     });
     setExpandedModules(expanded);
 
-    // Try fetching progress, else fallback
+    // Fetch live user progress
     try {
       const progRes = await api.get<{
         success: boolean;
         progress: { completedLessonIds: string[] };
       }>(`/progress/course/${courseData.id}`);
 
-      if (progRes.success && progRes.progress) {
+      if (progRes.success && progRes.progress && Array.isArray(progRes.progress.completedLessonIds)) {
         setCompletedLessonIds(new Set(progRes.progress.completedLessonIds));
       }
     } catch {
-      setCompletedLessonIds(new Set(['les_01', 'les_02']));
+      // Retain existing set
     }
 
     // Determine active lesson

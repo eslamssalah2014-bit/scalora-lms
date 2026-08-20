@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../lib/api';
 import { User } from '../../types';
-import { getPersistentStudents, savePersistentStudents } from '../../data/fallbackData';
-import { Users, Search, BookOpen, Calendar, Mail, Loader2, Award } from 'lucide-react';
+import { Users, Search, BookOpen, Calendar, Mail, Loader2, Award, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface StudentData extends User {
   _count?: {
@@ -18,8 +17,9 @@ interface StudentData extends User {
 }
 
 export const AdminStudentsPage: React.FC = () => {
-  const [students, setStudents] = useState<StudentData[]>(() => getPersistentStudents());
-  const [loading, setLoading] = useState(false);
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -27,14 +27,15 @@ export const AdminStudentsPage: React.FC = () => {
   }, []);
 
   const fetchStudents = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.get<{ success: boolean; students: StudentData[] }>('/admin/students');
-      if (res.success && res.students && res.students.length > 0) {
+      if (res.success && Array.isArray(res.students)) {
         setStudents(res.students);
-        savePersistentStudents(res.students);
       }
-    } catch {
-      setStudents(getPersistentStudents());
+    } catch (err: any) {
+      setError(err.message || 'Failed to load student directory from server.');
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Enrollment } from '../types';
 import { api } from '../lib/api';
-import { FALLBACK_ENROLLMENTS } from '../data/fallbackData';
 import { CertificateModal } from '../components/CertificateModal';
 import {
   BookOpen,
@@ -17,12 +16,15 @@ import {
   GraduationCap,
   TrendingUp,
   ShieldCheck,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [enrollments, setEnrollments] = useState<Enrollment[]>(FALLBACK_ENROLLMENTS);
-  const [loading, setLoading] = useState(false);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedCert, setSelectedCert] = useState<any | null>(null);
 
   useEffect(() => {
@@ -30,13 +32,15 @@ export const StudentDashboard: React.FC = () => {
   }, []);
 
   const fetchMyEnrollments = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my');
-      if (res.success && res.enrollments && res.enrollments.length > 0) {
+      const res = await api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my-courses');
+      if (res.success && Array.isArray(res.enrollments)) {
         setEnrollments(res.enrollments);
       }
-    } catch {
-      setEnrollments(FALLBACK_ENROLLMENTS);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load enrolled tracks from server.');
     } finally {
       setLoading(false);
     }
@@ -56,7 +60,7 @@ export const StudentDashboard: React.FC = () => {
   const totalEnrolled = enrollments.length;
   const completedCourses = enrollments.filter((e) => e.progressPercent === 100).length;
   const inProgressCourses = totalEnrolled - completedCourses;
-  const totalLessonsCompleted = enrollments.reduce((sum, e) => sum + e.completedCount, 0);
+  const totalLessonsCompleted = enrollments.reduce((sum, e) => sum + (e.completedCount || 0), 0);
 
   // Find active course for "Continue Learning"
   const activeEnrollment = enrollments.find((e) => e.progressPercent < 100) || enrollments[0];

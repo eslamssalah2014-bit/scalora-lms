@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
-import { getPersistentCourses } from '../data/fallbackData';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
-import { Search, Filter, BookOpen, Sparkles, Layers } from 'lucide-react';
+import { Search, Filter, BookOpen, Sparkles, Layers, RefreshCw, AlertCircle } from 'lucide-react';
 
 const CATEGORIES = [
   'All',
@@ -19,8 +18,9 @@ export const CoursesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
 
-  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [selectedSort, setSelectedSort] = useState('newest');
@@ -31,6 +31,8 @@ export const CoursesPage: React.FC = () => {
   }, [selectedCategory, selectedSort]);
 
   const fetchCourses = async () => {
+    setLoading(true);
+    setError(null);
     try {
       let url = `/courses?sort=${selectedSort}`;
       if (selectedCategory !== 'All') {
@@ -41,21 +43,11 @@ export const CoursesPage: React.FC = () => {
       }
 
       const res = await api.get<{ success: boolean; courses: Course[] }>(url);
-      if (res.success && res.courses && res.courses.length > 0) {
+      if (res.success && Array.isArray(res.courses)) {
         setCourses(res.courses);
-        return;
       }
-    } catch {
-      // Filter persistent courses locally
-      let filtered = getPersistentCourses();
-      if (selectedCategory !== 'All') {
-        filtered = filtered.filter((c) => c.category === selectedCategory);
-      }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter((c) => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q));
-      }
-      setCourses(filtered);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load courses from server.');
     } finally {
       setLoading(false);
     }

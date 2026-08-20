@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course } from '../../types';
 import { api } from '../../lib/api';
-import { getPersistentCourses, savePersistentCourses } from '../../data/fallbackData';
 import { Modal } from '../../components/Modal';
 import {
   BookOpen,
@@ -17,11 +16,14 @@ import {
   ExternalLink,
   Eye,
   Loader2,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 export const AdminCoursesPage: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>(() => getPersistentCourses());
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   // Course Modal State
@@ -45,14 +47,15 @@ export const AdminCoursesPage: React.FC = () => {
   }, []);
 
   const fetchCourses = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const res = await api.get<{ success: boolean; courses: Course[] }>('/courses/admin/all');
-      if (res.success && res.courses && res.courses.length > 0) {
+      if (res.success && Array.isArray(res.courses)) {
         setCourses(res.courses);
-        savePersistentCourses(res.courses);
       }
-    } catch {
-      setCourses(getPersistentCourses());
+    } catch (err: any) {
+      setError(err.message || 'Failed to load courses from server.');
     } finally {
       setLoading(false);
     }
@@ -108,51 +111,21 @@ export const AdminCoursesPage: React.FC = () => {
       } else {
         await api.post('/courses', payload);
       }
-      fetchCourses();
+      await fetchCourses();
       setModalOpen(false);
-    } catch {
-      // Optimistic persistent update for live Vercel demo
-      if (editingCourse) {
-        setCourses((prev) => {
-          const updated = prev.map((c) => (c.id === editingCourse.id ? { ...c, ...payload } : c));
-          savePersistentCourses(updated);
-          return updated;
-        });
-      } else {
-        const newCourse: Course = {
-          id: `course_${Date.now()}`,
-          slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `course-${Date.now()}`,
-          ...payload,
-          modulesCount: 0,
-          lessonsCount: 0,
-          quizzesCount: 0,
-          studentsCount: 0,
-          modules: [],
-          quizzes: [],
-          createdAt: new Date().toISOString(),
-        };
-        setCourses((prev) => {
-          const updated = [newCourse, ...prev];
-          savePersistentCourses(updated);
-          return updated;
-        });
-      }
-      setModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save course to server.');
     } finally {
       setFormLoading(false);
     }
   };
 
   const togglePublish = async (courseId: string) => {
-    setCourses((prev) => {
-      const updated = prev.map((c) => (c.id === courseId ? { ...c, isPublished: !c.isPublished } : c));
-      savePersistentCourses(updated);
-      return updated;
-    });
     try {
       await api.patch(`/courses/${courseId}/publish`);
-    } catch {
-      // Local state already updated
+      await fetchCourses();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update course status on server.');
     }
   };
 
@@ -160,15 +133,11 @@ export const AdminCoursesPage: React.FC = () => {
     if (!window.confirm(`Are you sure you want to permanently delete "${courseTitle}"?`)) {
       return;
     }
-    setCourses((prev) => {
-      const updated = prev.filter((c) => c.id !== courseId);
-      savePersistentCourses(updated);
-      return updated;
-    });
     try {
       await api.delete(`/courses/${courseId}`);
-    } catch {
-      // Local state already updated
+      await fetchCourses();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete course from server.');
     }
   };
 
