@@ -105,6 +105,8 @@ app.use('/payments', paymentRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);
+app.use('/students', adminRoutes);
+app.use('/', adminRoutes);
 
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

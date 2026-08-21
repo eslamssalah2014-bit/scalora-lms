@@ -90,6 +90,8 @@ app.use('/api/payments', payment_routes_js_1.default);
 app.use('/payments', payment_routes_js_1.default);
 app.use('/api/admin', admin_routes_js_1.default);
 app.use('/admin', admin_routes_js_1.default);
+app.use('/students', admin_routes_js_1.default);
+app.use('/', admin_routes_js_1.default);
 // Global Error Handler
 app.use((err, _req, res, _next) => {
     console.error('Unhandled Error:', err);
