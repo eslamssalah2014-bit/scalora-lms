@@ -33,28 +33,55 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Services Links */}
           <div>
-            <h4 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Platform</h4>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Services</h4>
             <ul className="space-y-2.5 text-sm text-slate-400">
               <li>
-                <Link to="/courses" className="hover:text-scalora-blue transition-colors">
-                  Explore Courses
+                <Link to="/services" className="hover:text-scalora-blue transition-colors">
+                  Operations Consulting
                 </Link>
               </li>
               <li>
-                <a href="/#why-scalora" className="hover:text-scalora-blue transition-colors">
-                  Why Scalora
-                </a>
-              </li>
-              <li>
-                <Link to="/dashboard" className="hover:text-scalora-blue transition-colors">
-                  Student Dashboard
+                <Link to="/services#what-we-do" className="hover:text-scalora-blue transition-colors">
+                  Systems Building
                 </Link>
               </li>
               <li>
-                <Link to="/admin" className="hover:text-scalora-blue transition-colors">
-                  Instructor & Admin
+                <Link to="/services#what-we-do" className="hover:text-scalora-blue transition-colors">
+                  Workflow Automation
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-scalora-blue transition-colors">
+                  Book Consultation
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Community Links */}
+          <div>
+            <h4 className="text-sm font-bold uppercase tracking-wider text-cyan-300 mb-4">Community & Academy</h4>
+            <ul className="space-y-2.5 text-sm text-slate-400">
+              <li>
+                <Link to="/community" className="hover:text-cyan-300 transition-colors">
+                  Community Hub
+                </Link>
+              </li>
+              <li>
+                <Link to="/courses" className="hover:text-cyan-300 transition-colors">
+                  Browse Courses
+                </Link>
+              </li>
+              <li>
+                <Link to="/community#community-courses" className="hover:text-cyan-300 transition-colors">
+                  Workshops & AMAs
+                </Link>
+              </li>
+              <li>
+                <Link to="/register" className="hover:text-cyan-300 transition-colors">
+                  Join Community
                 </Link>
               </li>
             </ul>

@@ -52,18 +52,36 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
-            <a
-              href="/#services"
-              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            <Link
+              to="/"
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/')
+                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Home
+            </Link>
+            <Link
+              to="/services"
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/services')
+                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
               Services
-            </a>
-            <a
-              href="/#community"
-              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            </Link>
+            <Link
+              to="/community"
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/community')
+                  ? 'text-cyan-300 bg-cyan-500/10 border border-cyan-400/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
               Community
-            </a>
+            </Link>
             <Link
               to="/courses"
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -74,18 +92,26 @@ export const Navbar: React.FC = () => {
             >
               Courses
             </Link>
-            <a
-              href="/#about"
-              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            <Link
+              to="/about"
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/about')
+                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
               About
-            </a>
-            <a
-              href="/#contact"
-              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            </Link>
+            <Link
+              to="/contact"
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/contact')
+                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
             >
               Contact
-            </a>
+            </Link>
           </nav>
 
           {/* User / Auth CTA */}
@@ -198,20 +224,27 @@ export const Navbar: React.FC = () => {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-scalora-blue/15 bg-[#04152D]/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-2">
-          <a
-            href="/#services"
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
+          >
+            Home
+          </Link>
+          <Link
+            to="/services"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
           >
             Services
-          </a>
-          <a
-            href="/#community"
+          </Link>
+          <Link
+            to="/community"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
           >
             Community
-          </a>
+          </Link>
           <Link
             to="/courses"
             onClick={() => setMobileMenuOpen(false)}
@@ -219,20 +252,20 @@ export const Navbar: React.FC = () => {
           >
             Courses
           </Link>
-          <a
-            href="/#about"
+          <Link
+            to="/about"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
           >
             About
-          </a>
-          <a
-            href="/#contact"
+          </Link>
+          <Link
+            to="/contact"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
           >
             Contact
-          </a>
+          </Link>
 
           {user ? (
             <div className="pt-4 border-t border-scalora-blue/15 space-y-2">
