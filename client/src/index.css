@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-[#04152D] text-slate-100 font-sans;
+  }
+  section {
+    scroll-margin-top: 5.5rem;
   }
 }
 

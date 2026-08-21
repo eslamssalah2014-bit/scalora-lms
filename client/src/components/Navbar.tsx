@@ -52,37 +52,39 @@ export const Navbar: React.FC = () => {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
-            <Link
-              to="/"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/')
-                  ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5'
-              }`}
+            <a
+              href="/#services"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
             >
-              Home
-            </Link>
+              Services
+            </a>
+            <a
+              href="/#community"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              Community
+            </a>
             <Link
               to="/courses"
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive('/courses')
                   ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
-              Explore Courses
+              Courses
             </Link>
             <a
-              href="/#why-scalora"
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              href="/#about"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
             >
-              Why Scalora
+              About
             </a>
             <a
-              href="/#testimonials"
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+              href="/#contact"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
             >
-              Testimonials
+              Contact
             </a>
           </nav>
 
@@ -195,21 +197,42 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-scalora-blue/15 bg-[#04152D]/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-3">
-          <Link
-            to="/"
+        <div className="md:hidden border-t border-scalora-blue/15 bg-[#04152D]/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-2">
+          <a
+            href="/#services"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
           >
-            Home
-          </Link>
+            Services
+          </a>
+          <a
+            href="/#community"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
+          >
+            Community
+          </a>
           <Link
             to="/courses"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
           >
-            Explore Courses
+            Courses
           </Link>
+          <a
+            href="/#about"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
+          >
+            About
+          </a>
+          <a
+            href="/#contact"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
+          >
+            Contact
+          </a>
 
           {user ? (
             <div className="pt-4 border-t border-scalora-blue/15 space-y-2">
