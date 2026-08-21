@@ -47,6 +47,21 @@ app.get('/api/health', (_req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
+app.get('/health', (_req, res) => {
+    res.json({
+        status: 'ok',
+        platform: 'Scalora LMS Backend',
+        timestamp: new Date().toISOString(),
+    });
+});
+app.get('/api/debug-headers', (req, res) => {
+    res.json({
+        url: req.url,
+        originalUrl: req.originalUrl,
+        headers: req.headers,
+        query: req.query,
+    });
+});
 // API Routes (Mounted with /api prefix and root for serverless execution)
 app.use('/api/auth', auth_routes_js_1.default);
 app.use('/auth', auth_routes_js_1.default);
