@@ -10,6 +10,7 @@ import enrollmentRoutes from './routes/enrollment.routes.js';
 import progressRoutes from './routes/progress.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import leadRoutes from './routes/lead.routes.js';
 
 dotenv.config();
 
@@ -102,6 +103,9 @@ app.use('/progress', progressRoutes);
 
 app.use('/api/payments', paymentRoutes);
 app.use('/payments', paymentRoutes);
+
+app.use('/api/leads', leadRoutes);
+app.use('/leads', leadRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);

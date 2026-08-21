@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../lib/api';
 import {
   Briefcase,
   Building2,
@@ -33,6 +34,7 @@ import {
   Phone,
   Clock,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 
 export const ServicesPage: React.FC = () => {
@@ -47,11 +49,31 @@ export const ServicesPage: React.FC = () => {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactForm.name || !contactForm.email || !contactForm.message) return;
-    setSubmitted(true);
+
+    try {
+      setSubmitting(true);
+      setFormError(null);
+      await api.post('/leads', {
+        fullName: contactForm.name,
+        email: contactForm.email,
+        phone: contactForm.phone,
+        companyName: contactForm.company,
+        industry: contactForm.industry,
+        teamSize: contactForm.teamSize,
+        goalsAndBottlenecks: contactForm.message,
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setFormError(err.message || 'Error submitting consultation request');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -941,12 +963,28 @@ export const ServicesPage: React.FC = () => {
                 />
               </div>
 
+              {formError && (
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+                  {formError}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-bold text-base shadow-glow-blue hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                disabled={submitting}
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-bold text-base shadow-glow-blue hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Send className="w-5 h-5" />
-                <span>Submit Consultation Request</span>
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Transmitting Request...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    <span>Submit Consultation Request</span>
+                  </>
+                )}
               </button>
             </form>
           )}

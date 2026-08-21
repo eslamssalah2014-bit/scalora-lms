@@ -231,3 +231,24 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model Lead {
+  id                  String   @id @default(cuid())
+  leadCode            String   @unique
+  fullName            String
+  email               String
+  phone               String?
+  companyName         String?
+  industry            String?
+  teamSize            String?
+  goalsAndBottlenecks String?
+  status              String   @default("NEW") // "NEW" | "CONTACTED" | "MEETING_SCHEDULED" | "DISCOVERY_COMPLETED" | "PROPOSAL_SENT" | "NEGOTIATION" | "WON" | "LOST"
+  assignedTo          String?  // Name or role of assignee (e.g. "Admin", "Sales Manager", "Senior Consultant")
+  notes               String?  // JSON string of LeadNote[]
+  activityLog         String?  // JSON string of LeadActivity[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("leads")
+}
+
+

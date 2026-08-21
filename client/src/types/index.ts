@@ -149,3 +149,57 @@ export interface AdminStats {
   publishedCoursesCount: number;
 }
 
+export type LeadStatus =
+  | 'NEW'
+  | 'CONTACTED'
+  | 'MEETING_SCHEDULED'
+  | 'DISCOVERY_COMPLETED'
+  | 'PROPOSAL_SENT'
+  | 'NEGOTIATION'
+  | 'WON'
+  | 'LOST';
+
+export interface LeadNote {
+  id: string;
+  text: string;
+  authorName: string;
+  authorId?: string;
+  createdAt: string;
+}
+
+export interface LeadActivity {
+  id: string;
+  type: string;
+  description: string;
+  actorName: string;
+  createdAt: string;
+}
+
+export interface Lead {
+  id: string;
+  leadCode: string;
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  companyName?: string | null;
+  industry?: string | null;
+  teamSize?: string | null;
+  goalsAndBottlenecks?: string | null;
+  status: LeadStatus;
+  assignedTo?: string | null;
+  notes?: LeadNote[];
+  activityLog?: LeadActivity[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeadStats {
+  totalLeads: number;
+  newLeads: number;
+  meetingsScheduled: number;
+  wonDeals: number;
+  lostDeals: number;
+  conversionRate: number;
+}
+
+

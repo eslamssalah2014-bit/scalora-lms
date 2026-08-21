@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
+  Target,
   BookOpen,
   Users,
   CreditCard,
@@ -25,6 +26,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
+    { label: 'Leads Center', path: '/admin/leads', icon: Target },
     { label: 'Courses', path: '/admin/courses', icon: BookOpen },
     { label: 'Students', path: '/admin/students', icon: Users },
     { label: 'Enrollments', path: '/admin/enrollments', icon: CreditCard },
