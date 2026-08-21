@@ -18,8 +18,7 @@ export const Footer: React.FC = () => {
               <span className="text-2xl font-black text-white">Scalora</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
-              Scalora is the enterprise learning platform engineered for mission-critical software engineering,
-              cloud architecture, and artificial intelligence mastery.
+              Operations & Business Systems Consulting. We help businesses build scalable systems, streamline operations, and implement smart automations.
             </p>
             <div className="flex items-center space-x-4 pt-2">
               <div className="flex items-center space-x-1.5 text-xs text-slate-400">
