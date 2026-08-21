@@ -106,26 +106,6 @@ export const ServicesPage: React.FC = () => {
                 <span>Explore Solutions</span>
               </a>
             </div>
-
-            {/* Live Operational Metrics */}
-            <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto border-t border-scalora-blue/15">
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-white">120+</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Systems Architected</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-scalora-accent">65%</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cycle Time Reduction</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-white">99.2%</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Client Retention</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-emerald-400">5.0 / 5</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Advisory Rating</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
