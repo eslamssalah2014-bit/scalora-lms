@@ -3,8 +3,8 @@ export const getApiBase = (): string => {
   if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
     return envUrl.trim().replace(/\/$/, '');
   }
-  // Default to live production backend on Render
-  return 'https://scalora-lms-3.onrender.com/api';
+  // Default to same-origin /api for seamless Vercel / serverless routing
+  return '/api';
 };
 
 export class ApiError extends Error {
