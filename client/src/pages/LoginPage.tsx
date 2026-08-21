@@ -34,12 +34,13 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex items-center space-x-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center">
-              <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
-            </div>
-            <span className="text-2xl font-black text-white">Scalora</span>
+        <div className="text-center space-y-3 flex flex-col items-center">
+          <Link to="/" className="inline-flex items-center justify-center group focus:outline-none">
+            <img
+              src="/scalora-logo-transparent.png"
+              alt="Scalora"
+              className="h-16 sm:h-20 w-auto max-w-[240px] object-contain drop-shadow-[0_0_25px_rgba(45,140,255,0.4)] transition-transform duration-300 group-hover:scale-105"
+            />
           </Link>
           <h2 className="text-2xl font-black text-white tracking-tight">Sign in to your account</h2>
           <p className="text-xs text-slate-400">Access your courses, quizzes, and digital certificates</p>
