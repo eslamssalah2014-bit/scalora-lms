@@ -96,26 +96,6 @@ export const HomePage: React.FC = () => {
                 </Link>
               )}
             </div>
-
-            {/* Platform Live Metrics */}
-            <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto border-t border-scalora-blue/15">
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-white">4,800+</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Engineers & Operators</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-scalora-accent">120+</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Consulting Sprints</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-white">4.9 / 5</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ecosystem Rating</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-emerald-400">100%</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Verifiable Credentials</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -250,99 +230,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. TESTIMONIALS & SOCIAL PROOF */}
-      {/* ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-scalora-accent">
-            <Users className="w-4 h-4" />
-            <span>Client & Member Voices</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white">
-            Trusted Across Both Business Lines
-          </h2>
-          <p className="text-sm text-slate-400">
-            Hear from operations executives who scaled output and engineers who advanced their technical mastery.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-1 text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-sm text-slate-300 italic leading-relaxed">
-                "Scalora Services restructured our delivery pipelines and automated customer onboarding, accelerating our turnaround by 65% in one quarter."
-              </p>
-            </div>
-            <div className="flex items-center gap-3 pt-4 border-t border-scalora-blue/15">
-              <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"
-                alt="Sarah Jenkins"
-                className="w-10 h-10 rounded-full object-cover border border-scalora-blue/30"
-              />
-              <div>
-                <div className="text-sm font-bold text-white">Sarah Jenkins</div>
-                <div className="text-xs text-scalora-blue">COO, Apex Digital (Services Client)</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-1 text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-sm text-slate-300 italic leading-relaxed">
-                "The Academy courses are the most practical technical curriculum I've taken. The Cloud-Native and AI tracks give you production blueprints, not theory."
-              </p>
-            </div>
-            <div className="flex items-center gap-3 pt-4 border-t border-scalora-blue/15">
-              <img
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80"
-                alt="Karim Mansour"
-                className="w-10 h-10 rounded-full object-cover border border-scalora-blue/30"
-              />
-              <div>
-                <div className="text-sm font-bold text-white">Karim Mansour</div>
-                <div className="text-xs text-scalora-blue">Lead Architect (Academy Member)</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-2xl space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center space-x-1 text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-sm text-slate-300 italic leading-relaxed">
-                "The Community network and downloadable SOP vault saved us months of trial and error when scaling our startup's internal processes."
-              </p>
-            </div>
-            <div className="flex items-center gap-3 pt-4 border-t border-scalora-blue/15">
-              <img
-                src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80"
-                alt="David Chen"
-                className="w-10 h-10 rounded-full object-cover border border-scalora-blue/30"
-              />
-              <div>
-                <div className="text-sm font-bold text-white">David Chen</div>
-                <div className="text-xs text-scalora-blue">Founder & CEO (Community Member)</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 4. GATEWAY CTA BANNER */}
+      {/* 3. GATEWAY CTA BANNER */}
       {/* ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-3xl bg-gradient-to-r from-[#082B5B] via-[#0D3E82] to-[#04152D] border border-scalora-blue/40 p-8 sm:p-14 overflow-hidden text-center shadow-2xl">
