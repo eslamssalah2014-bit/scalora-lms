@@ -127,10 +127,10 @@ export const ServicesPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 items-stretch">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 items-stretch">
           {/* Client 1: ChatX */}
-          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-scalora-blue hover:bg-white/5 transition-all group shadow-lg">
-            <div className="w-full h-24 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-scalora-blue hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-20 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src="/clients/chatx.jpg"
                 alt="ChatX"
@@ -138,14 +138,14 @@ export const ServicesPage: React.FC = () => {
               />
             </div>
             <div className="text-center">
-              <h4 className="text-sm font-bold text-white">ChatX</h4>
-              <p className="text-[11px] text-scalora-blue font-medium mt-0.5">SaaS & Communication</p>
+              <h4 className="text-xs font-bold text-white">ChatX</h4>
+              <p className="text-[10px] text-scalora-blue font-medium mt-0.5">SaaS Platform</p>
             </div>
           </div>
 
           {/* Client 2: Valens Agency */}
-          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-cyan-400 hover:bg-white/5 transition-all group shadow-lg">
-            <div className="w-full h-24 rounded-xl bg-white flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-cyan-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-20 rounded-xl bg-white flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src="/clients/valens.jpg"
                 alt="Valens Agency"
@@ -153,14 +153,14 @@ export const ServicesPage: React.FC = () => {
               />
             </div>
             <div className="text-center">
-              <h4 className="text-sm font-bold text-white">Valens Agency</h4>
-              <p className="text-[11px] text-cyan-300 font-medium mt-0.5">Digital Growth & Media</p>
+              <h4 className="text-xs font-bold text-white">Valens Agency</h4>
+              <p className="text-[10px] text-cyan-300 font-medium mt-0.5">Digital Growth</p>
             </div>
           </div>
 
           {/* Client 3: MEC Academy */}
-          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-purple-400 hover:bg-white/5 transition-all group shadow-lg">
-            <div className="w-full h-24 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-purple-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-20 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src="/clients/mec-academy.jpg"
                 alt="MEC Academy"
@@ -168,14 +168,14 @@ export const ServicesPage: React.FC = () => {
               />
             </div>
             <div className="text-center">
-              <h4 className="text-sm font-bold text-white">MEC Academy</h4>
-              <p className="text-[11px] text-purple-300 font-medium mt-0.5">Professional Education</p>
+              <h4 className="text-xs font-bold text-white">MEC Academy</h4>
+              <p className="text-[10px] text-purple-300 font-medium mt-0.5">Academy & Training</p>
             </div>
           </div>
 
           {/* Client 4: English Capsules */}
-          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-amber-400 hover:bg-white/5 transition-all group shadow-lg">
-            <div className="w-full h-24 rounded-xl bg-white flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-amber-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-20 rounded-xl bg-white flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src="/clients/english-capsules.jpg"
                 alt="English Capsules"
@@ -183,14 +183,14 @@ export const ServicesPage: React.FC = () => {
               />
             </div>
             <div className="text-center">
-              <h4 className="text-sm font-bold text-white">English Capsules</h4>
-              <p className="text-[11px] text-amber-300 font-medium mt-0.5">Language Solutions</p>
+              <h4 className="text-xs font-bold text-white">English Capsules</h4>
+              <p className="text-[10px] text-amber-300 font-medium mt-0.5">Language Solutions</p>
             </div>
           </div>
 
           {/* Client 5: Helium.Ai */}
-          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-emerald-400 hover:bg-white/5 transition-all group shadow-lg col-span-2 sm:col-span-1">
-            <div className="w-full h-24 rounded-xl bg-white flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-emerald-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-20 rounded-xl bg-white flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src="/clients/helium-ai.jpg"
                 alt="Helium.Ai"
@@ -198,8 +198,38 @@ export const ServicesPage: React.FC = () => {
               />
             </div>
             <div className="text-center">
-              <h4 className="text-sm font-bold text-white">Helium.Ai</h4>
-              <p className="text-[11px] text-emerald-300 font-medium mt-0.5">AI & Automation Engine</p>
+              <h4 className="text-xs font-bold text-white">Helium.Ai</h4>
+              <p className="text-[10px] text-emerald-300 font-medium mt-0.5">AI Engine</p>
+            </div>
+          </div>
+
+          {/* Client 6: P^SHIFT */}
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-rose-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-20 rounded-xl bg-white flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/pshift.jpg"
+                alt="P^SHIFT"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-xs font-bold text-white">P^SHIFT</h4>
+              <p className="text-[10px] text-rose-400 font-medium mt-0.5">Performance Ops</p>
+            </div>
+          </div>
+
+          {/* Client 7: work brand Office Space */}
+          <div className="glass-card p-4 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-amber-500 hover:bg-white/5 transition-all group shadow-lg col-span-2 sm:col-span-1">
+            <div className="w-full h-20 rounded-xl bg-white flex items-center justify-center p-2.5 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/workbrand.png"
+                alt="work brand Office Space"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-xs font-bold text-white">Workbrand</h4>
+              <p className="text-[10px] text-amber-400 font-medium mt-0.5">Office Space</p>
             </div>
           </div>
         </div>
