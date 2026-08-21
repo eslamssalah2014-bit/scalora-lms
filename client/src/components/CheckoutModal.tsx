@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { Modal } from './Modal';
 import {
   CreditCard,
@@ -20,6 +21,9 @@ import {
   AlertCircle,
   Clock,
   ArrowRight,
+  User,
+  Mail,
+  Phone,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -40,9 +44,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onSuccess,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [provider, setProvider] = useState<'INSTAPAY' | 'MOCK' | 'STRIPE'>('INSTAPAY');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Student Identity State (for guests)
+  const [fullName, setFullName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState('');
 
   // InstaPay Form State
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -55,6 +65,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Success States
   const [isInstantCompleted, setIsInstantCompleted] = useState(false);
   const [isInstaPaySubmitted, setIsInstaPaySubmitted] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (!fullName) setFullName(user.name);
+      if (!email) setEmail(user.email);
+    }
+  }, [user]);
 
   if (!course) return null;
 
@@ -76,7 +93,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setError('File size exceeds 10 MB limit. Please upload a smaller image or PDF.');
       return;
@@ -142,6 +158,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
+    // Validate email if guest
+    if (!user && !email.trim()) {
+      setError('Please enter your email address so we can enroll you and send confirmation.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -154,6 +176,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         referenceNumber: referenceNumber.trim(),
         screenshotUrl,
         notes: notes.trim(),
+        fullName: user ? user.name : (fullName.trim() || 'Student'),
+        email: user ? user.email : email.trim(),
+        phone: phone.trim(),
       });
 
       if (res.success) {
@@ -402,6 +427,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Payment Confirmation Fields */}
               <div className="space-y-4">
+                {/* Student Info: Logged in Badge vs Guest Inputs */}
+                {user ? (
+                  <div className="p-3 rounded-xl bg-scalora-navy/60 border border-scalora-blue/20 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-scalora-blue/20 text-scalora-accent flex items-center justify-center font-bold text-[10px]">
+                        {user.name.charAt(0)}
+                      </div>
+                      <span className="text-slate-300">
+                        Enrolling as: <strong className="text-white">{user.name}</strong> ({user.email})
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
+                      Logged In
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-scalora-navy/50 border border-scalora-blue/25">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Your full name"
+                        className="w-full px-3 py-2 rounded-xl glass-input text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                        Email Address (For Enrollment) *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your.email@example.com"
+                        className="w-full px-3 py-2 rounded-xl glass-input text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. Reference Number */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center justify-between">

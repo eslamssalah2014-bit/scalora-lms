@@ -7,7 +7,7 @@ const router = (0, express_1.Router)();
 // Student routes
 router.get('/gateways', auth_middleware_js_1.authenticate, payment_controller_js_1.getPaymentGateways);
 router.post('/checkout', auth_middleware_js_1.authenticate, payment_controller_js_1.checkout);
-router.post('/instapay', auth_middleware_js_1.authenticate, payment_controller_js_1.submitInstaPayPayment);
+router.post('/instapay', auth_middleware_js_1.optionalAuth, payment_controller_js_1.submitInstaPayPayment);
 // Admin Payment Verification routes
 router.get('/admin/requests', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, payment_controller_js_1.getAdminPaymentRequests);
 router.get('/admin/requests/:id', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, payment_controller_js_1.getPaymentRequestById);

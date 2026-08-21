@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getPaymentGateways = exports.deletePaymentRequest = exports.rejectPaymentRequest = exports.approvePaymentRequest = exports.getPaymentRequestById = exports.getAdminPaymentRequests = exports.submitInstaPayPayment = exports.checkout = void 0;
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
 const payment_service_js_1 = require("../services/payment.service.js");
@@ -13,6 +17,9 @@ const instapaySubmitSchema = zod_1.z.object({
     referenceNumber: zod_1.z.string().min(3, 'InstaPay reference number is required'),
     screenshotUrl: zod_1.z.string().min(10, 'Payment proof screenshot is required'),
     notes: zod_1.z.string().optional().or(zod_1.z.literal('')),
+    fullName: zod_1.z.string().optional().or(zod_1.z.literal('')),
+    email: zod_1.z.string().optional().or(zod_1.z.literal('')),
+    phone: zod_1.z.string().optional().or(zod_1.z.literal('')),
 });
 const checkout = async (req, res) => {
     try {
@@ -43,12 +50,29 @@ const checkout = async (req, res) => {
 exports.checkout = checkout;
 const submitInstaPayPayment = async (req, res) => {
     try {
-        const userId = req.user?.id;
+        const { courseId, referenceNumber, screenshotUrl, notes, fullName, email, phone } = instapaySubmitSchema.parse(req.body);
+        let userId = req.user?.id;
         if (!userId) {
-            res.status(401).json({ success: false, message: 'Please sign in to complete your course purchase' });
-            return;
+            const targetEmail = (email && email.trim())
+                ? email.trim().toLowerCase()
+                : `student-${referenceNumber.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@scalora.com`;
+            const targetName = (fullName && fullName.trim()) ? fullName.trim() : 'Prospective Student';
+            let user = await prisma_js_1.prisma.user.findUnique({
+                where: { email: targetEmail },
+            });
+            if (!user) {
+                const dummyPassword = await bcryptjs_1.default.hash(`ScaloraStudent${Math.random().toString(36).substring(2, 8)}!`, 10);
+                user = await prisma_js_1.prisma.user.create({
+                    data: {
+                        name: targetName,
+                        email: targetEmail,
+                        password: dummyPassword,
+                        role: 'STUDENT',
+                    },
+                });
+            }
+            userId = user.id;
         }
-        const { courseId, referenceNumber, screenshotUrl, notes } = instapaySubmitSchema.parse(req.body);
         const course = await prisma_js_1.prisma.course.findUnique({
             where: { id: courseId },
             select: { id: true, title: true, price: true, slug: true },
@@ -73,20 +97,9 @@ const submitInstaPayPayment = async (req, res) => {
             });
             return;
         }
-        const existingPending = await prisma_js_1.prisma.paymentRequest.findFirst({
-            where: {
-                userId,
-                courseId,
-                status: 'PENDING',
-            },
-        });
-        if (existingPending) {
-            res.status(400).json({
-                success: false,
-                message: 'You already have a pending InstaPay verification request for this course. Our team will review it within 4 hours.',
-                paymentRequest: existingPending,
-            });
-            return;
+        let combinedNotes = notes ? notes.trim() : '';
+        if (phone && phone.trim()) {
+            combinedNotes = combinedNotes ? `Phone: ${phone.trim()} | ${combinedNotes}` : `Phone: ${phone.trim()}`;
         }
         const paymentRequest = await prisma_js_1.prisma.paymentRequest.create({
             data: {
@@ -96,7 +109,7 @@ const submitInstaPayPayment = async (req, res) => {
                 paymentMethod: 'INSTAPAY',
                 referenceNumber: referenceNumber.trim(),
                 screenshotUrl,
-                notes: notes ? notes.trim() : null,
+                notes: combinedNotes || null,
                 status: 'PENDING',
             },
             include: {

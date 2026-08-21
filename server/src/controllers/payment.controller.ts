@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { paymentService } from '../services/payment.service.js';
@@ -14,6 +15,9 @@ const instapaySubmitSchema = z.object({
   referenceNumber: z.string().min(3, 'InstaPay reference number is required'),
   screenshotUrl: z.string().min(10, 'Payment proof screenshot is required'),
   notes: z.string().optional().or(z.literal('')),
+  fullName: z.string().optional().or(z.literal('')),
+  email: z.string().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
 });
 
 export const checkout = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -47,13 +51,34 @@ export const checkout = async (req: AuthenticatedRequest, res: Response): Promis
 
 export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
-      res.status(401).json({ success: false, message: 'Please sign in to complete your course purchase' });
-      return;
-    }
+    const { courseId, referenceNumber, screenshotUrl, notes, fullName, email, phone } = instapaySubmitSchema.parse(req.body);
 
-    const { courseId, referenceNumber, screenshotUrl, notes } = instapaySubmitSchema.parse(req.body);
+    let userId = req.user?.id;
+
+    if (!userId) {
+      const targetEmail = (email && email.trim())
+        ? email.trim().toLowerCase()
+        : `student-${referenceNumber.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@scalora.com`;
+      const targetName = (fullName && fullName.trim()) ? fullName.trim() : 'Prospective Student';
+
+      let user = await prisma.user.findUnique({
+        where: { email: targetEmail },
+      });
+
+      if (!user) {
+        const dummyPassword = await bcrypt.hash(`ScaloraStudent${Math.random().toString(36).substring(2, 8)}!`, 10);
+        user = await prisma.user.create({
+          data: {
+            name: targetName,
+            email: targetEmail,
+            password: dummyPassword,
+            role: 'STUDENT',
+          },
+        });
+      }
+
+      userId = user.id;
+    }
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
@@ -83,21 +108,9 @@ export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Resp
       return;
     }
 
-    const existingPending = await prisma.paymentRequest.findFirst({
-      where: {
-        userId,
-        courseId,
-        status: 'PENDING',
-      },
-    });
-
-    if (existingPending) {
-      res.status(400).json({
-        success: false,
-        message: 'You already have a pending InstaPay verification request for this course. Our team will review it within 4 hours.',
-        paymentRequest: existingPending,
-      });
-      return;
+    let combinedNotes = notes ? notes.trim() : '';
+    if (phone && phone.trim()) {
+      combinedNotes = combinedNotes ? `Phone: ${phone.trim()} | ${combinedNotes}` : `Phone: ${phone.trim()}`;
     }
 
     const paymentRequest = await prisma.paymentRequest.create({
@@ -108,7 +121,7 @@ export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Resp
         paymentMethod: 'INSTAPAY',
         referenceNumber: referenceNumber.trim(),
         screenshotUrl,
-        notes: notes ? notes.trim() : null,
+        notes: combinedNotes || null,
         status: 'PENDING',
       },
       include: {

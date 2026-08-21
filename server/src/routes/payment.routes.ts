@@ -9,14 +9,14 @@ import {
   rejectPaymentRequest,
   deletePaymentRequest,
 } from '../controllers/payment.controller.js';
-import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
+import { authenticate, optionalAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
 // Student routes
 router.get('/gateways', authenticate, getPaymentGateways);
 router.post('/checkout', authenticate, checkout);
-router.post('/instapay', authenticate, submitInstaPayPayment);
+router.post('/instapay', optionalAuth, submitInstaPayPayment);
 
 // Admin Payment Verification routes
 router.get('/admin/requests', authenticate, requireAdmin, getAdminPaymentRequests);
