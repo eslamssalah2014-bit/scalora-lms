@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { paymentService } from '../services/payment.service.js';
@@ -53,33 +54,6 @@ export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Resp
   try {
     const { courseId, referenceNumber, screenshotUrl, notes, fullName, email, phone } = instapaySubmitSchema.parse(req.body);
 
-    let userId = req.user?.id;
-
-    if (!userId) {
-      const targetEmail = (email && email.trim())
-        ? email.trim().toLowerCase()
-        : `student-${referenceNumber.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@scalora.com`;
-      const targetName = (fullName && fullName.trim()) ? fullName.trim() : 'Prospective Student';
-
-      let user = await prisma.user.findUnique({
-        where: { email: targetEmail },
-      });
-
-      if (!user) {
-        const dummyPassword = await bcrypt.hash(`ScaloraStudent${Math.random().toString(36).substring(2, 8)}!`, 10);
-        user = await prisma.user.create({
-          data: {
-            name: targetName,
-            email: targetEmail,
-            password: dummyPassword,
-            role: 'STUDENT',
-          },
-        });
-      }
-
-      userId = user.id;
-    }
-
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: { id: true, title: true, price: true, slug: true },
@@ -90,32 +64,20 @@ export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Resp
       return;
     }
 
-    const existingEnrollment = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: {
-          userId,
-          courseId,
-        },
-      },
-    });
-
-    if (existingEnrollment && existingEnrollment.status === 'ACTIVE') {
-      res.status(400).json({
-        success: false,
-        alreadyEnrolled: true,
-        message: 'You are already enrolled in this course!',
-      });
-      return;
-    }
+    const loggedInUser = req.user;
+    const customerName = loggedInUser?.name || fullName?.trim() || 'Prospective Student';
+    const customerEmail = loggedInUser?.email || email?.trim().toLowerCase() || `student-${referenceNumber.trim().toLowerCase().replace(/[^a-z0-9]/g, '')}@scalora.com`;
+    const customerPhone = phone?.trim() || null;
 
     let combinedNotes = notes ? notes.trim() : '';
-    if (phone && phone.trim()) {
-      combinedNotes = combinedNotes ? `Phone: ${phone.trim()} | ${combinedNotes}` : `Phone: ${phone.trim()}`;
-    }
 
+    // Create the Payment Request with status PENDING (user account will be created when approved by Admin)
     const paymentRequest = await prisma.paymentRequest.create({
       data: {
-        userId,
+        userId: loggedInUser?.id || null,
+        customerName,
+        customerEmail,
+        customerPhone,
         courseId,
         amount: course.price,
         paymentMethod: 'INSTAPAY',
@@ -136,7 +98,7 @@ export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Resp
 
     res.status(201).json({
       success: true,
-      message: 'Payment request submitted successfully. Your payment will be reviewed within a maximum of 4 hours. Once payment is verified, you will be enrolled in the course automatically and will receive a confirmation email.',
+      message: 'Payment request submitted successfully. Your payment will be reviewed within a maximum of 4 hours. Once payment is verified, your student account will be activated and you will receive a confirmation email to create your password and access your course.',
       paymentRequest,
     });
   } catch (error: any) {
@@ -166,6 +128,8 @@ export const getAdminPaymentRequests = async (req: AuthenticatedRequest, res: Re
       const q = search.trim();
       where.OR = [
         { referenceNumber: { contains: q, mode: 'insensitive' } },
+        { customerName: { contains: q, mode: 'insensitive' } },
+        { customerEmail: { contains: q, mode: 'insensitive' } },
         { user: { name: { contains: q, mode: 'insensitive' } } },
         { user: { email: { contains: q, mode: 'insensitive' } } },
         { course: { title: { contains: q, mode: 'insensitive' } } },
@@ -274,9 +238,47 @@ export const approvePaymentRequest = async (req: AuthenticatedRequest, res: Resp
       return;
     }
 
+    const customerEmail = (paymentRequest.customerEmail || paymentRequest.user?.email || '').toLowerCase().trim();
+    const customerName = paymentRequest.customerName || paymentRequest.user?.name || 'Student';
+
+    if (!customerEmail) {
+      res.status(400).json({ success: false, message: 'No student email address found for this payment request' });
+      return;
+    }
+
+    // 1. Find or Create User Account
+    let user = await prisma.user.findUnique({
+      where: { email: customerEmail },
+    });
+
+    if (!user) {
+      const tempPassword = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+      user = await prisma.user.create({
+        data: {
+          name: customerName,
+          email: customerEmail,
+          password: tempPassword,
+          role: 'STUDENT',
+        },
+      });
+    }
+
+    // 2. Generate 24-Hour Password Setup Token
+    const setupToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await prisma.passwordSetupToken.create({
+      data: {
+        userId: user.id,
+        token: setupToken,
+        expiresAt,
+      },
+    });
+
+    // 3. Create completed Payment record
     const payment = await prisma.payment.create({
       data: {
-        userId: paymentRequest.userId,
+        userId: user.id,
         courseId: paymentRequest.courseId,
         amount: paymentRequest.amount,
         currency: 'USD',
@@ -288,14 +290,16 @@ export const approvePaymentRequest = async (req: AuthenticatedRequest, res: Resp
           verifiedBy: adminName,
           verifiedAt: new Date().toISOString(),
           instapayRef: paymentRequest.referenceNumber,
+          setupTokenGenerated: true,
         }),
       },
     });
 
+    // 4. Create or activate Enrollment
     const enrollment = await prisma.enrollment.upsert({
       where: {
         userId_courseId: {
-          userId: paymentRequest.userId,
+          userId: user.id,
           courseId: paymentRequest.courseId,
         },
       },
@@ -305,7 +309,7 @@ export const approvePaymentRequest = async (req: AuthenticatedRequest, res: Resp
         amount: paymentRequest.amount,
       },
       create: {
-        userId: paymentRequest.userId,
+        userId: user.id,
         courseId: paymentRequest.courseId,
         status: 'ACTIVE',
         paymentId: payment.id,
@@ -313,10 +317,13 @@ export const approvePaymentRequest = async (req: AuthenticatedRequest, res: Resp
       },
     });
 
+    // 5. Update PaymentRequest to APPROVED
     const updated = await prisma.paymentRequest.update({
       where: { id },
       data: {
         status: 'APPROVED',
+        userId: user.id,
+        setupToken,
         reviewedAt: new Date(),
         reviewedBy: adminName,
         adminNotes: adminNotes ? adminNotes.trim() : paymentRequest.adminNotes,
@@ -327,11 +334,73 @@ export const approvePaymentRequest = async (req: AuthenticatedRequest, res: Resp
       },
     });
 
+    // 6. Automatically convert corresponding Lead to WON if matching lead exists
+    try {
+      const matchingLead = await prisma.lead.findFirst({
+        where: { email: customerEmail },
+      });
+
+      if (matchingLead) {
+        let act: any[] = [];
+        try {
+          act = matchingLead.activityLog ? JSON.parse(matchingLead.activityLog) : [];
+        } catch {
+          act = [];
+        }
+
+        act.unshift({
+          id: `act_${Date.now()}`,
+          type: 'PAYMENT_VERIFIED_WON',
+          description: `InstaPay payment approved for course "${paymentRequest.course.title}". Status updated to WON.`,
+          actorName: adminName,
+          createdAt: new Date().toISOString(),
+        });
+
+        await prisma.lead.update({
+          where: { id: matchingLead.id },
+          data: {
+            status: 'WON',
+            activityLog: JSON.stringify(act),
+          },
+        });
+      }
+    } catch {
+      // Non-blocking lead sync
+    }
+
+    const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const setupUrl = `/set-password/${setupToken}`;
+
+    const emailSubject = 'Payment Confirmed – Access Your Course';
+    const emailBody = `Hello ${customerName},
+
+Your payment has been successfully verified.
+
+Your course access for "${paymentRequest.course.title}" is now ready.
+
+To activate your account and access your course, click the link below and create your password:
+
+${clientBaseUrl}${setupUrl}
+
+This link expires in 24 hours.
+
+After setting your password, you will be redirected to your student dashboard where your purchased course will already be available.
+
+Thank you for choosing Scalora.`;
+
+    console.log(`[EMAIL DISPATCH] Sent to ${customerEmail}: Subject "${emailSubject}"\nLink: ${clientBaseUrl}${setupUrl}`);
+
     res.json({
       success: true,
-      message: `Payment request approved! ${paymentRequest.user.name} has been enrolled in "${paymentRequest.course.title}".`,
+      message: `Payment request approved! Account created for ${customerName} (${customerEmail}) and enrollment activated.`,
       paymentRequest: updated,
       enrollment,
+      setupToken,
+      setupUrl,
+      emailSubject,
+      emailBody,
+      customerEmail,
+      customerName,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error approving payment request' });

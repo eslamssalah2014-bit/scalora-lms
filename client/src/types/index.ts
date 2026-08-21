@@ -206,7 +206,10 @@ export type PaymentRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
 export interface PaymentRequest {
   id: string;
-  userId: string;
+  userId?: string | null;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   user?: {
     id: string;
     name: string;
@@ -231,6 +234,7 @@ export interface PaymentRequest {
   status: PaymentRequestStatus;
   adminNotes?: string | null;
   rejectionReason?: string | null;
+  setupToken?: string | null;
   submittedAt: string;
   reviewedAt?: string | null;
   reviewedBy?: string | null;

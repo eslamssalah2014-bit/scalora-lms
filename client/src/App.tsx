@@ -17,6 +17,7 @@ import { ContactPage } from './pages/ContactPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { PasswordSetupPage } from './pages/PasswordSetupPage';
 
 // Student Pages
 import { StudentDashboard } from './pages/StudentDashboard';
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/set-password/:token" element={<PasswordSetupPage />} />
 
           {/* Student Dashboard */}
           <Route

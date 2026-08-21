@@ -31,6 +31,7 @@ model User {
   payments       Payment[]
   certificates   Certificate[]
   paymentRequests PaymentRequest[]
+  passwordSetupTokens PasswordSetupToken[]
 
   @@map("users")
 }
@@ -255,8 +256,11 @@ model Lead {
 
 model PaymentRequest {
   id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
   courseId        String
   course          Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   amount          Float
@@ -267,6 +271,7 @@ model PaymentRequest {
   status          String    @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
   adminNotes      String?
   rejectionReason String?
+  setupToken      String?
   submittedAt     DateTime  @default(now())
   reviewedAt      DateTime?
   reviewedBy      String?
@@ -275,6 +280,19 @@ model PaymentRequest {
 
   @@map("payment_requests")
 }
+
+model PasswordSetupToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("password_setup_tokens")
+}
+
 
 
 

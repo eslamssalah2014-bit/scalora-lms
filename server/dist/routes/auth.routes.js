@@ -9,4 +9,6 @@ router.post('/login', auth_controller_js_1.login);
 router.get('/me', auth_middleware_js_1.authenticate, auth_controller_js_1.getMe);
 router.put('/profile', auth_middleware_js_1.authenticate, auth_controller_js_1.updateProfile);
 router.post('/forgot-password', auth_controller_js_1.forgotPassword);
+router.get('/setup-token/:token', auth_controller_js_1.validateSetupToken);
+router.post('/setup-password', auth_controller_js_1.setupPassword);
 exports.default = router;

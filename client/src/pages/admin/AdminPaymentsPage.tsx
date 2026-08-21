@@ -25,6 +25,8 @@ import {
   ShieldCheck,
   ChevronRight,
   TrendingUp,
+  Mail,
+  Key,
 } from 'lucide-react';
 
 const STATUS_CONFIG: Record<
@@ -74,12 +76,27 @@ export const AdminPaymentsPage: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Approval Modal State
+  const [isApproveOpen, setIsApproveOpen] = useState(false);
+  const [approvingRequest, setApprovingRequest] = useState<PaymentRequest | null>(null);
+  const [approvalResult, setApprovalResult] = useState<{
+    setupUrl: string;
+    emailSubject: string;
+    emailBody: string;
+    customerEmail: string;
+    customerName: string;
+  } | null>(null);
+
+  // Rejection State
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
+
   const [processingAction, setProcessingAction] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [copiedSetupLink, setCopiedSetupLink] = useState(false);
 
   const fetchPayments = async () => {
     try {
@@ -114,11 +131,11 @@ export const AdminPaymentsPage: React.FC = () => {
       }
       if (search.trim()) {
         const q = search.toLowerCase();
-        const matchName = req.user?.name.toLowerCase().includes(q) || false;
-        const matchEmail = req.user?.email.toLowerCase().includes(q) || false;
+        const studentName = (req.user?.name || req.customerName || '').toLowerCase();
+        const studentEmail = (req.user?.email || req.customerEmail || '').toLowerCase();
         const matchCourse = req.course?.title.toLowerCase().includes(q) || false;
         const matchRef = req.referenceNumber.toLowerCase().includes(q);
-        return matchName || matchEmail || matchCourse || matchRef;
+        return studentName.includes(q) || studentEmail.includes(q) || matchCourse || matchRef;
       }
       return true;
     });
@@ -131,21 +148,45 @@ export const AdminPaymentsPage: React.FC = () => {
     setTimeout(() => setCopiedRef(false), 2000);
   };
 
-  // Approve Payment Request
-  const handleApprove = async (reqId: string, notes?: string) => {
+  // Copy Setup Link
+  const handleCopySetupLink = (url: string) => {
+    const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+    navigator.clipboard.writeText(fullUrl);
+    setCopiedSetupLink(true);
+    setTimeout(() => setCopiedSetupLink(false), 2500);
+  };
+
+  // Open Approval Confirmation
+  const openApproveModal = (reqItem: PaymentRequest) => {
+    setApprovingRequest(reqItem);
+    setAdminNotes(reqItem.adminNotes || '');
+    setIsApproveOpen(true);
+  };
+
+  // Confirm Approve Payment Request
+  const handleConfirmApprove = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!approvingRequest) return;
+
     try {
       setProcessingAction(true);
       const res = await api.post<{
         success: boolean;
         message: string;
         paymentRequest: PaymentRequest;
-      }>(`/payments/admin/requests/${reqId}/approve`, {
-        adminNotes: notes || adminNotes,
+        setupToken: string;
+        setupUrl: string;
+        emailSubject: string;
+        emailBody: string;
+        customerEmail: string;
+        customerName: string;
+      }>(`/payments/admin/requests/${approvingRequest.id}/approve`, {
+        adminNotes: adminNotes.trim(),
       });
 
       if (res.success) {
-        setRequests((prev) => prev.map((r) => (r.id === reqId ? res.paymentRequest : r)));
-        if (selectedRequest?.id === reqId) {
+        setRequests((prev) => prev.map((r) => (r.id === approvingRequest.id ? res.paymentRequest : r)));
+        if (selectedRequest?.id === approvingRequest.id) {
           setSelectedRequest(res.paymentRequest);
         }
         setStats((prev) => ({
@@ -154,8 +195,17 @@ export const AdminPaymentsPage: React.FC = () => {
           approved: prev.approved + 1,
           totalRevenue: prev.totalRevenue + (res.paymentRequest.amount || 0),
         }));
+
+        setApprovalResult({
+          setupUrl: res.setupUrl,
+          emailSubject: res.emailSubject,
+          emailBody: res.emailBody,
+          customerEmail: res.customerEmail,
+          customerName: res.customerName,
+        });
+
+        setIsApproveOpen(false);
         setActionSuccess(res.message);
-        setTimeout(() => setActionSuccess(null), 3500);
       }
     } catch (err: any) {
       alert(err.message || 'Failed to approve payment');
@@ -247,7 +297,7 @@ export const AdminPaymentsPage: React.FC = () => {
                 )}
               </h1>
               <p className="text-xs text-slate-400">
-                Review and verify manual InstaPay bank transfers to grant automatic student course enrollments
+                Review and verify manual InstaPay bank transfers. Approving automatically creates student accounts and sends activation links.
               </p>
             </div>
           </div>
@@ -269,14 +319,46 @@ export const AdminPaymentsPage: React.FC = () => {
 
       {/* Action Notification Alert */}
       {actionSuccess && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2">
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
             <span>{actionSuccess}</span>
           </div>
           <button onClick={() => setActionSuccess(null)} className="text-emerald-400 hover:text-white">
             <X className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {/* Post-Approval Setup Link Drawer / Banner */}
+      {approvalResult && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/50 via-scalora-navy/80 to-[#04152D] border border-emerald-500/40 space-y-3 shadow-2xl animate-in zoom-in-95">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+              <Sparkles className="w-4 h-4" />
+              <span>Password Activation Link Generated for {approvalResult.customerName} ({approvalResult.customerEmail})</span>
+            </div>
+            <button onClick={() => setApprovalResult(null)} className="text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-300">
+            A branded activation email was generated. You can also directly copy the 24-hour setup link below to send via WhatsApp or chat:
+          </p>
+
+          <div className="flex items-center gap-2 pt-1">
+            <div className="flex-1 px-3.5 py-2.5 rounded-xl bg-black/50 border border-emerald-500/30 text-emerald-300 font-mono text-xs truncate">
+              {window.location.origin}{approvalResult.setupUrl}
+            </div>
+            <button
+              onClick={() => handleCopySetupLink(approvalResult.setupUrl)}
+              className="px-4 py-2.5 rounded-xl bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 flex items-center gap-1.5 transition-all shadow-lg flex-shrink-0"
+            >
+              {copiedSetupLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedSetupLink ? 'Copied Link!' : 'Copy Link'}</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -418,6 +500,8 @@ export const AdminPaymentsPage: React.FC = () => {
               <tbody className="divide-y divide-scalora-blue/10 text-xs">
                 {filteredRequests.map((reqItem) => {
                   const cfg = STATUS_CONFIG[reqItem.status] || STATUS_CONFIG.PENDING;
+                  const studentName = reqItem.user?.name || reqItem.customerName || 'Prospective Student';
+                  const studentEmail = reqItem.user?.email || reqItem.customerEmail || 'No email provided';
 
                   return (
                     <tr
@@ -432,17 +516,17 @@ export const AdminPaymentsPage: React.FC = () => {
                             src={
                               reqItem.user?.avatar ||
                               `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                reqItem.user?.name || 'Student'
+                                studentName
                               )}&background=2D8CFF&color=fff`
                             }
-                            alt={reqItem.user?.name}
+                            alt={studentName}
                             className="w-9 h-9 rounded-xl object-cover border border-scalora-blue/30 flex-shrink-0"
                           />
                           <div className="space-y-0.5 min-w-0">
                             <div className="font-bold text-white truncate group-hover:text-scalora-accent transition-colors">
-                              {reqItem.user?.name}
+                              {studentName}
                             </div>
-                            <div className="text-[11px] text-slate-400 truncate">{reqItem.user?.email}</div>
+                            <div className="text-[11px] text-slate-400 truncate">{studentEmail}</div>
                           </div>
                         </div>
                       </td>
@@ -520,10 +604,10 @@ export const AdminPaymentsPage: React.FC = () => {
                           {reqItem.status === 'PENDING' && (
                             <>
                               <button
-                                onClick={() => handleApprove(reqItem.id)}
+                                onClick={() => openApproveModal(reqItem)}
                                 disabled={processingAction}
                                 className="px-3 py-1.5 rounded-xl bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 transition-all flex items-center gap-1 shadow-lg"
-                                title="Approve & Grant Course Access"
+                                title="Approve Payment & Create Account"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>Approve</span>
@@ -571,7 +655,102 @@ export const AdminPaymentsPage: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. DETAILS DRAWER / MODAL */}
+      {/* 4. CONFIRM APPROVAL MODAL */}
+      {/* ========================================================================= */}
+      {isApproveOpen && approvingRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg bg-[#04152D] border border-emerald-500/30 rounded-3xl shadow-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex items-center justify-between border-b border-scalora-blue/15 pb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <span>Confirm Payment Approval</span>
+              </h3>
+              <button onClick={() => setIsApproveOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Workflow Notice */}
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-2">
+              <div className="font-bold flex items-center gap-1.5 text-emerald-400">
+                <Sparkles className="w-4 h-4" />
+                <span>Automated Activation Workflow</span>
+              </div>
+              <p className="leading-relaxed">
+                User account will be created, enrollment will be activated, and a password setup email will be sent.
+              </p>
+            </div>
+
+            {/* Target Details */}
+            <div className="p-4 rounded-2xl bg-scalora-navy/60 border border-scalora-blue/20 text-xs space-y-2">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Customer Name:</span>
+                <span className="font-bold text-white">
+                  {approvingRequest.user?.name || approvingRequest.customerName || 'Student'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Destination Email:</span>
+                <span className="font-bold text-emerald-400">
+                  {approvingRequest.user?.email || approvingRequest.customerEmail}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Purchased Course:</span>
+                <span className="font-bold text-white truncate max-w-[220px]">
+                  {approvingRequest.course?.title}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">InstaPay Ref:</span>
+                <span className="font-mono text-scalora-blue font-bold">
+                  {approvingRequest.referenceNumber}
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmApprove} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Optional Admin Audit Note
+                </label>
+                <input
+                  type="text"
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Verified with bank statement Ref..."
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsApproveOpen(false)}
+                  className="px-4 py-2.5 rounded-xl glass-panel text-xs text-slate-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={processingAction}
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-extrabold text-xs shadow-lg hover:opacity-95 flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {processingAction ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
+                  <span>{processingAction ? 'Activating...' : 'Approve & Send Activation Email'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. DETAILS DRAWER / MODAL */}
       {/* ========================================================================= */}
       {isDetailOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
@@ -613,11 +792,20 @@ export const AdminPaymentsPage: React.FC = () => {
                   <span>Student Information</span>
                 </h3>
                 <div className="space-y-1 text-xs">
-                  <div className="font-bold text-white text-sm">{selectedRequest.user?.name}</div>
-                  <div className="text-slate-300">{selectedRequest.user?.email}</div>
-                  <div className="text-slate-400 text-[11px] pt-1">
-                    Student ID: <code className="font-mono text-scalora-blue">{selectedRequest.userId}</code>
+                  <div className="font-bold text-white text-sm">
+                    {selectedRequest.user?.name || selectedRequest.customerName || 'Student'}
                   </div>
+                  <div className="text-slate-300">
+                    {selectedRequest.user?.email || selectedRequest.customerEmail}
+                  </div>
+                  {selectedRequest.customerPhone && (
+                    <div className="text-slate-400 text-[11px]">Phone: {selectedRequest.customerPhone}</div>
+                  )}
+                  {selectedRequest.userId && (
+                    <div className="text-slate-400 text-[11px] pt-1">
+                      Account ID: <code className="font-mono text-scalora-blue">{selectedRequest.userId}</code>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -692,18 +880,18 @@ export const AdminPaymentsPage: React.FC = () => {
                 <div className="flex items-center gap-3 text-amber-400">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                   <div className="text-xs font-semibold">
-                    Verify that the transaction reference and amount match your InstaPay bank statement before granting enrollment access.
+                    Verify that the transaction reference and amount match your InstaPay records. Approving will automatically create the student's LMS account and send the 24-hour password setup email.
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">
                   <button
-                    onClick={() => handleApprove(selectedRequest.id)}
+                    onClick={() => openApproveModal(selectedRequest)}
                     disabled={processingAction}
                     className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-extrabold text-xs shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Approve Payment & Grant Instant Course Access</span>
+                    <span>Approve Payment & Create Account</span>
                   </button>
 
                   <button
@@ -739,7 +927,7 @@ export const AdminPaymentsPage: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 5. REJECT MODAL */}
+      {/* 6. REJECT MODAL */}
       {/* ========================================================================= */}
       {isRejectOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
@@ -810,7 +998,7 @@ export const AdminPaymentsPage: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 6. LIGHTBOX ZOOM MODAL */}
+      {/* 7. LIGHTBOX ZOOM MODAL */}
       {/* ========================================================================= */}
       {lightboxImage && (
         <div
