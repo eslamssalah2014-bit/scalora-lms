@@ -111,7 +111,102 @@ export const ServicesPage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. ABOUT SCALORA (From Operational Chaos to Structured Growth) */}
+      {/* 2. OUR CLIENTS */}
+      {/* ========================================================================= */}
+      <section id="our-clients" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-scalora-accent">
+            <Building2 className="w-4 h-4" />
+            <span>Trusted Partnerships</span>
+          </div>
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
+            Our Clients
+          </h2>
+          <p className="text-sm sm:text-base text-slate-300">
+            Empowering high-growth businesses, marketing agencies, tech companies, and educational institutions with robust operations systems.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 items-stretch">
+          {/* Client 1: ChatX */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-scalora-blue hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-24 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/chatx.jpg"
+                alt="ChatX"
+                className="max-h-full max-w-full object-contain rounded"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-sm font-bold text-white">ChatX</h4>
+              <p className="text-[11px] text-scalora-blue font-medium mt-0.5">SaaS & Communication</p>
+            </div>
+          </div>
+
+          {/* Client 2: Valens Agency */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-cyan-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-24 rounded-xl bg-white flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/valens.jpg"
+                alt="Valens Agency"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-sm font-bold text-white">Valens Agency</h4>
+              <p className="text-[11px] text-cyan-300 font-medium mt-0.5">Digital Growth & Media</p>
+            </div>
+          </div>
+
+          {/* Client 3: MEC Academy */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-purple-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-24 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/mec-academy.jpg"
+                alt="MEC Academy"
+                className="max-h-full max-w-full object-contain rounded"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-sm font-bold text-white">MEC Academy</h4>
+              <p className="text-[11px] text-purple-300 font-medium mt-0.5">Professional Education</p>
+            </div>
+          </div>
+
+          {/* Client 4: English Capsules */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-amber-400 hover:bg-white/5 transition-all group shadow-lg">
+            <div className="w-full h-24 rounded-xl bg-white flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/english-capsules.jpg"
+                alt="English Capsules"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-sm font-bold text-white">English Capsules</h4>
+              <p className="text-[11px] text-amber-300 font-medium mt-0.5">Language Solutions</p>
+            </div>
+          </div>
+
+          {/* Client 5: Helium.Ai */}
+          <div className="glass-card p-6 rounded-2xl flex flex-col items-center justify-center space-y-3 border border-scalora-blue/20 hover:border-emerald-400 hover:bg-white/5 transition-all group shadow-lg col-span-2 sm:col-span-1">
+            <div className="w-full h-24 rounded-xl bg-white flex items-center justify-center p-3 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src="/clients/helium-ai.jpg"
+                alt="Helium.Ai"
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <h4 className="text-sm font-bold text-white">Helium.Ai</h4>
+              <p className="text-[11px] text-emerald-300 font-medium mt-0.5">AI & Automation Engine</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 3. ABOUT SCALORA (From Operational Chaos to Structured Growth) */}
       {/* ========================================================================= */}
       <section id="about-services" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
