@@ -50,7 +50,7 @@ export const AdminLayout: React.FC = () => {
       <div className="md:hidden flex items-center justify-between p-4 bg-[#04152D] border-b border-scalora-blue/20">
         <Link to="/admin" className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-lg bg-[#04152D] border border-scalora-blue/30 p-1 flex items-center justify-center">
-            <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
+            <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
           </div>
           <span className="font-extrabold text-lg text-white">Scalora Admin</span>
         </Link>
@@ -73,7 +73,7 @@ export const AdminLayout: React.FC = () => {
           <div className="hidden md:flex items-center justify-between pb-4 border-b border-scalora-blue/15">
             <Link to="/" className="flex items-center space-x-3 group">
               <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center">
-                <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
+                <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <span className="text-xl font-black text-white">Scalora</span>

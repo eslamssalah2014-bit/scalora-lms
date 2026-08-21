@@ -30,7 +30,7 @@ export const ForgotPasswordPage: React.FC = () => {
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center space-x-2.5">
             <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center">
-              <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
+              <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
             </div>
             <span className="text-2xl font-black text-white">Scalora</span>
           </Link>

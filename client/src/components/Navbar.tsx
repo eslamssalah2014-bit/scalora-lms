@@ -36,16 +36,11 @@ export const Navbar: React.FC = () => {
           {/* Brand Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue transition-transform group-hover:scale-105 flex items-center justify-center">
-              <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
+              <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
-                Scalora <span className="w-2 h-2 rounded-full bg-scalora-accent animate-pulse" />
-              </span>
-              <span className="text-[10px] tracking-widest uppercase font-semibold text-scalora-blue/80 -mt-1">
-                Enterprise LMS
-              </span>
-            </div>
+            <span className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">
+              Scalora <span className="w-2 h-2 rounded-full bg-scalora-accent animate-pulse" />
+            </span>
           </Link>
 
           {/* Desktop Navigation Links */}

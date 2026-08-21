@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center">
-                <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
+                <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
               </div>
               <span className="text-2xl font-black text-white">Scalora</span>
             </Link>
