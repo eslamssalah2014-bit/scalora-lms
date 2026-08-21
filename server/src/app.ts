@@ -15,6 +15,16 @@ dotenv.config();
 
 const app = express();
 
+// Path Normalizer for Vercel Serverless Function [...path]
+app.use((req, _res, next) => {
+  if (req.url && req.url.includes('[...path]')) {
+    const rawPath = req.query?.path;
+    const cleanPath = Array.isArray(rawPath) ? rawPath.join('/') : rawPath || '';
+    req.url = `/api/${cleanPath}`;
+  }
+  next();
+});
+
 // Middleware
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))

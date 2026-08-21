@@ -17,6 +17,15 @@ const payment_routes_js_1 = __importDefault(require("./routes/payment.routes.js"
 const admin_routes_js_1 = __importDefault(require("./routes/admin.routes.js"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+// Path Normalizer for Vercel Serverless Function [...path]
+app.use((req, _res, next) => {
+    if (req.url && req.url.includes('[...path]')) {
+        const rawPath = req.query?.path;
+        const cleanPath = Array.isArray(rawPath) ? rawPath.join('/') : rawPath || '';
+        req.url = `/api/${cleanPath}`;
+    }
+    next();
+});
 // Middleware
 const allowedOrigins = process.env.CLIENT_URL
     ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
