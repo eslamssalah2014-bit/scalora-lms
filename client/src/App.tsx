@@ -25,6 +25,7 @@ import { QuizPage } from './pages/QuizPage';
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminPaymentsPage } from './pages/admin/AdminPaymentsPage';
 import { AdminLeadsPage } from './pages/admin/AdminLeadsPage';
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
 import { AdminCurriculumPage } from './pages/admin/AdminCurriculumPage';
@@ -104,6 +105,7 @@ export const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="payments" element={<AdminPaymentsPage />} />
           <Route path="leads" element={<AdminLeadsPage />} />
           <Route path="courses" element={<AdminCoursesPage />} />
           <Route path="courses/:courseId/curriculum" element={<AdminCurriculumPage />} />

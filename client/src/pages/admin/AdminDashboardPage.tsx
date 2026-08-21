@@ -88,17 +88,18 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <Link
+            to="/admin/payments"
+            className="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-500 hover:text-black transition-all flex items-center gap-1.5"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Payments Verification</span>
+          </Link>
+          <Link
             to="/admin/courses"
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-1.5"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Create Course</span>
-          </Link>
-          <Link
-            to="/admin/enrollments"
-            className="px-4 py-2.5 rounded-xl bg-scalora-navy hover:bg-scalora-navy/80 text-slate-200 text-xs font-bold border border-scalora-blue/30 transition-colors"
-          >
-            <span>Enroll Student</span>
           </Link>
         </div>
       </div>

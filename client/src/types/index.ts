@@ -202,4 +202,49 @@ export interface LeadStats {
   conversionRate: number;
 }
 
+export type PaymentRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface PaymentRequest {
+  id: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+    createdAt?: string;
+  };
+  courseId: string;
+  course?: {
+    id: string;
+    title: string;
+    price: number;
+    slug: string;
+    thumbnail?: string | null;
+    instructor?: string;
+  };
+  amount: number;
+  paymentMethod: string;
+  referenceNumber: string;
+  screenshotUrl: string;
+  notes?: string | null;
+  status: PaymentRequestStatus;
+  adminNotes?: string | null;
+  rejectionReason?: string | null;
+  submittedAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentRequestStats {
+  totalRequests: number;
+  pendingReview: number;
+  approved: number;
+  rejected: number;
+  totalRevenue: number;
+}
+
+
 

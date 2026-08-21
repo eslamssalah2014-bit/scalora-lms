@@ -26,10 +26,11 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
+    { label: 'Payments Verification', path: '/admin/payments', icon: CreditCard },
     { label: 'Leads Center', path: '/admin/leads', icon: Target },
     { label: 'Courses', path: '/admin/courses', icon: BookOpen },
     { label: 'Students', path: '/admin/students', icon: Users },
-    { label: 'Enrollments', path: '/admin/enrollments', icon: CreditCard },
+    { label: 'Enrollments', path: '/admin/enrollments', icon: GraduationCap },
     { label: 'Quizzes', path: '/admin/quizzes', icon: HelpCircle },
     { label: 'Settings', path: '/admin/settings', icon: Settings },
   ];
