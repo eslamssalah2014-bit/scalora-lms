@@ -35,10 +35,8 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-20">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-scalora-navy via-scalora-blue to-scalora-accent p-0.5 shadow-glow-blue transition-transform group-hover:scale-105">
-              <div className="w-full h-full bg-[#04152D] rounded-[10px] flex items-center justify-center">
-                <GraduationCap className="w-6 h-6 text-scalora-blue group-hover:text-scalora-accent transition-colors" />
-              </div>
+            <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue transition-transform group-hover:scale-105 flex items-center justify-center">
+              <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5">

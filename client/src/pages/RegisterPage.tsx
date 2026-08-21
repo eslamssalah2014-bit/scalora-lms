@@ -34,10 +34,8 @@ export const RegisterPage: React.FC = () => {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center space-x-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-scalora-navy to-scalora-blue p-0.5 shadow-glow-blue">
-              <div className="w-full h-full bg-[#04152D] rounded-[10px] flex items-center justify-center">
-                <GraduationCap className="w-5 h-5 text-scalora-blue" />
-              </div>
+            <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center">
+              <img src="/scalora-logo.png" alt="Scalora Logo" className="w-full h-full object-contain" />
             </div>
             <span className="text-2xl font-black text-white">Scalora</span>
           </Link>
