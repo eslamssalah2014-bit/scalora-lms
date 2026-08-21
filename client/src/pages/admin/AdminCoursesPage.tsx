@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Course } from '../../types';
+import { Course, Category } from '../../types';
 import { api } from '../../lib/api';
 import { Modal } from '../../components/Modal';
 import {
@@ -18,6 +18,10 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  Tag,
+  Plus,
+  X,
+  Check,
 } from 'lucide-react';
 
 export const AdminCoursesPage: React.FC = () => {
@@ -25,6 +29,18 @@ export const AdminCoursesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  // Category State
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [catLoading, setCatLoading] = useState(false);
+  const [catError, setCatError] = useState<string | null>(null);
+  const [catSuccess, setCatSuccess] = useState<string | null>(null);
+
+  // Quick inline add category in course modal
+  const [isInlineAddingCat, setIsInlineAddingCat] = useState(false);
+  const [inlineCatName, setInlineCatName] = useState('');
 
   // Course Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -44,6 +60,7 @@ export const AdminCoursesPage: React.FC = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchCategories();
   }, []);
 
   const fetchCourses = async () => {
@@ -61,6 +78,73 @@ export const AdminCoursesPage: React.FC = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get<{ success: boolean; categories: Category[] }>('/courses/categories');
+      if (res.success && Array.isArray(res.categories)) {
+        setCategories(res.categories);
+        if (res.categories.length > 0 && !category) {
+          setCategory(res.categories[0].name);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to load categories:', err);
+    }
+  };
+
+  const handleCreateCategory = async (nameToAdd: string, autoSelect = false) => {
+    if (!nameToAdd.trim()) return;
+    setCatLoading(true);
+    setCatError(null);
+    setCatSuccess(null);
+
+    try {
+      const res = await api.post<{ success: boolean; message: string; category: Category }>(
+        '/courses/categories',
+        { name: nameToAdd.trim() }
+      );
+      if (res.success && res.category) {
+        await fetchCategories();
+        if (autoSelect) {
+          setCategory(res.category.name);
+          setIsInlineAddingCat(false);
+          setInlineCatName('');
+        }
+        setNewCatName('');
+        setCatSuccess(`Category "${res.category.name}" created successfully!`);
+      }
+    } catch (err: any) {
+      setCatError(err.message || 'Failed to create category.');
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId: string, catName: string) => {
+    if (!window.confirm(`Are you sure you want to delete category "${catName}"?`)) {
+      return;
+    }
+    setCatLoading(true);
+    setCatError(null);
+    setCatSuccess(null);
+
+    try {
+      await api.delete(`/courses/categories/${catId}`);
+      await fetchCategories();
+      setCatSuccess(`Category "${catName}" deleted successfully.`);
+      if (category === catName && categories.length > 1) {
+        const remaining = categories.filter((c) => c.id !== catId);
+        if (remaining.length > 0) {
+          setCategory(remaining[0].name);
+        }
+      }
+    } catch (err: any) {
+      setCatError(err.message || 'Failed to delete category.');
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
   const openCreateModal = () => {
     setEditingCourse(null);
     setTitle('');
@@ -68,10 +152,12 @@ export const AdminCoursesPage: React.FC = () => {
     setThumbnail('');
     setPrice(0);
     setInstructor('Scalora Master Instructor');
-    setCategory('Cloud Architecture');
+    setCategory(categories.length > 0 ? categories[0].name : 'Cloud Architecture');
     setLevel('All Levels');
     setIsPublished(true);
     setFormError(null);
+    setIsInlineAddingCat(false);
+    setInlineCatName('');
     setModalOpen(true);
   };
 
@@ -86,6 +172,8 @@ export const AdminCoursesPage: React.FC = () => {
     setLevel(course.level || 'All Levels');
     setIsPublished(course.isPublished);
     setFormError(null);
+    setIsInlineAddingCat(false);
+    setInlineCatName('');
     setModalOpen(true);
   };
 
@@ -159,13 +247,27 @@ export const AdminCoursesPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-2 self-start sm:self-auto"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>New Course</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setCatError(null);
+              setCatSuccess(null);
+              setCategoryModalOpen(true);
+            }}
+            className="px-3.5 py-2.5 rounded-xl glass-panel hover:bg-scalora-navy text-slate-200 text-xs font-bold border border-scalora-blue/30 transition-all flex items-center gap-2"
+          >
+            <Tag className="w-4 h-4 text-scalora-accent" />
+            <span>Manage Categories</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>New Course</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Input */}
@@ -359,20 +461,90 @@ export const AdminCoursesPage: React.FC = () => {
           {/* Category & Level */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs bg-[#04152D]"
-              >
-                <option value="Cloud Architecture">Cloud Architecture</option>
-                <option value="AI & Data Science">AI & Data Science</option>
-                <option value="Software Engineering">Software Engineering</option>
-                <option value="DevOps & Cloud">DevOps & Cloud</option>
-                <option value="Cybersecurity">Cybersecurity</option>
-              </select>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Category
+                </label>
+                <div className="flex items-center gap-2">
+                  {!isInlineAddingCat && (
+                    <button
+                      type="button"
+                      onClick={() => setIsInlineAddingCat(true)}
+                      className="text-[11px] font-bold text-scalora-accent hover:underline flex items-center gap-0.5"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>New</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCatError(null);
+                      setCatSuccess(null);
+                      setCategoryModalOpen(true);
+                    }}
+                    className="text-[11px] font-bold text-slate-400 hover:text-white flex items-center gap-0.5"
+                  >
+                    <span>Manage</span>
+                  </button>
+                </div>
+              </div>
+
+              {isInlineAddingCat ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={inlineCatName}
+                    onChange={(e) => setInlineCatName(e.target.value)}
+                    placeholder="Enter category name..."
+                    autoFocus
+                    className="w-full px-3 py-2 rounded-xl glass-input text-xs"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateCategory(inlineCatName, true);
+                      } else if (e.key === 'Escape') {
+                        setIsInlineAddingCat(false);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={catLoading || !inlineCatName.trim()}
+                    onClick={() => handleCreateCategory(inlineCatName, true)}
+                    className="p-2 rounded-xl bg-scalora-blue hover:bg-scalora-hover text-white disabled:opacity-50"
+                    title="Save category"
+                  >
+                    {catLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInlineAddingCat(false);
+                      setInlineCatName('');
+                    }}
+                    className="p-2 rounded-xl glass-panel text-slate-400 hover:text-white"
+                    title="Cancel"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs bg-[#04152D]"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id || c.name} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                  {category && !categories.some((c) => c.name.toLowerCase() === category.toLowerCase()) && (
+                    <option value={category}>{category}</option>
+                  )}
+                </select>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -488,6 +660,107 @@ export const AdminCoursesPage: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Category Management Modal */}
+      <Modal
+        isOpen={categoryModalOpen}
+        onClose={() => setCategoryModalOpen(false)}
+        title="Manage Course Categories"
+      >
+        <div className="space-y-6">
+          <p className="text-xs text-slate-400">
+            Create new categories or delete existing ones. Categories appear as filters on the public catalog and options when creating courses.
+          </p>
+
+          {catError && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{catError}</span>
+            </div>
+          )}
+
+          {catSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <span>{catSuccess}</span>
+            </div>
+          )}
+
+          {/* Add Category Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateCategory(newCatName);
+            }}
+            className="flex items-center gap-2"
+          >
+            <input
+              type="text"
+              required
+              value={newCatName}
+              onChange={(e) => setNewCatName(e.target.value)}
+              placeholder="New category name (e.g. Prompt Engineering)"
+              className="flex-1 px-3.5 py-2.5 rounded-xl glass-input text-xs"
+            />
+            <button
+              type="submit"
+              disabled={catLoading || !newCatName.trim()}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {catLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              <span>Add Category</span>
+            </button>
+          </form>
+
+          {/* Category List */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Active Categories ({categories.length})
+            </h4>
+
+            <div className="max-h-72 overflow-y-auto space-y-2 pr-1 divide-y divide-scalora-blue/10">
+              {categories.length === 0 ? (
+                <p className="text-xs text-slate-500 italic py-4 text-center">No categories found.</p>
+              ) : (
+                categories.map((c) => (
+                  <div
+                    key={c.id || c.name}
+                    className="pt-2 flex items-center justify-between gap-3 group hover:bg-white/5 p-2 rounded-xl transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Tag className="w-3.5 h-3.5 text-scalora-accent" />
+                      <span className="text-xs font-bold text-white">{c.name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-scalora-blue/20 text-scalora-blue border border-scalora-blue/30 font-semibold">
+                        {c.courseCount ?? 0} {c.courseCount === 1 ? 'course' : 'courses'}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={catLoading}
+                      onClick={() => handleDeleteCategory(c.id, c.name)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      title={`Delete "${c.name}"`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-scalora-blue/20">
+            <button
+              type="button"
+              onClick={() => setCategoryModalOpen(false)}
+              className="px-4 py-2 rounded-xl bg-scalora-navy hover:bg-scalora-navy/80 text-white text-xs font-bold"
+            >
+              Done
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

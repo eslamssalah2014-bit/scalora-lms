@@ -347,3 +347,142 @@ export const togglePublishCourse = async (req: AuthenticatedRequest, res: Respon
     res.status(500).json({ success: false, message: error.message || 'Error updating publish status' });
   }
 };
+
+// ============================================================================
+// CATEGORY MANAGEMENT CONTROLLERS
+// ============================================================================
+
+const DEFAULT_CATEGORIES = [
+  'Cloud Architecture',
+  'AI & Data Science',
+  'Software Engineering',
+  'DevOps & Cloud',
+  'Business Operations',
+  'Cybersecurity',
+];
+
+export const getCategories = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // 1. Get all categories from database
+    let dbCategories = await prisma.category.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    // 2. If table is empty, seed defaults
+    if (dbCategories.length === 0) {
+      for (const name of DEFAULT_CATEGORIES) {
+        const slug = generateSlug(name);
+        await prisma.category.upsert({
+          where: { slug },
+          update: {},
+          create: { name, slug },
+        });
+      }
+      dbCategories = await prisma.category.findMany({
+        orderBy: { name: 'asc' },
+      });
+    }
+
+    // 3. Count courses per category
+    const courseCategories = await prisma.course.findMany({
+      select: { category: true },
+    });
+
+    const counts: Record<string, number> = {};
+    for (const c of courseCategories) {
+      if (c.category) {
+        const key = c.category.toLowerCase().trim();
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    }
+
+    const categoriesWithCount = dbCategories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      courseCount: counts[cat.name.toLowerCase().trim()] || 0,
+      createdAt: cat.createdAt,
+    }));
+
+    res.json({
+      success: true,
+      categories: categoriesWithCount,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error fetching categories' });
+  }
+};
+
+export const createCategory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { name } = req.body;
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      res.status(400).json({ success: false, message: 'Category name must be at least 2 characters' });
+      return;
+    }
+
+    const trimmedName = name.trim();
+    const slug = generateSlug(trimmedName);
+
+    // Check if category with this name or slug already exists
+    const existing = await prisma.category.findFirst({
+      where: {
+        OR: [
+          { name: { equals: trimmedName, mode: 'insensitive' } },
+          { slug: { equals: slug } },
+        ],
+      },
+    });
+
+    if (existing) {
+      res.status(400).json({ success: false, message: `Category "${trimmedName}" already exists` });
+      return;
+    }
+
+    const category = await prisma.category.create({
+      data: {
+        name: trimmedName,
+        slug,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Category created successfully',
+      category: {
+        ...category,
+        courseCount: 0,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error creating category' });
+  }
+};
+
+export const deleteCategory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    const category = await prisma.category.findFirst({
+      where: {
+        OR: [{ id }, { name: { equals: id, mode: 'insensitive' } }, { slug: id }],
+      },
+    });
+
+    if (!category) {
+      res.status(404).json({ success: false, message: 'Category not found' });
+      return;
+    }
+
+    await prisma.category.delete({
+      where: { id: category.id },
+    });
+
+    res.json({
+      success: true,
+      message: `Category "${category.name}" deleted successfully`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error deleting category' });
+  }
+};

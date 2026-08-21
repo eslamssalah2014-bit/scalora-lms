@@ -7,10 +7,18 @@ import {
   updateCourse,
   deleteCourse,
   togglePublishCourse,
+  getCategories,
+  createCategory,
+  deleteCategory,
 } from '../controllers/course.controller.js';
 import { authenticate, optionalAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
 const router = Router();
+
+// Category routes
+router.get('/categories', getCategories);
+router.post('/categories', authenticate, requireAdmin, createCategory);
+router.delete('/categories/:id', authenticate, requireAdmin, deleteCategory);
 
 // Public routes (with optional auth to detect enrollment)
 router.get('/', getPublishedCourses);
@@ -24,3 +32,4 @@ router.delete('/:id', authenticate, requireAdmin, deleteCourse);
 router.patch('/:id/publish', authenticate, requireAdmin, togglePublishCourse);
 
 export default router;
+

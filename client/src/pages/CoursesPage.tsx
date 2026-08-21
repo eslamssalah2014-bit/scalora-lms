@@ -6,18 +6,21 @@ import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { Search, Filter, BookOpen, Sparkles, Layers, RefreshCw, AlertCircle } from 'lucide-react';
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'All',
   'Cloud Architecture',
   'AI & Data Science',
   'Software Engineering',
   'DevOps & Cloud',
+  'Business Operations',
+  'Cybersecurity',
 ];
 
 export const CoursesPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
 
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +30,24 @@ export const CoursesPage: React.FC = () => {
   const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<Course | null>(null);
 
   useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     fetchCourses();
   }, [selectedCategory, selectedSort]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get<{ success: boolean; categories: { name: string }[] }>('/courses/categories');
+      if (res.success && Array.isArray(res.categories)) {
+        const uniqueNames = ['All', ...res.categories.map((c) => c.name)];
+        setCategories(uniqueNames);
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -129,7 +148,7 @@ export const CoursesPage: React.FC = () => {
 
         {/* Category Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => handleCategoryChange(cat)}

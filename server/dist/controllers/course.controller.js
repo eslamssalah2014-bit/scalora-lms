@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.togglePublishCourse = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
+exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
 const courseSchema = zod_1.z.object({
@@ -323,3 +323,129 @@ const togglePublishCourse = async (req, res) => {
     }
 };
 exports.togglePublishCourse = togglePublishCourse;
+// ============================================================================
+// CATEGORY MANAGEMENT CONTROLLERS
+// ============================================================================
+const DEFAULT_CATEGORIES = [
+    'Cloud Architecture',
+    'AI & Data Science',
+    'Software Engineering',
+    'DevOps & Cloud',
+    'Business Operations',
+    'Cybersecurity',
+];
+const getCategories = async (_req, res) => {
+    try {
+        // 1. Get all categories from database
+        let dbCategories = await prisma_js_1.prisma.category.findMany({
+            orderBy: { name: 'asc' },
+        });
+        // 2. If table is empty, seed defaults
+        if (dbCategories.length === 0) {
+            for (const name of DEFAULT_CATEGORIES) {
+                const slug = generateSlug(name);
+                await prisma_js_1.prisma.category.upsert({
+                    where: { slug },
+                    update: {},
+                    create: { name, slug },
+                });
+            }
+            dbCategories = await prisma_js_1.prisma.category.findMany({
+                orderBy: { name: 'asc' },
+            });
+        }
+        // 3. Count courses per category
+        const courseCategories = await prisma_js_1.prisma.course.findMany({
+            select: { category: true },
+        });
+        const counts = {};
+        for (const c of courseCategories) {
+            if (c.category) {
+                const key = c.category.toLowerCase().trim();
+                counts[key] = (counts[key] || 0) + 1;
+            }
+        }
+        const categoriesWithCount = dbCategories.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            slug: cat.slug,
+            courseCount: counts[cat.name.toLowerCase().trim()] || 0,
+            createdAt: cat.createdAt,
+        }));
+        res.json({
+            success: true,
+            categories: categoriesWithCount,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error fetching categories' });
+    }
+};
+exports.getCategories = getCategories;
+const createCategory = async (req, res) => {
+    try {
+        const { name } = req.body;
+        if (!name || typeof name !== 'string' || name.trim().length < 2) {
+            res.status(400).json({ success: false, message: 'Category name must be at least 2 characters' });
+            return;
+        }
+        const trimmedName = name.trim();
+        const slug = generateSlug(trimmedName);
+        // Check if category with this name or slug already exists
+        const existing = await prisma_js_1.prisma.category.findFirst({
+            where: {
+                OR: [
+                    { name: { equals: trimmedName, mode: 'insensitive' } },
+                    { slug: { equals: slug } },
+                ],
+            },
+        });
+        if (existing) {
+            res.status(400).json({ success: false, message: `Category "${trimmedName}" already exists` });
+            return;
+        }
+        const category = await prisma_js_1.prisma.category.create({
+            data: {
+                name: trimmedName,
+                slug,
+            },
+        });
+        res.status(201).json({
+            success: true,
+            message: 'Category created successfully',
+            category: {
+                ...category,
+                courseCount: 0,
+            },
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error creating category' });
+    }
+};
+exports.createCategory = createCategory;
+const deleteCategory = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const category = await prisma_js_1.prisma.category.findFirst({
+            where: {
+                OR: [{ id }, { name: { equals: id, mode: 'insensitive' } }, { slug: id }],
+            },
+        });
+        if (!category) {
+            res.status(404).json({ success: false, message: 'Category not found' });
+            return;
+        }
+        await prisma_js_1.prisma.category.delete({
+            where: { id: category.id },
+        });
+        res.json({
+            success: true,
+            message: `Category "${category.name}" deleted successfully`,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error deleting category' });
+    }
+};
+exports.deleteCategory = deleteCategory;

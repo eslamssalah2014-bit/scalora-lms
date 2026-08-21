@@ -133,6 +133,14 @@ export interface Enrollment {
   user?: User;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  courseCount?: number;
+  createdAt?: string;
+}
+
 export interface AdminStats {
   totalCourses: number;
   totalStudents: number;
@@ -140,3 +148,4 @@ export interface AdminStats {
   totalRevenue: number;
   publishedCoursesCount: number;
 }
+
