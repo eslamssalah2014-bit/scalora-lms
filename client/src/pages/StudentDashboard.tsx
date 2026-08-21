@@ -245,7 +245,7 @@ export const StudentDashboard: React.FC = () => {
               <div key={enr.enrollmentId} className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between">
                 <div>
                   {/* Thumbnail */}
-                  <div className="relative h-44 w-full overflow-hidden bg-scalora-navy">
+                  <div className="relative aspect-square w-full overflow-hidden bg-[#04152D]">
                     <img
                       src={
                         enr.course.thumbnail ||
@@ -254,16 +254,15 @@ export const StudentDashboard: React.FC = () => {
                       alt={enr.course.title}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#04152D] via-transparent to-transparent" />
-                    <div className="absolute top-3 left-3">
-                      <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-scalora-navy/90 text-scalora-accent border border-scalora-blue/30">
-                        {enr.course.category}
-                      </span>
-                    </div>
                   </div>
 
                   {/* Body */}
                   <div className="p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-scalora-blue/15 text-scalora-accent border border-scalora-blue/30">
+                        {enr.course.category}
+                      </span>
+                    </div>
                     <h3 className="text-base font-bold text-white line-clamp-2 leading-snug">
                       {enr.course.title}
                     </h3>

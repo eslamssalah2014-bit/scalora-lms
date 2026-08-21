@@ -290,7 +290,7 @@ export const CourseDetailsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="sticky top-28 rounded-3xl glass-panel p-6 border border-scalora-blue/30 space-y-6 shadow-2xl">
             {/* Thumbnail Preview */}
-            <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-scalora-navy border border-scalora-blue/20">
+            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#04152D] border border-scalora-blue/30 shadow-lg">
               <img
                 src={
                   course.thumbnail ||
@@ -299,7 +299,6 @@ export const CourseDetailsPage: React.FC = () => {
                 alt={course.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#04152D] via-transparent to-transparent" />
             </div>
 
             {/* Pricing Tag */}

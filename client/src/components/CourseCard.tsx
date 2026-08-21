@@ -26,32 +26,21 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
   };
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden flex flex-col group h-full">
-      {/* Thumbnail */}
-      <Link to={`/courses/${course.slug}`} className="relative h-48 sm:h-52 w-full overflow-hidden block bg-scalora-navy">
+    <div className="glass-card rounded-2xl overflow-hidden flex flex-col group h-full border border-scalora-blue/20 hover:border-scalora-blue/50 transition-all duration-300">
+      {/* Thumbnail - Aspect Square for full poster visibility */}
+      <Link to={`/courses/${course.slug}`} className="relative aspect-square w-full overflow-hidden block bg-[#04152D]">
         <img
           src={
             course.thumbnail ||
             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
           }
           alt={course.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#04152D] via-transparent to-black/30" />
-
-        {/* Top Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-          <span className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide uppercase bg-scalora-navy/80 backdrop-blur-md text-scalora-accent border border-scalora-blue/30 shadow-sm">
-            {course.category}
-          </span>
-          <span className="px-2 py-1 rounded-md text-[11px] font-semibold bg-black/50 backdrop-blur-md text-slate-200">
-            {course.level || 'All Levels'}
-          </span>
-        </div>
 
         {/* Enrolled Badge if applicable */}
         {(isEnrolled || course.isEnrolled) && (
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/90 text-white flex items-center gap-1 shadow-lg backdrop-blur-md">
+          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/90 text-white flex items-center gap-1 shadow-lg backdrop-blur-md z-10">
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Enrolled</span>
           </div>
@@ -60,7 +49,17 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
 
       {/* Content */}
       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-2.5">
+          {/* Category & Level Tags */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-scalora-blue/15 text-scalora-accent border border-scalora-blue/30">
+              {course.category}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-scalora-navy/80 text-slate-300 border border-scalora-blue/20">
+              {course.level || 'All Levels'}
+            </span>
+          </div>
+
           <Link to={`/courses/${course.slug}`}>
             <h3 className="text-lg font-bold text-white group-hover:text-scalora-blue transition-colors line-clamp-2 leading-snug">
               {course.title}
