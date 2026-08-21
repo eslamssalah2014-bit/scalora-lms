@@ -7,8 +7,32 @@ export interface User {
   role: Role;
   avatar?: string | null;
   bio?: string | null;
+  phone?: string | null;
+  status?: 'ACTIVE' | 'INACTIVE' | string;
+  lastLoginAt?: string | null;
   createdAt?: string;
+  updatedAt?: string;
 }
+
+export interface StudentStats {
+  totalEnrollments: number;
+  completedCourses: number;
+  certificatesEarned: number;
+  quizAttempts: number;
+  activeCourses: number;
+  lessonsCompleted: number;
+}
+
+export interface StudentActivity {
+  id: string;
+  type: 'PASSWORD_RESET' | 'STUDENT_UPDATED' | 'ENROLLMENT' | 'QUIZ_SUBMISSION' | 'CERTIFICATE_ISSUED' | string;
+  title: string;
+  description: string;
+  timestamp: string;
+  actor?: string;
+  details?: any;
+}
+
 
 export type LessonType = 'YOUTUBE' | 'PDF' | 'DOWNLOAD' | 'TEXT';
 
