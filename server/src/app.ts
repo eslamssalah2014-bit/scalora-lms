@@ -52,16 +52,33 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// API Routes
+// API Routes (Mounted with /api prefix and root for serverless execution)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/courses', courseRoutes);
+app.use('/courses', courseRoutes);
+
 app.use('/api/modules', moduleRoutes);
+app.use('/modules', moduleRoutes);
+
 app.use('/api/lessons', lessonRoutes);
+app.use('/lessons', lessonRoutes);
+
 app.use('/api/quizzes', quizRoutes);
+app.use('/quizzes', quizRoutes);
+
 app.use('/api/enrollments', enrollmentRoutes);
+app.use('/enrollments', enrollmentRoutes);
+
 app.use('/api/progress', progressRoutes);
+app.use('/progress', progressRoutes);
+
 app.use('/api/payments', paymentRoutes);
+app.use('/payments', paymentRoutes);
+
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
 
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

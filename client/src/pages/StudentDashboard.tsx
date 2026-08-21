@@ -35,8 +35,13 @@ export const StudentDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my-courses');
-      if (res.success && Array.isArray(res.enrollments)) {
+      let res: { success: boolean; enrollments: Enrollment[] };
+      try {
+        res = await api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my');
+      } catch {
+        res = await api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my-courses');
+      }
+      if (res && res.success && Array.isArray(res.enrollments)) {
         setEnrollments(res.enrollments);
       }
     } catch (err: any) {
@@ -67,6 +72,22 @@ export const StudentDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+      {error && (
+        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-rose-300 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={fetchMyEnrollments}
+            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-white font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. Welcome & Greeting Banner */}
       <div className="relative p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-[#082B5B] via-[#0D3E82] to-[#04152D] border border-scalora-blue/30 overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-scalora-accent/15 blur-3xl rounded-full pointer-events-none" />

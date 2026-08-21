@@ -3,8 +3,8 @@ export const getApiBase = (): string => {
   if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
     return envUrl.trim().replace(/\/$/, '');
   }
-  // Default to Render backend if no VITE_API_URL is configured
-  return 'https://scalora-lms.onrender.com/api';
+  // Default to live production backend on Render
+  return 'https://scalora-lms-3.onrender.com/api';
 };
 
 export class ApiError extends Error {

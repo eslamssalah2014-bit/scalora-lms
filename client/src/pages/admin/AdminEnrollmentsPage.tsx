@@ -93,10 +93,19 @@ export const AdminEnrollmentsPage: React.FC = () => {
     setFormLoading(true);
     setFormError(null);
 
+    const targetStudentId = selectedStudentId || students[0]?.id;
+    const targetCourseId = selectedCourseId || courses[0]?.id;
+
+    if (!targetStudentId || !targetCourseId) {
+      setFormError('Please select both a student and a course.');
+      setFormLoading(false);
+      return;
+    }
+
     try {
       await api.post('/enrollments/admin/manual', {
-        userId: selectedStudentId,
-        courseId: selectedCourseId,
+        userId: targetStudentId,
+        courseId: targetCourseId,
       });
 
       await fetchData();

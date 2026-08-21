@@ -44,36 +44,39 @@ export const getMyEnrollments = async (req: AuthenticatedRequest, res: Response)
     });
     const completedSet = new Set(completedProgress.map((p) => p.lessonId));
 
-    const enrolledCourses = enrollments.map((enr) => {
-      const allLessons = enr.course.modules.flatMap((m) => m.lessons);
-      const totalLessons = allLessons.length;
-      const completedCount = allLessons.filter((l) => completedSet.has(l.id)).length;
-      const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+    const enrolledCourses = enrollments
+      .filter((enr) => Boolean(enr.course))
+      .map((enr) => {
+        const modules = enr.course.modules || [];
+        const allLessons = modules.flatMap((m) => m.lessons || []);
+        const totalLessons = allLessons.length;
+        const completedCount = allLessons.filter((l) => completedSet.has(l.id)).length;
+        const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
-      const nextLesson = allLessons.find((l) => !completedSet.has(l.id)) || allLessons[0];
+        const nextLesson = allLessons.find((l) => !completedSet.has(l.id)) || allLessons[0];
 
-      return {
-        enrollmentId: enr.id,
-        enrolledAt: enr.createdAt,
-        status: enr.status,
-        progressPercent,
-        completedCount,
-        totalLessons,
-        nextLessonId: nextLesson?.id,
-        course: {
-          id: enr.course.id,
-          title: enr.course.title,
-          slug: enr.course.slug,
-          description: enr.course.description,
-          thumbnail: enr.course.thumbnail,
-          instructor: enr.course.instructor,
-          category: enr.course.category,
-          level: enr.course.level,
-          modulesCount: enr.course.modules.length,
-          quizzesCount: enr.course.quizzes.length,
-        },
-      };
-    });
+        return {
+          enrollmentId: enr.id,
+          enrolledAt: enr.createdAt,
+          status: enr.status,
+          progressPercent,
+          completedCount,
+          totalLessons,
+          nextLessonId: nextLesson?.id,
+          course: {
+            id: enr.course.id,
+            title: enr.course.title,
+            slug: enr.course.slug,
+            description: enr.course.description,
+            thumbnail: enr.course.thumbnail,
+            instructor: enr.course.instructor,
+            category: enr.course.category,
+            level: enr.course.level,
+            modulesCount: modules.length,
+            quizzesCount: enr.course.quizzes ? enr.course.quizzes.length : 0,
+          },
+        };
+      });
 
     res.json({ success: true, enrollments: enrolledCourses });
   } catch (error: any) {

@@ -40,8 +40,11 @@ const getMyEnrollments = async (req, res) => {
             select: { lessonId: true },
         });
         const completedSet = new Set(completedProgress.map((p) => p.lessonId));
-        const enrolledCourses = enrollments.map((enr) => {
-            const allLessons = enr.course.modules.flatMap((m) => m.lessons);
+        const enrolledCourses = enrollments
+            .filter((enr) => Boolean(enr.course))
+            .map((enr) => {
+            const modules = enr.course.modules || [];
+            const allLessons = modules.flatMap((m) => m.lessons || []);
             const totalLessons = allLessons.length;
             const completedCount = allLessons.filter((l) => completedSet.has(l.id)).length;
             const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -63,8 +66,8 @@ const getMyEnrollments = async (req, res) => {
                     instructor: enr.course.instructor,
                     category: enr.course.category,
                     level: enr.course.level,
-                    modulesCount: enr.course.modules.length,
-                    quizzesCount: enr.course.quizzes.length,
+                    modulesCount: modules.length,
+                    quizzesCount: enr.course.quizzes ? enr.course.quizzes.length : 0,
                 },
             };
         });

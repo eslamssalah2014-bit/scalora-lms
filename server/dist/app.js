@@ -47,16 +47,25 @@ app.get('/api/health', (_req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
-// API Routes
+// API Routes (Mounted with /api prefix and root for serverless execution)
 app.use('/api/auth', auth_routes_js_1.default);
+app.use('/auth', auth_routes_js_1.default);
 app.use('/api/courses', course_routes_js_1.default);
+app.use('/courses', course_routes_js_1.default);
 app.use('/api/modules', module_routes_js_1.default);
+app.use('/modules', module_routes_js_1.default);
 app.use('/api/lessons', lesson_routes_js_1.default);
+app.use('/lessons', lesson_routes_js_1.default);
 app.use('/api/quizzes', quiz_routes_js_1.default);
+app.use('/quizzes', quiz_routes_js_1.default);
 app.use('/api/enrollments', enrollment_routes_js_1.default);
+app.use('/enrollments', enrollment_routes_js_1.default);
 app.use('/api/progress', progress_routes_js_1.default);
+app.use('/progress', progress_routes_js_1.default);
 app.use('/api/payments', payment_routes_js_1.default);
+app.use('/payments', payment_routes_js_1.default);
 app.use('/api/admin', admin_routes_js_1.default);
+app.use('/admin', admin_routes_js_1.default);
 // Global Error Handler
 app.use((err, _req, res, _next) => {
     console.error('Unhandled Error:', err);

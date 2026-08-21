@@ -6,7 +6,9 @@ import { Users, Search, BookOpen, Calendar, Mail, Loader2, Award, RefreshCw, Ale
 interface StudentData extends User {
   _count?: {
     enrollments: number;
-    quizAttempts: number;
+    quizResults?: number;
+    quizAttempts?: number;
+    certificates?: number;
   };
   enrollments?: {
     course: {
@@ -143,7 +145,7 @@ export const AdminStudentsPage: React.FC = () => {
 
                     {/* Quiz Attempts */}
                     <td className="py-4 px-4 font-semibold text-scalora-accent">
-                      {s._count?.quizAttempts ?? 0} assessments
+                      {s._count?.quizResults ?? s._count?.quizAttempts ?? 0} assessments
                     </td>
 
                     {/* Joined Date */}
