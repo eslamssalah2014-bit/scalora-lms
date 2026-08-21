@@ -39,7 +39,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         name: validatedData.name,
         email: validatedData.email.toLowerCase(),
         password: hashedPassword,
-        role: validatedData.role || 'STUDENT',
+        role: 'STUDENT',
       },
       select: {
         id: true,

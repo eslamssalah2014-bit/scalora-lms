@@ -35,7 +35,7 @@ const register = async (req, res) => {
                 name: validatedData.name,
                 email: validatedData.email.toLowerCase(),
                 password: hashedPassword,
-                role: validatedData.role || 'STUDENT',
+                role: 'STUDENT',
             },
             select: {
                 id: true,

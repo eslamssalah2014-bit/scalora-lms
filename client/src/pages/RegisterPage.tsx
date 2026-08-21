@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, Lock, Mail, User, ArrowRight, Loader2, Sparkles, Shield } from 'lucide-react';
-import { Role } from '../types';
+import { GraduationCap, Lock, Mail, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -11,7 +10,6 @@ export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<Role>('STUDENT');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +19,8 @@ export const RegisterPage: React.FC = () => {
     setError(null);
 
     try {
-      await register(name, email, password, role);
-      navigate(role === 'ADMIN' ? '/admin' : '/dashboard', { replace: true });
+      await register(name, email, password, 'STUDENT');
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -108,40 +106,6 @@ export const RegisterPage: React.FC = () => {
                   placeholder="At least 6 characters"
                   className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm"
                 />
-              </div>
-            </div>
-
-            {/* Role Selection */}
-            <div className="space-y-1.5 pt-1">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Account Type
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole('STUDENT')}
-                  className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                    role === 'STUDENT'
-                      ? 'border-scalora-blue bg-scalora-blue/20 text-white shadow-glow-blue'
-                      : 'border-scalora-blue/20 bg-scalora-navy/40 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <User className="w-4 h-4 text-scalora-accent" />
-                  <span>Student Learner</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setRole('ADMIN')}
-                  className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                    role === 'ADMIN'
-                      ? 'border-purple-500 bg-purple-500/20 text-white shadow-lg'
-                      : 'border-scalora-blue/20 bg-scalora-navy/40 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Shield className="w-4 h-4 text-purple-400" />
-                  <span>Admin / Instructor</span>
-                </button>
               </div>
             </div>
 
