@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, Lock, Mail, ArrowRight, Shield, User, Loader2, Sparkles } from 'lucide-react';
+import { GraduationCap, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { login, demoLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -30,19 +30,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (role: 'ADMIN' | 'STUDENT') => {
-    setLoading(true);
-    setError(null);
-    try {
-      await demoLogin(role);
-      navigate(role === 'ADMIN' ? '/admin' : '/dashboard', { replace: true });
-    } catch (err: any) {
-      setError(err.message || 'Demo login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">
@@ -58,39 +45,6 @@ export const LoginPage: React.FC = () => {
           </Link>
           <h2 className="text-2xl font-black text-white tracking-tight">Sign in to your account</h2>
           <p className="text-xs text-slate-400">Access your courses, quizzes, and digital certificates</p>
-        </div>
-
-        {/* 1-Click Demo Login Shortcuts */}
-        <div className="p-4 rounded-2xl bg-scalora-navy/60 border border-scalora-blue/30 space-y-2.5 shadow-xl">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-200 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-scalora-accent" />
-              1-Click Demo Logins
-            </span>
-            <span className="text-[10px] text-scalora-blue font-semibold">Instant Evaluation</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('ADMIN')}
-              disabled={loading}
-              className="px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-            >
-              <Shield className="w-3.5 h-3.5 text-purple-400" />
-              <span>Demo Admin</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('STUDENT')}
-              disabled={loading}
-              className="px-3 py-2 rounded-xl bg-scalora-blue/20 hover:bg-scalora-blue/30 border border-scalora-blue/40 text-cyan-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-            >
-              <User className="w-3.5 h-3.5 text-scalora-accent" />
-              <span>Demo Student</span>
-            </button>
-          </div>
         </div>
 
         {/* Login Card */}
