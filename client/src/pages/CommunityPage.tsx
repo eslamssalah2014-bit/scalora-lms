@@ -105,26 +105,6 @@ export const CommunityPage: React.FC = () => {
                 <span>Join Community</span>
               </Link>
             </div>
-
-            {/* Academy Metrics */}
-            <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto border-t border-scalora-blue/15">
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-white">4,800+</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Members</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-cyan-300">45+</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Masterclasses & AMAs</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-white">150+</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Curated SOPs & Blueprints</div>
-              </div>
-              <div className="p-4 rounded-2xl glass-panel text-center space-y-1">
-                <div className="text-2xl sm:text-3xl font-black text-emerald-400">100%</div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Verifiable Credentials</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -362,38 +342,6 @@ export const CommunityPage: React.FC = () => {
                 <span>Make & Zapier Scenario JSONs</span>
               </div>
               <p className="text-xs text-slate-400">Pre-built webhook scenarios for zero-touch client onboarding.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 5. MEMBERSHIP CTA */}
-      {/* ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl bg-gradient-to-tr from-[#020C1B] via-[#082B5B] to-[#0D3E82] border border-cyan-400/40 p-8 sm:p-14 overflow-hidden text-center shadow-2xl">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-cyan-400/20 blur-3xl rounded-full pointer-events-none" />
-          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-              Join 4,800+ High-Performing Operators & Engineers
-            </h2>
-            <p className="text-sm sm:text-base text-slate-200">
-              Get immediate access to practical courses, interactive masterclasses, downloadable business toolkits, and an elite global peer community.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-              <Link
-                to="/register"
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-scalora-navy hover:bg-slate-100 font-extrabold text-sm shadow-xl transition-all flex items-center justify-center gap-2"
-              >
-                <span>Create Free Community Account</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                to="/courses"
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-scalora-navy/60 hover:bg-scalora-navy text-white font-bold text-sm border border-white/20 transition-colors"
-              >
-                Browse All Courses
-              </Link>
             </div>
           </div>
         </div>
