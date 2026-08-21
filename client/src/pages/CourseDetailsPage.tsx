@@ -335,13 +335,7 @@ export const CourseDetailsPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 <button
-                  onClick={() => {
-                    if (!user) {
-                      navigate('/login');
-                    } else {
-                      setCheckoutOpen(true);
-                    }
-                  }}
+                  onClick={() => setCheckoutOpen(true)}
                   className="w-full py-4 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-black text-sm shadow-glow-blue hover:opacity-95 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-4 h-4" />
