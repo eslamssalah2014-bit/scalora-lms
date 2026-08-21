@@ -80,6 +80,7 @@ export const AdminPaymentsPage: React.FC = () => {
   // Approval Modal State
   const [isApproveOpen, setIsApproveOpen] = useState(false);
   const [approvingRequest, setApprovingRequest] = useState<PaymentRequest | null>(null);
+  const [approveError, setApproveError] = useState<string | null>(null);
   const [approvalResult, setApprovalResult] = useState<{
     setupUrl: string;
     emailSubject: string;
@@ -160,6 +161,7 @@ export const AdminPaymentsPage: React.FC = () => {
   const openApproveModal = (reqItem: PaymentRequest) => {
     setApprovingRequest(reqItem);
     setAdminNotes(reqItem.adminNotes || '');
+    setApproveError(null);
     setIsApproveOpen(true);
   };
 
@@ -208,7 +210,7 @@ export const AdminPaymentsPage: React.FC = () => {
         setActionSuccess(res.message);
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to approve payment');
+      setApproveError(err.message || 'Failed to approve payment');
     } finally {
       setProcessingAction(false);
     }
@@ -708,6 +710,15 @@ export const AdminPaymentsPage: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {approveError && (
+              <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center justify-between shadow-lg">
+                <span>{approveError}</span>
+                <button type="button" onClick={() => setApproveError(null)} className="text-rose-400 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleConfirmApprove} className="space-y-4">
               <div className="space-y-1.5">

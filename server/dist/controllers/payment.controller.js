@@ -252,16 +252,30 @@ const approvePaymentRequest = async (req, res) => {
                 expiresAt,
             },
         });
-        // 3. Create completed Payment record
-        const payment = await prisma_js_1.prisma.payment.create({
-            data: {
+        // 3. Create or update completed Payment record with guaranteed unique transaction ID
+        const uniqueTxnId = `INSTAPAY_${paymentRequest.id}_${paymentRequest.referenceNumber.trim().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+        const payment = await prisma_js_1.prisma.payment.upsert({
+            where: { transactionId: uniqueTxnId },
+            update: {
+                amount: paymentRequest.amount,
+                status: 'COMPLETED',
+                provider: 'INSTAPAY',
+                metadata: JSON.stringify({
+                    paymentRequestId: paymentRequest.id,
+                    verifiedBy: adminName,
+                    verifiedAt: new Date().toISOString(),
+                    instapayRef: paymentRequest.referenceNumber,
+                    setupTokenGenerated: true,
+                }),
+            },
+            create: {
                 userId: user.id,
                 courseId: paymentRequest.courseId,
                 amount: paymentRequest.amount,
                 currency: 'USD',
                 status: 'COMPLETED',
                 provider: 'INSTAPAY',
-                transactionId: paymentRequest.referenceNumber,
+                transactionId: uniqueTxnId,
                 metadata: JSON.stringify({
                     paymentRequestId: paymentRequest.id,
                     verifiedBy: adminName,
