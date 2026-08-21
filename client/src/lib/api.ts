@@ -3,8 +3,8 @@ export const getApiBase = (): string => {
   if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
     return envUrl.trim().replace(/\/$/, '');
   }
-  // Default to live production backend on Render
-  return 'https://scalora-lms-3.onrender.com/api';
+  // Default to same-origin /api for seamless Vercel / serverless routing
+  return '/api';
 };
 
 export class ApiError extends Error {
@@ -41,7 +41,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
-    throw new ApiError('Received non-JSON response from server', response.status || 404);
+    const textPreview = await response.text().catch(() => '');
+    throw new ApiError(
+      `Received non-JSON response from server (${response.status}): ${textPreview.slice(0, 80) || 'Empty body'}`,
+      response.status || 404
+    );
   }
 
   const data = await response.json().catch(() => ({}));
