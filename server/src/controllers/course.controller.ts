@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { communityService } from '../services/community.service.js';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -268,6 +269,9 @@ export const createCourse = async (req: AuthenticatedRequest, res: Response): Pr
         isPublished: validatedData.isPublished || false,
       },
     });
+
+    // Automatically create linked Community Channel for this course
+    await communityService.ensureCourseChannel(course.id, course.title, course.description);
 
     res.status(201).json({ success: true, message: 'Course created successfully', course });
   } catch (error: any) {

@@ -16,6 +16,7 @@ const progress_routes_js_1 = __importDefault(require("./routes/progress.routes.j
 const payment_routes_js_1 = __importDefault(require("./routes/payment.routes.js"));
 const admin_routes_js_1 = __importDefault(require("./routes/admin.routes.js"));
 const lead_routes_js_1 = __importDefault(require("./routes/lead.routes.js"));
+const community_routes_js_1 = __importDefault(require("./routes/community.routes.js"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Path Normalizer for Vercel Serverless Function [...path]
@@ -91,6 +92,8 @@ app.use('/api/payments', payment_routes_js_1.default);
 app.use('/payments', payment_routes_js_1.default);
 app.use('/api/leads', lead_routes_js_1.default);
 app.use('/leads', lead_routes_js_1.default);
+app.use('/api/community', community_routes_js_1.default);
+app.use('/community', community_routes_js_1.default);
 app.use('/api/admin', admin_routes_js_1.default);
 app.use('/admin', admin_routes_js_1.default);
 app.use('/students', admin_routes_js_1.default);

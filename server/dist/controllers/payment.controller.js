@@ -9,6 +9,7 @@ const crypto_1 = __importDefault(require("crypto"));
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
 const payment_service_js_1 = require("../services/payment.service.js");
+const community_service_js_1 = require("../services/community.service.js");
 const checkoutSchema = zod_1.z.object({
     courseId: zod_1.z.string().min(1, 'Course ID is required'),
     provider: zod_1.z.enum(['MOCK', 'STRIPE', 'PAYMOB', 'INSTAPAY']).optional().default('MOCK'),
@@ -306,6 +307,8 @@ const approvePaymentRequest = async (req, res) => {
                 amount: paymentRequest.amount,
             },
         });
+        // Automatically grant access to the course's Community Channel
+        await community_service_js_1.communityService.autoEnrollInChannel(user.id, paymentRequest.courseId);
         // 5. Update PaymentRequest to APPROVED
         const updated = await prisma_js_1.prisma.paymentRequest.update({
             where: { id },

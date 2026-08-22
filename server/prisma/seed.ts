@@ -7,6 +7,13 @@ async function main() {
   console.log('🌱 Starting Scalora LMS PostgreSQL database seeding...');
 
   // 1. Clean existing records in correct foreign-key dependency order
+  await prisma.communityNotification.deleteMany({});
+  await prisma.communityComment.deleteMany({});
+  await prisma.communityLike.deleteMany({});
+  await prisma.communitySavedPost.deleteMany({});
+  await prisma.communityPost.deleteMany({});
+  await prisma.communityMember.deleteMany({});
+  await prisma.communityChannel.deleteMany({});
   await prisma.certificate.deleteMany({});
   await prisma.lessonProgress.deleteMany({});
   await prisma.enrollment.deleteMany({});
@@ -507,6 +514,219 @@ async function main() {
   });
 
   console.log('✅ Created Certificates & Quiz Results in PostgreSQL');
+
+  // 12. Seed Community Channels & Members
+  console.log('🌱 Seeding Scalora Community Channels & Social Feed...');
+
+  const ch1 = await prisma.communityChannel.create({
+    data: {
+      courseId: course1.id,
+      name: `${course1.title} Community`,
+      description: 'Official private peer-learning channel for Cloud-Native Microservices Architecture & Kubernetes. Discuss architecture patterns, share code blueprints, and get feedback from instructors.',
+    },
+  });
+
+  const ch2 = await prisma.communityChannel.create({
+    data: {
+      courseId: course2.id,
+      name: `${course2.title} Community`,
+      description: 'Exclusive research & development channel for Generative AI, RAG architectures, Vector DBs, and Autonomous Multi-Agent systems.',
+    },
+  });
+
+  const ch3 = await prisma.communityChannel.create({
+    data: {
+      courseId: course3.id,
+      name: `${course3.title} Community`,
+      description: 'Enterprise React 19, TypeScript, and modern design systems collaboration channel.',
+    },
+  });
+
+  const ch4 = await prisma.communityChannel.create({
+    data: {
+      courseId: course4.id,
+      name: `${course4.title} Community`,
+      description: 'DevOps automation, Terraform IAC, Docker multi-stage builds, and CI/CD pipelines discussion hub.',
+    },
+  });
+
+  // Add memberships for enrolled users
+  // Admin is member of all channels
+  for (const ch of [ch1, ch2, ch3, ch4]) {
+    await prisma.communityMember.create({
+      data: { channelId: ch.id, userId: admin.id, role: 'ADMIN' },
+    });
+  }
+
+  // Student (Alex) is enrolled in Course 1 & Course 2
+  await prisma.communityMember.create({
+    data: { channelId: ch1.id, userId: student.id, role: 'MEMBER' },
+  });
+  await prisma.communityMember.create({
+    data: { channelId: ch2.id, userId: student.id, role: 'MEMBER' },
+  });
+
+  // Student 2 (Sarah) is enrolled in Course 2
+  await prisma.communityMember.create({
+    data: { channelId: ch2.id, userId: student2.id, role: 'MEMBER' },
+  });
+
+  // 13. Seed Rich Posts in Channel 1 (Cloud-Native)
+  const post1 = await prisma.communityPost.create({
+    data: {
+      channelId: ch1.id,
+      userId: admin.id,
+      type: 'ANNOUNCEMENT',
+      title: '🚀 Welcome to Cloud-Native Mastery Track: Community Guidelines & Live AMA Schedule',
+      content:
+        'Welcome everyone to the private Scalora Cloud-Native Architecture Community!\n\nHere are a few quick tips to maximize your learning journey:\n1. **Ask specific questions**: Include code snippets, error traces, or architecture diagrams.\n2. **Weekly AMA**: Every Thursday at 7:00 PM UTC we host a live architectural review session.\n3. **Share blueprints**: Feel free to share your Kubernetes manifests and gRPC stubs for peer review.\n\nLet’s build resilient, distributed systems together!',
+      isPinned: true,
+      isAnnouncement: true,
+    },
+  });
+
+  const post2 = await prisma.communityPost.create({
+    data: {
+      channelId: ch1.id,
+      userId: student.id,
+      type: 'TEXT',
+      title: 'Handling distributed transaction rollbacks with Saga Orchestrator in Node.js',
+      content:
+        'Hey team! While implementing Lesson 1.2 on the Saga Pattern, I ran into a question regarding compensating transactions when a downstream payment step fails.\n\n```typescript\nasync function executeOrderSaga(orderId: string) {\n  const inventoryResult = await reserveInventory(orderId);\n  if (!inventoryResult.success) return abortSaga();\n  \n  const paymentResult = await processPayment(orderId);\n  if (!paymentResult.success) {\n    // Compensating transaction\n    await releaseInventory(orderId);\n    throw new Error("Payment failed, inventory released");\n  }\n}\n```\n\nIs it better practice to handle retry loops with exponential backoff before triggering the compensation, or should the orchestrator immediately rollback?',
+    },
+  });
+
+  const post3 = await prisma.communityPost.create({
+    data: {
+      channelId: ch1.id,
+      userId: admin.id,
+      type: 'FILE',
+      title: '📦 Enterprise Kubernetes Helm Starter Chart v2.4 (Production Blueprint)',
+      content:
+        'Attached is the updated Helm chart starter kit with automated ingress annotations, resource limits (requests/limits), liveness/readiness probes, and Prometheus metrics scraping endpoints configured out of the box.',
+      fileName: 'scalora-k8s-production-helm-v2.4.zip',
+      fileUrl: 'https://github.com/scalora/k8s-microservices-starter/archive/refs/heads/main.zip',
+      fileSize: '4.8 MB',
+    },
+  });
+
+  const post4 = await prisma.communityPost.create({
+    data: {
+      channelId: ch1.id,
+      userId: admin.id,
+      type: 'IMAGE',
+      title: 'Grafana Observability Dashboard Topology from our live cluster workshop',
+      content:
+        'Here is the distributed tracing view showing gRPC latency reduction from 145ms down to 1.8ms after multiplexing HTTP/2 connections in Lesson 2.1.',
+      mediaUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop&q=80',
+    },
+  });
+
+  // 14. Seed Posts in Channel 2 (GenAI)
+  const postGenAI1 = await prisma.communityPost.create({
+    data: {
+      channelId: ch2.id,
+      userId: admin.id,
+      type: 'ANNOUNCEMENT',
+      title: '🤖 Generative AI & Autonomous Agents Track Kickoff',
+      content:
+        'Welcome to the Generative AI engineering cohort! In this channel, we share vector indexing strategies, prompt evaluation benchmarks, and LangChain/LlamaIndex production patterns.\n\nCheck out the pinned RAG handbook in the Resources tab!',
+      isPinned: true,
+      isAnnouncement: true,
+    },
+  });
+
+  const postGenAI2 = await prisma.communityPost.create({
+    data: {
+      channelId: ch2.id,
+      userId: student2.id,
+      type: 'TEXT',
+      title: 'Comparing HNSW vs IVF-PQ indexing for 10M+ dense vectors in pgvector',
+      content:
+        'We recently benchmarked pgvector with 1536-dim OpenAI embeddings. Adding HNSW indexing brought recall to 98.4% with sub-15ms p99 query latency. Highly recommend checking out the indexing parameters in Lesson 1.2!',
+    },
+  });
+
+  // 15. Seed Comments & Threaded Replies
+  const comment1 = await prisma.communityComment.create({
+    data: {
+      postId: post2.id,
+      userId: admin.id,
+      content:
+        'Great question Eslam! In production systems, you typically distinguish between **transient errors** (e.g. network blips, 503s) and **terminal business rejections** (e.g. card expired, insufficient funds). For transient errors, apply an exponential backoff retry (up to 3 times with jitter). If all retries fail or if it is a terminal business rejection, immediately execute the compensating action.',
+    },
+  });
+
+  await prisma.communityComment.create({
+    data: {
+      postId: post2.id,
+      userId: student.id,
+      parentId: comment1.id,
+      content: 'That makes total sense. Implementing jitter + 3 retries before compensating. Thanks Dr. Tariq!',
+    },
+  });
+
+  await prisma.communityComment.create({
+    data: {
+      postId: post1.id,
+      userId: student.id,
+      content: 'Excited to be part of this cohort! Looking forward to Thursday’s architectural AMA.',
+    },
+  });
+
+  // 16. Seed Likes & Saved Posts
+  await prisma.communityLike.create({
+    data: { postId: post1.id, userId: student.id },
+  });
+  await prisma.communityLike.create({
+    data: { postId: post2.id, userId: admin.id },
+  });
+  await prisma.communityLike.create({
+    data: { postId: post3.id, userId: student.id },
+  });
+
+  await prisma.communitySavedPost.create({
+    data: { postId: post3.id, userId: student.id },
+  });
+
+  // 17. Seed Community Notifications
+  await prisma.communityNotification.create({
+    data: {
+      userId: student.id,
+      actorId: admin.id,
+      channelId: ch1.id,
+      postId: post2.id,
+      type: 'COMMENT',
+      message: 'Eslam Salah (Admin) commented on your post: "Great question Eslam! In production systems..."',
+      isRead: false,
+    },
+  });
+
+  await prisma.communityNotification.create({
+    data: {
+      userId: student.id,
+      actorId: admin.id,
+      channelId: ch1.id,
+      postId: post1.id,
+      type: 'ANNOUNCEMENT',
+      message: `📢 Important Announcement in ${ch1.name}: "🚀 Welcome to Cloud-Native Mastery Track..."`,
+      isRead: false,
+    },
+  });
+
+  await prisma.communityNotification.create({
+    data: {
+      userId: student.id,
+      actorId: admin.id,
+      channelId: ch1.id,
+      postId: post2.id,
+      type: 'LIKE',
+      message: 'Eslam Salah (Admin) liked your post in Cloud-Native Microservices Architecture.',
+      isRead: true,
+    },
+  });
+
+  console.log('✅ Seeded Community Channels, Members, Posts, Comments, Likes & Notifications');
   console.log('🎉 Scalora LMS PostgreSQL Database Seeding Completed Successfully!');
 }
 

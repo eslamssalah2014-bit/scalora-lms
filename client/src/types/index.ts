@@ -250,5 +250,211 @@ export interface PaymentRequestStats {
   totalRevenue: number;
 }
 
+// ============================================================================
+// COMMUNITY MODULE TYPES
+// ============================================================================
+
+export type PostType = 'TEXT' | 'IMAGE' | 'FILE' | 'LINK' | 'ANNOUNCEMENT';
+
+export interface CommunityChannel {
+  id: string;
+  name: string;
+  description?: string | null;
+  courseId?: string | null;
+  course?: {
+    id: string;
+    title: string;
+    slug: string;
+    thumbnail?: string | null;
+    category: string;
+    instructor: string;
+  } | null;
+  isLocked: boolean;
+  isArchived: boolean;
+  membersCount: number;
+  postsCount: number;
+  recentMembers?: CommunityMemberSummary[];
+  createdAt: string;
+}
+
+export interface CommunityMemberSummary {
+  id: string;
+  name: string;
+  avatar?: string | null;
+  role: string;
+  channelRole?: string;
+  bio?: string | null;
+  joinedAt?: string;
+}
+
+export interface CommunityMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  role: string;
+  channelRole: string;
+  bio?: string | null;
+  joinedAt: string;
+  enrolledCoursesCount: number;
+  postsCount: number;
+  commentsCount: number;
+}
+
+export interface CommentAuthor {
+  id: string;
+  name: string;
+  avatar?: string | null;
+  role: string;
+  bio?: string | null;
+}
+
+export interface CommentReply {
+  id: string;
+  parentId?: string | null;
+  content: string;
+  createdAt: string;
+  author: CommentAuthor;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  parentId?: string | null;
+  content: string;
+  createdAt: string;
+  author: CommentAuthor;
+  replies?: CommentReply[];
+}
+
+export interface CommunityPost {
+  id: string;
+  channelId: string;
+  type: PostType;
+  title?: string | null;
+  content: string;
+  mediaUrl?: string | null;
+  fileName?: string | null;
+  fileUrl?: string | null;
+  fileSize?: string | null;
+  linkUrl?: string | null;
+  isPinned: boolean;
+  isAnnouncement: boolean;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string | null;
+    role: string;
+    bio?: string | null;
+  };
+  likesCount: number;
+  commentsCount: number;
+  isLiked: boolean;
+  isSaved: boolean;
+  recentComments?: {
+    id: string;
+    content: string;
+    createdAt: string;
+    author: CommentAuthor;
+    repliesCount?: number;
+  }[];
+}
+
+export interface CommunityNotification {
+  id: string;
+  type: 'COMMENT' | 'REPLY' | 'LIKE' | 'ANNOUNCEMENT' | 'SYSTEM' | 'WELCOME' | string;
+  message: string;
+  isRead: boolean;
+  channelId?: string | null;
+  channelName?: string | null;
+  postId?: string | null;
+  actor?: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    role: string;
+  } | null;
+  createdAt: string;
+}
+
+export interface CommunityMemberProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  role: string;
+  bio?: string | null;
+  joinedAt: string;
+  totalPosts: number;
+  totalComments: number;
+  certificatesCount: number;
+  enrolledCourses: {
+    id: string;
+    title: string;
+    slug: string;
+    thumbnail?: string | null;
+    category: string;
+    instructor: string;
+  }[];
+  recentPosts: {
+    id: string;
+    channelId: string;
+    channelName: string;
+    title?: string | null;
+    content: string;
+    type: PostType;
+    createdAt: string;
+    likesCount: number;
+    commentsCount: number;
+  }[];
+}
+
+export interface CommunityAdminOverview {
+  stats: {
+    totalChannels: number;
+    totalPosts: number;
+    totalComments: number;
+    totalMembers: number;
+  };
+  channels: {
+    id: string;
+    name: string;
+    description?: string | null;
+    courseId?: string | null;
+    courseTitle?: string | null;
+    isLocked: boolean;
+    isArchived: boolean;
+    membersCount: number;
+    postsCount: number;
+    createdAt: string;
+  }[];
+  recentPosts: {
+    id: string;
+    channelId: string;
+    channelName: string;
+    type: PostType;
+    title?: string | null;
+    content: string;
+    mediaUrl?: string | null;
+    fileName?: string | null;
+    isPinned: boolean;
+    isAnnouncement: boolean;
+    createdAt: string;
+    author: {
+      id: string;
+      name: string;
+      avatar?: string | null;
+      role: string;
+      email: string;
+    };
+    likesCount: number;
+    commentsCount: number;
+  }[];
+}
+
 
 

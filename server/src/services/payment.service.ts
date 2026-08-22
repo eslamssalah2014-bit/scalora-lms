@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { communityService } from './community.service.js';
 
 export interface PaymentIntentOptions {
   userId: string;
@@ -215,6 +216,9 @@ export class PaymentService {
         payment: true,
       },
     });
+
+    // Automatically add student to course Community Channel
+    await communityService.autoEnrollInChannel(userId, courseId);
 
     return {
       alreadyEnrolled: false,

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
+const community_service_js_1 = require("../services/community.service.js");
 const courseSchema = zod_1.z.object({
     title: zod_1.z.string().min(3, 'Title must be at least 3 characters'),
     slug: zod_1.z.string().optional(),
@@ -249,6 +250,8 @@ const createCourse = async (req, res) => {
                 isPublished: validatedData.isPublished || false,
             },
         });
+        // Automatically create linked Community Channel for this course
+        await community_service_js_1.communityService.ensureCourseChannel(course.id, course.title, course.description);
         res.status(201).json({ success: true, message: 'Course created successfully', course });
     }
     catch (error) {

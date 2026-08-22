@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.paymentService = exports.PaymentService = exports.PaymobPaymentProvider = exports.StripePaymentProvider = exports.MockPaymentProvider = void 0;
 const prisma_js_1 = require("../lib/prisma.js");
+const community_service_js_1 = require("./community.service.js");
 /**
  * Mock / Sandbox Payment Provider for instant demo & development testing
  */
@@ -164,6 +165,8 @@ class PaymentService {
                 payment: true,
             },
         });
+        // Automatically add student to course Community Channel
+        await community_service_js_1.communityService.autoEnrollInChannel(userId, courseId);
         return {
             alreadyEnrolled: false,
             enrollment,

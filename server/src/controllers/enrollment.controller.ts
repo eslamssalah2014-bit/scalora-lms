@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { communityService } from '../services/community.service.js';
 
 const manualEnrollSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
@@ -164,6 +165,9 @@ export const manualEnroll = async (req: AuthenticatedRequest, res: Response): Pr
         payment: true,
       },
     });
+
+    // Automatically add student to course Community Channel
+    await communityService.autoEnrollInChannel(validatedData.userId, validatedData.courseId);
 
     res.status(201).json({
       success: true,

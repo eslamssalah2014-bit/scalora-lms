@@ -34,6 +34,7 @@ import { AdminQuizzesPage } from './pages/admin/AdminQuizzesPage';
 import { AdminEnrollmentsPage } from './pages/admin/AdminEnrollmentsPage';
 import { AdminStudentsPage } from './pages/admin/AdminStudentsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { AdminCommunityPage } from './pages/admin/AdminCommunityPage';
 
 // Layout with Header & Footer
 const MainLayout: React.FC = () => {
@@ -107,6 +108,7 @@ export const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="community" element={<AdminCommunityPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
           <Route path="leads" element={<AdminLeadsPage />} />
           <Route path="courses" element={<AdminCoursesPage />} />

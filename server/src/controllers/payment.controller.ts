@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { paymentService } from '../services/payment.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { communityService } from '../services/community.service.js';
 
 const checkoutSchema = z.object({
   courseId: z.string().min(1, 'Course ID is required'),
@@ -331,6 +332,9 @@ export const approvePaymentRequest = async (req: AuthenticatedRequest, res: Resp
         amount: paymentRequest.amount,
       },
     });
+
+    // Automatically grant access to the course's Community Channel
+    await communityService.autoEnrollInChannel(user.id, paymentRequest.courseId);
 
     // 5. Update PaymentRequest to APPROVED
     const updated = await prisma.paymentRequest.update({

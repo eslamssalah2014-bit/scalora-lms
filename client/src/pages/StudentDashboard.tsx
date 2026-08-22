@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   RefreshCw,
   AlertCircle,
+  Users,
 } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
@@ -118,13 +119,23 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
 
-          <Link
-            to="/courses"
-            className="self-start md:self-auto px-5 py-3 rounded-xl bg-scalora-navy/80 hover:bg-scalora-navy text-white text-xs font-bold border border-scalora-blue/30 shadow-lg transition-all flex items-center gap-2"
-          >
-            <BookOpen className="w-4 h-4 text-scalora-blue" />
-            <span>Browse More Tracks</span>
-          </Link>
+          <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
+            <Link
+              to="/community"
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent hover:opacity-95 transition-all flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" />
+              <span>Community Feed</span>
+            </Link>
+
+            <Link
+              to="/courses"
+              className="px-5 py-3 rounded-xl bg-scalora-navy/80 hover:bg-scalora-navy text-white text-xs font-bold border border-scalora-blue/30 shadow-lg transition-all flex items-center gap-2"
+            >
+              <BookOpen className="w-4 h-4 text-scalora-blue" />
+              <span>Browse More Tracks</span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -298,7 +309,15 @@ export const StudentDashboard: React.FC = () => {
                     className="flex-1 py-2.5 rounded-xl bg-scalora-blue hover:bg-scalora-hover text-white text-xs font-bold text-center flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <PlayCircle className="w-4 h-4" />
-                    <span>{enr.progressPercent === 100 ? 'Review Course' : 'Continue'}</span>
+                    <span>{enr.progressPercent === 100 ? 'Review' : 'Continue'}</span>
+                  </Link>
+
+                  <Link
+                    to="/community"
+                    className="px-3 py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 text-xs font-bold flex items-center gap-1 transition-colors"
+                    title="Course Community Channel"
+                  >
+                    <Users className="w-4 h-4" />
                   </Link>
 
                   {enr.progressPercent === 100 && (

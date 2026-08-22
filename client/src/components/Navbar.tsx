@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { NotificationDropdown } from './community/NotificationDropdown';
 import {
   GraduationCap,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   ChevronDown,
   Shield,
   Sparkles,
+  Users,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -110,78 +112,92 @@ export const Navbar: React.FC = () => {
           {/* User / Auth CTA */}
           <div className="hidden md:flex items-center space-x-3">
             {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-scalora-navy/60 hover:bg-scalora-navy border border-scalora-blue/20 transition-all focus:outline-none"
-                >
-                  <img
-                    src={
-                      user.avatar ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        user.name
-                      )}&background=2D8CFF&color=fff`
-                    }
-                    alt={user.name}
-                    className="w-8 h-8 rounded-lg object-cover border border-scalora-blue/30"
-                  />
-                  <div className="text-left hidden lg:block">
-                    <div className="text-sm font-semibold text-white leading-none">{user.name}</div>
-                    <div className="text-[11px] font-medium text-scalora-blue/90 mt-0.5 uppercase tracking-wide">
-                      {user.role}
-                    </div>
-                  </div>
-                  <ChevronDown className="w-4 h-4 text-slate-400" />
-                </button>
+              <div className="flex items-center space-x-3">
+                {/* Community Notifications Bell */}
+                <NotificationDropdown />
 
-                {/* Dropdown Menu */}
-                {userDropdownOpen && (
-                  <div
-                    className="absolute right-0 mt-2 w-56 rounded-2xl glass-panel py-2 shadow-2xl border border-scalora-blue/30 animate-in fade-in zoom-in-95 duration-150"
-                    onClick={() => setUserDropdownOpen(false)}
+                {/* User Profile Button */}
+                <div className="relative">
+                  <button
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-scalora-navy/60 hover:bg-scalora-navy border border-scalora-blue/20 transition-all focus:outline-none"
                   >
-                    <div className="px-4 py-2.5 border-b border-scalora-blue/15">
-                      <p className="text-xs text-slate-400">Signed in as</p>
-                      <p className="text-sm font-semibold text-white truncate">{user.email}</p>
+                    <img
+                      src={
+                        user.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          user.name
+                        )}&background=2D8CFF&color=fff`
+                      }
+                      alt={user.name}
+                      className="w-8 h-8 rounded-lg object-cover border border-scalora-blue/30"
+                    />
+                    <div className="text-left hidden lg:block">
+                      <div className="text-sm font-semibold text-white leading-none">{user.name}</div>
+                      <div className="text-[11px] font-medium text-scalora-blue/90 mt-0.5 uppercase tracking-wide">
+                        {user.role}
+                      </div>
                     </div>
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  </button>
 
-                    {user.role === 'ADMIN' ? (
+                  {/* Dropdown Menu */}
+                  {userDropdownOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-56 rounded-2xl glass-panel py-2 shadow-2xl border border-scalora-blue/30 animate-in fade-in zoom-in-95 duration-150"
+                      onClick={() => setUserDropdownOpen(false)}
+                    >
+                      <div className="px-4 py-2.5 border-b border-scalora-blue/15">
+                        <p className="text-xs text-slate-400">Signed in as</p>
+                        <p className="text-sm font-semibold text-white truncate">{user.email}</p>
+                      </div>
+
+                      {user.role === 'ADMIN' ? (
+                        <Link
+                          to="/admin"
+                          className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
+                        >
+                          <Shield className="w-4 h-4 text-scalora-accent" />
+                          <span>Admin Console</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/dashboard"
+                          className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-scalora-blue" />
+                          <span>Student Dashboard</span>
+                        </Link>
+                      )}
+
                       <Link
-                        to="/admin"
-                        className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
+                        to="/community"
+                        className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/20 transition-colors"
                       >
-                        <Shield className="w-4 h-4 text-scalora-accent" />
-                        <span>Admin Console</span>
+                        <Users className="w-4 h-4 text-cyan-400" />
+                        <span>Scalora Community</span>
                       </Link>
-                    ) : (
+
                       <Link
                         to="/dashboard"
                         className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
                       >
-                        <LayoutDashboard className="w-4 h-4 text-scalora-blue" />
-                        <span>Student Dashboard</span>
+                        <BookOpen className="w-4 h-4 text-emerald-400" />
+                        <span>My Enrolled Courses</span>
                       </Link>
-                    )}
 
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-scalora-blue/20 transition-colors"
-                    >
-                      <BookOpen className="w-4 h-4 text-emerald-400" />
-                      <span>My Enrolled Courses</span>
-                    </Link>
+                      <div className="border-t border-scalora-blue/15 my-1" />
 
-                    <div className="border-t border-scalora-blue/15 my-1" />
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center space-x-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
-                )}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center space-x-2.5 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-3">

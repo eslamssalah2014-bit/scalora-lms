@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.manualEnroll = exports.getAllEnrollmentsAdmin = exports.getMyEnrollments = void 0;
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
+const community_service_js_1 = require("../services/community.service.js");
 const manualEnrollSchema = zod_1.z.object({
     userId: zod_1.z.string().min(1, 'User ID is required'),
     courseId: zod_1.z.string().min(1, 'Course ID is required'),
@@ -152,6 +153,8 @@ const manualEnroll = async (req, res) => {
                 payment: true,
             },
         });
+        // Automatically add student to course Community Channel
+        await community_service_js_1.communityService.autoEnrollInChannel(validatedData.userId, validatedData.courseId);
         res.status(201).json({
             success: true,
             message: `Enrolled ${user.name} into ${course.title} successfully`,

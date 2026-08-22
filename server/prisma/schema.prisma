@@ -33,6 +33,15 @@ model User {
   paymentRequests PaymentRequest[]
   passwordSetupTokens PasswordSetupToken[]
 
+  // Community Relations
+  communityMemberships   CommunityMember[]
+  communityPosts         CommunityPost[]
+  communityComments      CommunityComment[]
+  communityLikes         CommunityLike[]
+  communitySavedPosts    CommunitySavedPost[]
+  communityNotifications CommunityNotification[] @relation("NotificationRecipient")
+  triggeredNotifications CommunityNotification[] @relation("NotificationActor")
+
   @@map("users")
 }
 
@@ -66,6 +75,7 @@ model Course {
   payments    Payment[]
   certificates Certificate[]
   paymentRequests PaymentRequest[]
+  communityChannel CommunityChannel?
 
   @@map("courses")
 }
@@ -291,6 +301,126 @@ model PasswordSetupToken {
   createdAt DateTime  @default(now())
 
   @@map("password_setup_tokens")
+}
+
+// ============================================================================
+// SCALORA COMMUNITY MODULE MODELS
+// ============================================================================
+
+model CommunityChannel {
+  id          String   @id @default(cuid())
+  courseId    String?  @unique
+  course      Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  isLocked    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members       CommunityMember[]
+  posts         CommunityPost[]
+  notifications CommunityNotification[]
+
+  @@map("community_channels")
+}
+
+model CommunityMember {
+  id        String           @id @default(cuid())
+  channelId String
+  channel   CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String           @default("MEMBER") // "MEMBER" | "MODERATOR" | "ADMIN"
+  joinedAt  DateTime         @default(now())
+
+  @@unique([channelId, userId])
+  @@map("community_members")
+}
+
+model CommunityPost {
+  id             String           @id @default(cuid())
+  channelId      String
+  channel        CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String           @default("TEXT") // "TEXT" | "IMAGE" | "FILE" | "LINK" | "ANNOUNCEMENT"
+  title          String?
+  content        String
+  mediaUrl       String?
+  fileName       String?
+  fileUrl        String?
+  fileSize       String?
+  linkUrl        String?
+  isPinned       Boolean          @default(false)
+  isAnnouncement Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  comments      CommunityComment[]
+  likes         CommunityLike[]
+  savedBy       CommunitySavedPost[]
+  notifications CommunityNotification[]
+
+  @@map("community_posts")
+}
+
+model CommunityComment {
+  id        String             @id @default(cuid())
+  postId    String
+  post      CommunityPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    CommunityComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   CommunityComment[] @relation("CommentReplies")
+  content   String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@map("community_comments")
+}
+
+model CommunityLike {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([postId, userId])
+  @@map("community_likes")
+}
+
+model CommunitySavedPost {
+  id        String        @id @default(cuid())
+  postId    String
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([postId, userId])
+  @@map("community_saved_posts")
+}
+
+model CommunityNotification {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  channelId String?
+  channel   CommunityChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      CommunityPost?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type      String            // "COMMENT" | "REPLY" | "LIKE" | "ANNOUNCEMENT" | "SYSTEM" | "WELCOME"
+  message   String
+  isRead    Boolean           @default(false)
+  createdAt DateTime          @default(now())
+
+  @@map("community_notifications")
 }
 
 
