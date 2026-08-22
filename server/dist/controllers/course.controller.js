@@ -4,6 +4,7 @@ exports.deleteCategory = exports.createCategory = exports.getCategories = export
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
 const community_service_js_1 = require("../services/community.service.js");
+const audit_service_js_1 = require("../services/audit.service.js");
 const courseSchema = zod_1.z.object({
     title: zod_1.z.string().min(3, 'Title must be at least 3 characters'),
     slug: zod_1.z.string().optional(),
@@ -252,6 +253,15 @@ const createCourse = async (req, res) => {
         });
         // Automatically create linked Community Channel for this course
         await community_service_js_1.communityService.ensureCourseChannel(course.id, course.title, course.description);
+        // Audit Log
+        await audit_service_js_1.auditService.log({
+            action: 'COURSE_CREATED',
+            entityType: 'COURSE',
+            entityId: course.id,
+            userId: req.user?.id,
+            newData: course,
+            metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
+        });
         res.status(201).json({ success: true, message: 'Course created successfully', course });
     }
     catch (error) {
@@ -276,6 +286,16 @@ const updateCourse = async (req, res) => {
             where: { id },
             data: validatedData,
         });
+        // Audit Log
+        await audit_service_js_1.auditService.log({
+            action: 'COURSE_UPDATED',
+            entityType: 'COURSE',
+            entityId: id,
+            userId: req.user?.id,
+            oldData: existing,
+            newData: updated,
+            metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
+        });
         res.json({ success: true, message: 'Course updated successfully', course: updated });
     }
     catch (error) {
@@ -295,7 +315,17 @@ const deleteCourse = async (req, res) => {
             res.status(404).json({ success: false, message: 'Course not found' });
             return;
         }
+        // Soft delete executed safely via Prisma middleware
         await prisma_js_1.prisma.course.delete({ where: { id } });
+        // Audit Log
+        await audit_service_js_1.auditService.log({
+            action: 'COURSE_DELETED',
+            entityType: 'COURSE',
+            entityId: id,
+            userId: req.user?.id,
+            oldData: existing,
+            metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
+        });
         res.json({ success: true, message: 'Course deleted successfully' });
     }
     catch (error) {

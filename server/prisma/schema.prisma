@@ -22,6 +22,7 @@ model User {
   phone          String?
   status         String           @default("ACTIVE") // "ACTIVE" | "INACTIVE"
   lastLoginAt    DateTime?
+  deletedAt      DateTime?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -46,11 +47,12 @@ model User {
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@map("categories")
 }
@@ -66,6 +68,7 @@ model Course {
   category    String
   level       String        @default("All Levels")
   isPublished Boolean       @default(false)
+  deletedAt   DateTime?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -86,6 +89,7 @@ model Module {
   order     Int       @default(0)
   courseId  String
   course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -107,6 +111,7 @@ model Lesson {
   order       Int              @default(0)
   moduleId    String
   module      Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  deletedAt   DateTime?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -123,6 +128,7 @@ model Quiz {
   courseId     String
   course       Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   moduleId     String?
+  deletedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -173,6 +179,7 @@ model Payment {
   provider      String       // "MOCK" | "STRIPE" | "PAYMOB"
   transactionId String       @unique
   metadata      String?      // Optional metadata JSON
+  deletedAt     DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -182,19 +189,20 @@ model Payment {
 }
 
 model Certificate {
-  id                String   @id @default(cuid())
-  certificateNumber String   @unique // e.g. "SCL-K8S-ALEX-2026"
+  id                String    @id @default(cuid())
+  certificateNumber String    @unique // e.g. "SCL-K8S-ALEX-2026"
   userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseId          String
-  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course            Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   studentName       String
   courseTitle       String
   instructorName    String
-  issueDate         DateTime @default(now())
+  issueDate         DateTime  @default(now())
   verificationUrl   String
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@unique([userId, courseId])
   @@map("certificates")
@@ -210,6 +218,7 @@ model Enrollment {
   paymentId String?
   payment   Payment?  @relation(fields: [paymentId], references: [id], onDelete: SetNull)
   amount    Float     @default(0.0)
+  deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -225,6 +234,7 @@ model LessonProgress {
   lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   isCompleted Boolean   @default(false)
   completedAt DateTime?
+  deletedAt   DateTime?
 
   @@unique([userId, lessonId])
   @@map("lesson_progress")
@@ -232,8 +242,8 @@ model LessonProgress {
 
 model AuditLog {
   id         String   @id @default(cuid())
-  action     String   // "STUDENT_UPDATED" | "PASSWORD_RESET" | "ENROLLED" | "PROFILE_EDITED"
-  entityType String   @default("USER") // "USER" | "COURSE" | "ENROLLMENT"
+  action     String   // "STUDENT_UPDATED" | "PASSWORD_RESET" | "ENROLLED" | "PROFILE_EDITED" | "COURSE_CREATED" | "COURSE_UPDATED" | "COURSE_DELETED"
+  entityType String   @default("USER") // "USER" | "COURSE" | "ENROLLMENT" | "PAYMENT"
   entityId   String   // Target Student / Entity ID
   userId     String?  // Admin User ID who initiated action
   oldData    String?  // JSON string
@@ -245,8 +255,8 @@ model AuditLog {
 }
 
 model Lead {
-  id                  String   @id @default(cuid())
-  leadCode            String   @unique
+  id                  String    @id @default(cuid())
+  leadCode            String    @unique
   fullName            String
   email               String
   phone               String?
@@ -254,12 +264,13 @@ model Lead {
   industry            String?
   teamSize            String?
   goalsAndBottlenecks String?
-  status              String   @default("NEW") // "NEW" | "CONTACTED" | "MEETING_SCHEDULED" | "DISCOVERY_COMPLETED" | "PROPOSAL_SENT" | "NEGOTIATION" | "WON" | "LOST"
-  assignedTo          String?  // Name or role of assignee (e.g. "Admin", "Sales Manager", "Senior Consultant")
-  notes               String?  // JSON string of LeadNote[]
-  activityLog         String?  // JSON string of LeadActivity[]
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  status              String    @default("NEW") // "NEW" | "CONTACTED" | "MEETING_SCHEDULED" | "DISCOVERY_COMPLETED" | "PROPOSAL_SENT" | "NEGOTIATION" | "WON" | "LOST"
+  assignedTo          String?   // Name or role of assignee (e.g. "Admin", "Sales Manager", "Senior Consultant")
+  notes               String?   // JSON string of LeadNote[]
+  activityLog         String?   // JSON string of LeadActivity[]
+  deletedAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@map("leads")
 }
@@ -282,6 +293,7 @@ model PaymentRequest {
   adminNotes      String?
   rejectionReason String?
   setupToken      String?
+  deletedAt       DateTime?
   submittedAt     DateTime  @default(now())
   reviewedAt      DateTime?
   reviewedBy      String?
@@ -315,6 +327,7 @@ model CommunityChannel {
   description String?
   isLocked    Boolean  @default(false)
   isArchived  Boolean  @default(false)
+  deletedAt   DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -354,6 +367,7 @@ model CommunityPost {
   linkUrl        String?
   isPinned       Boolean          @default(false)
   isAnnouncement Boolean          @default(false)
+  deletedAt      DateTime?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -375,6 +389,7 @@ model CommunityComment {
   parent    CommunityComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies   CommunityComment[] @relation("CommentReplies")
   content   String
+  deletedAt DateTime?
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 

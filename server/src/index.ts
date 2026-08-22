@@ -1,4 +1,8 @@
 import app from './app.js';
+import { validateProductionSafety } from './middleware/safety.middleware.js';
+
+// Verify and enforce production database safety architecture
+validateProductionSafety();
 
 const PORT = process.env.PORT || 5000;
 

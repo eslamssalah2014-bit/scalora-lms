@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { communityService } from '../services/community.service.js';
+import { auditService } from '../services/audit.service.js';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -273,6 +274,16 @@ export const createCourse = async (req: AuthenticatedRequest, res: Response): Pr
     // Automatically create linked Community Channel for this course
     await communityService.ensureCourseChannel(course.id, course.title, course.description);
 
+    // Audit Log
+    await auditService.log({
+      action: 'COURSE_CREATED',
+      entityType: 'COURSE',
+      entityId: course.id,
+      userId: req.user?.id,
+      newData: course,
+      metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
+    });
+
     res.status(201).json({ success: true, message: 'Course created successfully', course });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -299,6 +310,17 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
       data: validatedData,
     });
 
+    // Audit Log
+    await auditService.log({
+      action: 'COURSE_UPDATED',
+      entityType: 'COURSE',
+      entityId: id,
+      userId: req.user?.id,
+      oldData: existing,
+      newData: updated,
+      metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
+    });
+
     res.json({ success: true, message: 'Course updated successfully', course: updated });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -319,7 +341,18 @@ export const deleteCourse = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
+    // Soft delete executed safely via Prisma middleware
     await prisma.course.delete({ where: { id } });
+
+    // Audit Log
+    await auditService.log({
+      action: 'COURSE_DELETED',
+      entityType: 'COURSE',
+      entityId: id,
+      userId: req.user?.id,
+      oldData: existing,
+      metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
+    });
 
     res.json({ success: true, message: 'Course deleted successfully' });
   } catch (error: any) {

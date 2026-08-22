@@ -4,27 +4,17 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting Scalora LMS PostgreSQL database seeding...');
+  // CRITICAL PRODUCTION DATABASE PROTECTION: Seeding is permanently disabled against production / Supabase
+  if (
+    process.env.DATABASE_URL?.includes('supabase') ||
+    process.env.DATABASE_URL?.includes('pooler.supabase.com') ||
+    process.env.NODE_ENV === 'production'
+  ) {
+    console.error('🚫 SEEDING PROHIBITED: Production Database Protection Policy is active. Seeding is permanently disabled.');
+    process.exit(0);
+  }
 
-  // 1. Clean existing records in correct foreign-key dependency order
-  await prisma.communityNotification.deleteMany({});
-  await prisma.communityComment.deleteMany({});
-  await prisma.communityLike.deleteMany({});
-  await prisma.communitySavedPost.deleteMany({});
-  await prisma.communityPost.deleteMany({});
-  await prisma.communityMember.deleteMany({});
-  await prisma.communityChannel.deleteMany({});
-  await prisma.certificate.deleteMany({});
-  await prisma.lessonProgress.deleteMany({});
-  await prisma.enrollment.deleteMany({});
-  await prisma.payment.deleteMany({});
-  await prisma.quizResult.deleteMany({});
-  await prisma.quizQuestion.deleteMany({});
-  await prisma.quiz.deleteMany({});
-  await prisma.lesson.deleteMany({});
-  await prisma.module.deleteMany({});
-  await prisma.course.deleteMany({});
-  await prisma.user.deleteMany({});
+  console.log('🌱 Starting Scalora LMS local database seeding (Additive/Safe Mode)...');
 
   // 2. Create Users
   const adminPassword = await bcrypt.hash('ScaloraAdmin123!', 10);
