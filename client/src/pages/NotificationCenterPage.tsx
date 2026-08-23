@@ -25,8 +25,16 @@ import {
   Filter,
   CheckCircle2,
   SlidersHorizontal,
+  Smartphone,
+  ShieldCheck,
+  Send,
 } from 'lucide-react';
 import { NotificationPreferencesModal } from '../components/NotificationPreferencesModal';
+import {
+  getNotificationPermission,
+  subscribeToPushNotifications,
+  sendTestPush,
+} from '../lib/pushNotifications';
 
 type NotificationTab = 'ALL' | 'UNREAD' | 'MESSAGES' | 'COMMUNITY' | 'COURSES' | 'SYSTEM';
 
@@ -39,6 +47,10 @@ export const NotificationCenterPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>(getNotificationPermission());
+  const [enablingPush, setEnablingPush] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
+  const [testPushStatus, setTestPushStatus] = useState<string | null>(null);
   const [unreadCounts, setUnreadCounts] = useState({
     all: 0,
     messages: 0,
@@ -284,6 +296,88 @@ export const NotificationCenterPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Android / Desktop Native Push Banner */}
+      {permission !== 'granted' ? (
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-cyan-950/60 via-[#071F3D] to-[#05142B] border border-cyan-400/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="text-xs font-black text-white flex items-center gap-1.5">
+                <span>Enable Android Lock Screen & Tray Notifications</span>
+                <span className="px-2 py-0.2 rounded-full bg-cyan-400 text-black text-[9px] font-black uppercase">Recommended</span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                Receive instant alerts for direct messages and course lessons even when your phone is locked.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              setEnablingPush(true);
+              const granted = await subscribeToPushNotifications();
+              setPermission(granted ? 'granted' : 'denied');
+              setEnablingPush(false);
+            }}
+            disabled={enablingPush}
+            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue hover:from-cyan-400 hover:to-cyan-600 text-white font-extrabold text-xs shadow-glow-accent transition-all flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-50 min-h-[44px]"
+          >
+            {enablingPush ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Connecting Device...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                <span>Turn On Device Push</span>
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        <div className="p-3.5 px-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-emerald-300 font-bold">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>Operating System Push Active (Android System Tray + Desktop Synced)</span>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              setTestingPush(true);
+              setTestPushStatus(null);
+              const res = await sendTestPush();
+              setTestPushStatus(res.message);
+              setTestingPush(false);
+              setTimeout(() => setTestPushStatus(null), 4000);
+            }}
+            disabled={testingPush}
+            className="px-3 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 hover:text-white font-extrabold text-[11px] border border-emerald-500/40 transition-all flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {testingPush ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Testing...</span>
+              </>
+            ) : (
+              <>
+                <Send className="w-3 h-3" />
+                <span>Send Test Push</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {testPushStatus && (
+        <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-semibold animate-in fade-in">
+          {testPushStatus}
+        </div>
+      )}
 
       {/* 2. Search & Tab Filter Bar */}
       <div className="space-y-4">
