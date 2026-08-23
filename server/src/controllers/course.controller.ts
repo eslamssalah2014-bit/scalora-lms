@@ -143,6 +143,7 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
         lessonsCount: totalLessons,
         quizzesCount: course.quizzes.length,
         studentsCount: course._count.enrollments,
+        trainers: course.trainers.map((t) => t.trainer),
       };
     });
 
@@ -300,11 +301,18 @@ export const createCourse = async (req: AuthenticatedRequest, res: Response): Pr
 
     // Assign trainers if provided
     if (trainerIds && trainerIds.length > 0) {
-      for (const trainerId of trainerIds) {
+      const uniqueTrainerIds = Array.from(new Set(trainerIds.filter(Boolean)));
+      const validUsers = await prisma.user.findMany({
+        where: { id: { in: uniqueTrainerIds }, deletedAt: null },
+        select: { id: true },
+      });
+      const validUserIds = validUsers.map((u) => u.id);
+
+      for (const tId of validUserIds) {
         await prisma.courseTrainer.create({
           data: {
             courseId: course.id,
-            trainerId,
+            trainerId: tId,
           },
         });
       }
@@ -356,13 +364,22 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
         where: { courseId: id },
       });
 
-      for (const trainerId of trainerIds) {
-        await prisma.courseTrainer.create({
-          data: {
-            courseId: id,
-            trainerId,
-          },
+      const uniqueTrainerIds = Array.from(new Set(trainerIds.filter(Boolean)));
+      if (uniqueTrainerIds.length > 0) {
+        const validUsers = await prisma.user.findMany({
+          where: { id: { in: uniqueTrainerIds }, deletedAt: null },
+          select: { id: true },
         });
+        const validUserIds = validUsers.map((u) => u.id);
+
+        for (const tId of validUserIds) {
+          await prisma.courseTrainer.create({
+            data: {
+              courseId: id,
+              trainerId: tId,
+            },
+          });
+        }
       }
     }
 

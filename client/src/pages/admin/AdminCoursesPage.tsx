@@ -190,7 +190,11 @@ export const AdminCoursesPage: React.FC = () => {
     setCategory(course.category);
     setLevel(course.level || 'All Levels');
     setIsPublished(course.isPublished);
-    setSelectedTrainerIds(course.trainers ? course.trainers.map((t) => t.id) : []);
+    setSelectedTrainerIds(
+      course.trainers
+        ? course.trainers.map((t: any) => t.trainer?.id || t.trainerId || t.id).filter(Boolean)
+        : []
+    );
     setTrainerSearch('');
     setFormError(null);
     setIsInlineAddingCat(false);
