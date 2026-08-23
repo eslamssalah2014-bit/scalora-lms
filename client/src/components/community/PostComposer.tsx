@@ -189,14 +189,14 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('TEXT');
                 setIsOpen(true);
               }}
-              className="flex-1 text-left px-5 py-3 rounded-2xl bg-[#071324] hover:bg-[#0E203C] text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-white/10 transition-all shadow-inner"
+              className="flex-1 text-left px-4 py-3 rounded-2xl bg-[#071324] hover:bg-[#0E203C] text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-white/10 transition-all shadow-inner min-h-[44px]"
             >
               What's on your mind, {firstName}?
             </button>
           </div>
 
-          {/* Quick Action Pills matching exact spec */}
-          <div className="pt-2 border-t border-white/5 flex items-center justify-around sm:justify-start sm:gap-4 overflow-x-auto scrollbar-none text-xs font-semibold">
+          {/* Quick Action Pills - 2x2 Grid on Mobile, Flex on Desktop */}
+          <div className="pt-2 border-t border-white/5 grid grid-cols-2 sm:flex sm:items-center sm:gap-2 gap-1.5 text-xs font-semibold w-full">
             {/* 1. Create Post */}
             <button
               type="button"
@@ -204,10 +204,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('TEXT');
                 setIsOpen(true);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors min-h-[44px]"
             >
               <FileText className="w-4 h-4 text-cyan-400" />
-              <span>Create Post</span>
+              <span>Post</span>
             </button>
 
             {/* 2. Ask Question */}
@@ -218,10 +218,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setTitle('❓ Question: ');
                 setIsOpen(true);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition-colors min-h-[44px]"
             >
               <HelpCircle className="w-4 h-4 text-blue-400" />
-              <span>Ask Question</span>
+              <span>Ask</span>
             </button>
 
             {/* 3. Share Resource */}
@@ -231,10 +231,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('FILE');
                 setIsOpen(true);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-purple-300 hover:bg-purple-500/10 transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-colors min-h-[44px]"
             >
               <FolderDown className="w-4 h-4 text-purple-400" />
-              <span>Share Resource</span>
+              <span>Resource</span>
             </button>
 
             {/* 4. Create Poll */}
@@ -244,10 +244,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('POLL');
                 setIsOpen(true);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors min-h-[44px]"
             >
               <BarChart2 className="w-4 h-4 text-amber-400" />
-              <span>Create Poll</span>
+              <span>Poll</span>
             </button>
 
             {isAdmin && (
@@ -257,7 +257,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   setActiveTab('ANNOUNCEMENT');
                   setIsOpen(true);
                 }}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
+                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 transition-colors min-h-[44px]"
               >
                 <Megaphone className="w-4 h-4 text-rose-400" />
                 <span>Announcement</span>

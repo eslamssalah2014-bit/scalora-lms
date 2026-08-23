@@ -238,7 +238,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const displayContent = isLongContent && !isExpanded ? `${cleanContent.slice(0, 320)}...` : cleanContent;
 
   return (
-    <article className="bg-[#0B1528] rounded-3xl p-5 sm:p-6 border border-white/10 hover:border-cyan-500/30 transition-all shadow-xl space-y-4 relative group">
+    <article className="bg-[#0B1528] rounded-3xl p-4 sm:p-6 border border-white/10 hover:border-cyan-500/30 transition-all shadow-xl space-y-4 relative group w-full max-w-full overflow-hidden break-words box-border">
       {/* Pinned / Announcement Top Ribbon */}
       {(post.isPinned || post.isAnnouncement) && (
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold w-fit mb-1">
@@ -510,57 +510,57 @@ export const PostCard: React.FC<PostCardProps> = ({
       </div>
 
       {/* Facebook-Style Action Buttons Row */}
-      <div className="grid grid-cols-4 gap-1 pt-1 border-t border-white/5 text-xs font-bold">
+      <div className="grid grid-cols-4 gap-1 pt-1 border-t border-white/5 text-xs font-bold w-full">
         {/* Like Button */}
         <button
           type="button"
           onClick={handleToggleLike}
-          className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${
+          className={`py-2 px-1 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all min-h-[44px] ${
             isLiked
               ? 'text-rose-400 bg-rose-500/10 shadow-sm font-black'
               : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
           }`}
         >
           <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />
-          <span className="hidden sm:inline">Like</span>
+          <span className="text-[10px] sm:text-xs">Like</span>
         </button>
 
         {/* Comment Button */}
         <button
           type="button"
           onClick={loadComments}
-          className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${
+          className={`py-2 px-1 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all min-h-[44px] ${
             showComments
               ? 'text-cyan-300 bg-cyan-500/10 font-black'
               : 'text-slate-300 hover:bg-white/5 hover:text-cyan-300'
           }`}
         >
           <MessageSquare className="w-4 h-4" />
-          <span className="hidden sm:inline">Comment</span>
+          <span className="text-[10px] sm:text-xs">Comment</span>
         </button>
 
         {/* Save Button */}
         <button
           type="button"
           onClick={handleToggleSave}
-          className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${
+          className={`py-2 px-1 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 transition-all min-h-[44px] ${
             isSaved
               ? 'text-amber-300 bg-amber-500/10 font-black'
               : 'text-slate-300 hover:bg-white/5 hover:text-amber-300'
           }`}
         >
           <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-400 text-amber-400' : ''}`} />
-          <span className="hidden sm:inline">Bookmark</span>
+          <span className="text-[10px] sm:text-xs">Save</span>
         </button>
 
         {/* Share Button */}
         <button
           type="button"
           onClick={handleSharePost}
-          className="py-2.5 rounded-xl flex items-center justify-center gap-2 text-slate-300 hover:bg-white/5 hover:text-cyan-300 transition-all"
+          className="py-2 px-1 rounded-xl flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-slate-300 hover:bg-white/5 hover:text-cyan-300 transition-all min-h-[44px]"
         >
           {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-          <span className="hidden sm:inline">{copiedLink ? 'Copied' : 'Share'}</span>
+          <span className="text-[10px] sm:text-xs">{copiedLink ? 'Copied' : 'Share'}</span>
         </button>
       </div>
 

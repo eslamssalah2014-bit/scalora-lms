@@ -177,24 +177,24 @@ export const CommunityPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#040D1B] py-4 sm:py-6">
-      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 space-y-4">
+    <div className="min-h-screen bg-[#040D1B] w-full max-w-full overflow-x-hidden py-3 sm:py-6">
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 space-y-4 w-full max-w-full overflow-x-hidden">
         {/* Mobile Sub-Navigation Bar */}
-        <div className="lg:hidden flex items-center justify-between p-2 rounded-2xl bg-[#0B1528] border border-white/10">
+        <div className="lg:hidden grid grid-cols-3 gap-1 p-1.5 rounded-2xl bg-[#0B1528] border border-white/10 w-full max-w-full">
           <button
             type="button"
             onClick={() => setMobileTab('CHANNELS')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all ${
-              mobileTab === 'CHANNELS' ? 'bg-cyan-500 text-white' : 'text-slate-400'
+            className={`py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all min-h-[44px] flex items-center justify-center ${
+              mobileTab === 'CHANNELS' ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Communities ({channels.length})
+            Tracks ({channels.length})
           </button>
           <button
             type="button"
             onClick={() => setMobileTab('FEED')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all ${
-              mobileTab === 'FEED' ? 'bg-cyan-500 text-white' : 'text-slate-400'
+            className={`py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all min-h-[44px] flex items-center justify-center ${
+              mobileTab === 'FEED' ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
             Community Hub
@@ -202,16 +202,16 @@ export const CommunityPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setMobileTab('INFO')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all ${
-              mobileTab === 'INFO' ? 'bg-cyan-500 text-white' : 'text-slate-400'
+            className={`py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all min-h-[44px] flex items-center justify-center ${
+              mobileTab === 'INFO' ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
             }`}
           >
-            Trainers & Info
+            Instructors
           </button>
         </div>
 
         {/* 3-COLUMN MAIN LAYOUT */}
-        <div className="flex flex-col lg:flex-row gap-5 items-start">
+        <div className="flex flex-col lg:flex-row gap-5 items-start w-full max-w-full">
           {/* ========================================================================= */}
           {/* 1. LEFT SIDEBAR: User Card, Navigation & Enrolled Communities */}
           {/* ========================================================================= */}
@@ -234,18 +234,18 @@ export const CommunityPage: React.FC = () => {
           {/* ========================================================================= */}
           {/* 2. CENTER COLUMN: Community Hero, Segmented Tabs & Main Content */}
           {/* ========================================================================= */}
-          <main className={`flex-1 min-w-0 space-y-4 ${mobileTab === 'FEED' ? 'block' : 'hidden lg:block'}`}>
+          <main className={`flex-1 min-w-0 w-full max-w-full space-y-4 ${mobileTab === 'FEED' ? 'block' : 'hidden lg:block'}`}>
             {selectedChannel && (
               <>
                 {/* ========================================================================= */}
                 {/* COMMUNITY HERO SECTION (Premium Header Card) */}
                 {/* ========================================================================= */}
-                <div className="bg-[#0B1528] rounded-3xl p-5 sm:p-6 border border-white/10 shadow-2xl relative overflow-hidden space-y-4 group">
+                <div className="bg-[#0B1528] rounded-3xl p-4 sm:p-6 border border-white/10 shadow-2xl relative overflow-hidden space-y-4 group w-full max-w-full">
                   {/* Subtle Gradient Backdrop */}
                   <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                    <div className="space-y-1.5 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 relative z-10 w-full">
+                    <div className="space-y-1.5 min-w-0 flex-1">
                       {/* Category Badge */}
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
@@ -260,7 +260,7 @@ export const CommunityPage: React.FC = () => {
                       </div>
 
                       {/* Community Title */}
-                      <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
+                      <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight leading-tight break-words">
                         {selectedChannel.name}
                       </h1>
 
@@ -272,7 +272,7 @@ export const CommunityPage: React.FC = () => {
                     </div>
 
                     {/* Quick Metadata Stats */}
-                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <div className="grid grid-cols-2 sm:flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
                       <div className="px-3.5 py-2 rounded-2xl bg-[#071324] border border-white/10 text-center">
                         <div className="text-xs font-black text-purple-300">{trainersCount}</div>
                         <div className="text-[10px] text-slate-400 font-bold">Trainers</div>
@@ -285,67 +285,63 @@ export const CommunityPage: React.FC = () => {
                   </div>
 
                   {/* ========================================================================= */}
-                  {/* LARGE MODERN SEGMENTED COMMUNITY TABS */}
+                  {/* LARGE MODERN SEGMENTED COMMUNITY TABS (Zero Overflow 4-Column Grid on Mobile) */}
                   {/* ========================================================================= */}
-                  <div className="pt-2 border-t border-white/10 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs sm:text-sm font-bold">
+                  <div className="pt-2 border-t border-white/10 grid grid-cols-4 sm:flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold w-full max-w-full">
                     {/* 1. Feed */}
                     <button
                       type="button"
                       onClick={() => setActiveMainTab('FEED')}
-                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
                         activeMainTab === 'FEED'
                           ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
                           : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
                       }`}
                     >
                       <MessageSquare className="w-4 h-4" />
-                      <span>Feed</span>
+                      <span className="text-[10px] sm:text-xs">Feed</span>
                     </button>
 
                     {/* 2. Group Chat */}
                     <button
                       type="button"
                       onClick={() => setActiveMainTab('CHAT')}
-                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
                         activeMainTab === 'CHAT'
                           ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
                           : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
                       }`}
                     >
                       <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-                      <span>Group Chat</span>
-                      <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] uppercase">
-                        Live
-                      </span>
+                      <span className="text-[10px] sm:text-xs">Chat</span>
                     </button>
 
                     {/* 3. Resources */}
                     <button
                       type="button"
                       onClick={() => setActiveMainTab('RESOURCES')}
-                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
                         activeMainTab === 'RESOURCES'
                           ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
                           : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
                       }`}
                     >
                       <FolderDown className="w-4 h-4" />
-                      <span>Resources</span>
+                      <span className="text-[10px] sm:text-xs">Vault</span>
                     </button>
 
                     {/* 4. Members */}
                     <button
                       type="button"
                       onClick={() => setActiveMainTab('MEMBERS')}
-                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
                         activeMainTab === 'MEMBERS'
                           ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
                           : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
                       }`}
                     >
                       <Users className="w-4 h-4" />
-                      <span>Members</span>
-                      <span className="text-xs text-slate-400 font-normal">({selectedChannel.membersCount})</span>
+                      <span className="text-[10px] sm:text-xs">Members</span>
                     </button>
                   </div>
                 </div>
@@ -364,40 +360,40 @@ export const CommunityPage: React.FC = () => {
                     />
 
                     {/* Feed Filter & Search Bar */}
-                    <div className="p-3 bg-[#0B1528] rounded-2xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold">
-                      <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
+                    <div className="p-3 bg-[#0B1528] rounded-2xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold w-full max-w-full">
+                      <div className="grid grid-cols-3 sm:flex items-center gap-1.5 w-full sm:w-auto">
                         <button
                           type="button"
                           onClick={() => setFeedFilter('ALL')}
-                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                          className={`py-2 px-2 rounded-xl transition-all min-h-[40px] flex items-center justify-center text-center ${
                             feedFilter === 'ALL'
-                              ? 'bg-cyan-500 text-white'
+                              ? 'bg-cyan-500 text-white shadow-sm'
                               : 'bg-white/5 text-slate-400 hover:text-white'
                           }`}
                         >
-                          All Discussions
+                          All
                         </button>
                         <button
                           type="button"
                           onClick={() => setFeedFilter('ANNOUNCEMENTS')}
-                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                          className={`py-2 px-2 rounded-xl transition-all min-h-[40px] flex items-center justify-center text-center ${
                             feedFilter === 'ANNOUNCEMENTS'
-                              ? 'bg-rose-500 text-white'
+                              ? 'bg-rose-500 text-white shadow-sm'
                               : 'bg-white/5 text-slate-400 hover:text-white'
                           }`}
                         >
-                          Announcements
+                          News
                         </button>
                         <button
                           type="button"
                           onClick={() => setFeedFilter('SAVED')}
-                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                          className={`py-2 px-2 rounded-xl transition-all min-h-[40px] flex items-center justify-center text-center ${
                             feedFilter === 'SAVED'
-                              ? 'bg-amber-500 text-white'
+                              ? 'bg-amber-500 text-white shadow-sm'
                               : 'bg-white/5 text-slate-400 hover:text-white'
                           }`}
                         >
-                          Saved Bookmarks
+                          Saved
                         </button>
                       </div>
 
@@ -408,7 +404,7 @@ export const CommunityPage: React.FC = () => {
                           placeholder="Filter discussions..."
                           value={postSearch}
                           onChange={(e) => setPostSearch(e.target.value)}
-                          className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
+                          className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 min-h-[40px]"
                         />
                       </div>
                     </div>
