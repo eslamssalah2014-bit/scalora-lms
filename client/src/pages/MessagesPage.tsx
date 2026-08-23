@@ -121,30 +121,28 @@ export const MessagesPage: React.FC = () => {
         setIsPartnerTyping(false);
       }
 
-      // Update conversations sidebar list & unread counters instantly
+      // Update conversations sidebar list & unread counters instantly (move to top without auto-opening)
       setConversations((prev) => {
         const partnerId = message.senderId === user.id ? message.recipientId : message.senderId;
-        const exists = prev.find((c) => c.partner.id === partnerId);
+        const existingIndex = prev.findIndex((c) => c.partner.id === partnerId);
 
-        if (exists) {
-          return prev.map((c) => {
-            if (c.partner.id === partnerId) {
-              return {
-                ...c,
-                lastMessage: {
-                  id: message.id,
-                  content: message.content || (message.attachmentType === 'IMAGE' ? '📷 Image' : '📎 Attachment'),
-                  createdAt: message.createdAt,
-                  isSender: message.senderId === user.id,
-                  isRead: message.isRead,
-                },
-                unreadCount: partnerId === activePartnerId ? 0 : c.unreadCount + 1,
-              };
-            }
-            return c;
-          });
+        if (existingIndex !== -1) {
+          const existing = prev[existingIndex];
+          const updatedConv: Conversation = {
+            ...existing,
+            lastMessage: {
+              id: message.id,
+              content: message.content || (message.attachmentType === 'IMAGE' ? '📷 Image' : '📎 Attachment'),
+              createdAt: message.createdAt,
+              isSender: message.senderId === user.id,
+              isRead: message.isRead,
+            },
+            unreadCount: partnerId === activePartnerId ? 0 : existing.unreadCount + 1,
+          };
+          const others = prev.filter((_, idx) => idx !== existingIndex);
+          return [updatedConv, ...others];
         } else {
-          // Re-fetch conversation list to include the new partner
+          // Re-fetch conversation list to include the new partner (without auto-opening)
           fetchConversations();
           return prev;
         }
@@ -181,7 +179,7 @@ export const MessagesPage: React.FC = () => {
   }, [user?.id, activePartnerId]);
 
   // =========================================================================
-  // DATA FETCHING METHODS
+  // DATA FETCHING METHODS (INBOX FIRST - NO AUTO SELECT)
   // =========================================================================
 
   const fetchConversations = async () => {
@@ -190,9 +188,7 @@ export const MessagesPage: React.FC = () => {
       const res = await api.get<{ success: boolean; conversations: Conversation[] }>('/messages/conversations');
       if (res.success) {
         setConversations(res.conversations);
-        if (!activePartnerId && res.conversations.length > 0) {
-          setActivePartnerId(res.conversations[0].partner.id);
-        }
+        // INBOX FIRST: Do NOT auto-open any conversation. The user decides.
       }
     } catch (err) {
       console.error('Error fetching conversations:', err);
@@ -347,6 +343,29 @@ export const MessagesPage: React.FC = () => {
     setIsNewModalOpen(false);
   };
 
+  const formatMessageTime = (dateStr?: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffSec = (now.getTime() - date.getTime()) / 1000;
+
+    if (diffSec < 60) return 'just now';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    }
+
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
   const filteredConversations = conversations.filter(
     (c) =>
       c.partner.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -377,7 +396,7 @@ export const MessagesPage: React.FC = () => {
           <div className="p-4 sm:p-5 border-b border-white/10 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
-                <span>Chats</span>
+                <span>Inbox</span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
                   Realtime
                 </span>
@@ -411,7 +430,7 @@ export const MessagesPage: React.FC = () => {
             {loadingConversations ? (
               <div className="p-8 text-center flex flex-col items-center justify-center space-y-2">
                 <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
-                <span className="text-xs text-slate-400">Loading chats...</span>
+                <span className="text-xs text-slate-400">Loading inbox...</span>
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="p-8 text-center space-y-3">
@@ -428,6 +447,7 @@ export const MessagesPage: React.FC = () => {
             ) : (
               filteredConversations.map((conv) => {
                 const isSelected = activePartnerId === conv.partner.id;
+                const hasUnread = conv.unreadCount > 0;
                 return (
                   <button
                     key={conv.partner.id}
@@ -455,28 +475,29 @@ export const MessagesPage: React.FC = () => {
                     {/* Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span className="text-xs font-bold text-white truncate">{conv.partner.name}</span>
+                        <span className={`text-xs truncate ${hasUnread ? 'font-black text-white' : 'font-bold text-white'}`}>
+                          {conv.partner.name}
+                        </span>
                         {conv.lastMessage && (
-                          <span className="text-[10px] text-slate-500 flex-shrink-0">
-                            {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                          <span className={`text-[10px] flex-shrink-0 ${hasUnread ? 'font-bold text-cyan-400' : 'text-slate-500'}`}>
+                            {formatMessageTime(conv.lastMessage.createdAt)}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-400 truncate flex items-center gap-1">
-                        {conv.lastMessage ? (
-                          <>
-                            <span className="truncate">{conv.lastMessage.content}</span>
-                            {conv.unreadCount > 0 && (
-                              <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
-                            )}
-                          </>
-                        ) : (
-                          <span className="italic text-slate-500">Tap to chat</span>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className={`text-xs truncate ${hasUnread ? 'text-slate-200 font-semibold' : 'text-slate-400'}`}>
+                          {conv.lastMessage ? (
+                            <span>{conv.lastMessage.content}</span>
+                          ) : (
+                            <span className="italic text-slate-500">Tap to chat</span>
+                          )}
+                        </p>
+                        {hasUnread && (
+                          <span className="px-2 py-0.5 rounded-full bg-cyan-500 text-white font-extrabold text-[10px] shadow-glow-accent flex-shrink-0">
+                            {conv.unreadCount}
+                          </span>
                         )}
-                      </p>
+                      </div>
                     </div>
                   </button>
                 );
@@ -501,11 +522,15 @@ export const MessagesPage: React.FC = () => {
                   {/* Mobile Back Button */}
                   <button
                     type="button"
-                    onClick={() => setActivePartnerId(null)}
-                    className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 min-h-[40px] min-w-[40px] flex items-center justify-center"
-                    title="Back to conversations"
+                    onClick={() => {
+                      setActivePartnerId(null);
+                      setActivePartner(null);
+                    }}
+                    className="md:hidden px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 min-h-[40px] flex items-center gap-1.5 font-bold text-xs"
+                    title="Back to Inbox"
                   >
-                    <ChevronLeft className="w-5 h-5 text-cyan-400" />
+                    <ChevronLeft className="w-4 h-4 text-cyan-400" />
+                    <span>Inbox</span>
                   </button>
 
                   <div className="relative flex-shrink-0">
@@ -762,18 +787,23 @@ export const MessagesPage: React.FC = () => {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3">
-              <Mail className="w-12 h-12 text-slate-600" />
-              <h3 className="text-base font-bold text-white">Select a Conversation</h3>
-              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                Choose an instructor from the left panel or click below to start a new discussion.
-              </p>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 sm:p-12 text-center space-y-4 bg-gradient-to-b from-[#09152A] to-[#071122]">
+              <div className="w-20 h-20 rounded-3xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shadow-glow-accent">
+                <Mail className="w-10 h-10" />
+              </div>
+              <div className="space-y-1.5 max-w-sm">
+                <h3 className="text-xl font-black text-white tracking-tight">Messages</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                  Select a conversation from your inbox to view discussions, or start a new inquiry with an instructor.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(true)}
-                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent"
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent hover:opacity-90 transition-all flex items-center gap-2"
               >
-                Start Discussion
+                <Plus className="w-4 h-4" />
+                <span>Start a new conversation</span>
               </button>
             </div>
           )}
