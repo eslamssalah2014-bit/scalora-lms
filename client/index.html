@@ -25,6 +25,22 @@
     <!-- Android / Chrome Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="Scalora" />
+
+    <!-- Early BeforeInstallPrompt Diagnostic Trap -->
+    <script>
+      window.deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        console.log('⚡ [PWA-DIAGNOSTIC] beforeinstallprompt fired at timestamp:', new Date().toISOString());
+        e.preventDefault();
+        window.deferredPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-prompt-ready'));
+      });
+      window.addEventListener('appinstalled', function(e) {
+        console.log('🎉 [PWA-DIAGNOSTIC] appinstalled event fired at timestamp:', new Date().toISOString());
+        window.deferredPrompt = null;
+        window.dispatchEvent(new CustomEvent('pwa-installed'));
+      });
+    </script>
     
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

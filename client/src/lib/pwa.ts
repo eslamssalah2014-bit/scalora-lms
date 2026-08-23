@@ -1,8 +1,8 @@
 /**
- * Progressive Web App (PWA) Registration & Install Manager
+ * Progressive Web App (PWA) Registration & Forensic Install Manager
  */
 
-type InstallPromptCallback = (e: any) => void;
+type InstallPromptCallback = (canInstall: boolean) => void;
 
 class PwaManager {
   private deferredPrompt: any = null;
@@ -11,24 +11,47 @@ class PwaManager {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      // Check if already running in standalone PWA mode
+      // 1. Check if already running in standalone PWA mode
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true;
 
       this.isInstalled = isStandalone;
 
-      // Listen for browser install prompt trigger
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        this.deferredPrompt = e;
+      // 2. Pick up early captured prompt if available
+      if ((window as any).deferredPrompt) {
+        this.deferredPrompt = (window as any).deferredPrompt;
+        console.log('⚡ [PWA-DIAGNOSTIC] Picked up early deferredPrompt from window');
+      }
+
+      // 3. Listen to early trap custom events
+      window.addEventListener('pwa-prompt-ready', () => {
+        this.deferredPrompt = (window as any).deferredPrompt;
+        console.log('⚡ [PWA-DIAGNOSTIC] Received pwa-prompt-ready event');
         this.notifyListeners();
       });
 
-      // Listen for app installed event
-      window.addEventListener('appinstalled', () => {
+      window.addEventListener('pwa-installed', () => {
         this.isInstalled = true;
         this.deferredPrompt = null;
+        console.log('🎉 [PWA-DIAGNOSTIC] Received pwa-installed event');
+        this.notifyListeners();
+      });
+
+      // 4. Also keep direct beforeinstallprompt listener
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('⚡ [PWA-DIAGNOSTIC] beforeinstallprompt fired directly in PwaManager');
+        e.preventDefault();
+        this.deferredPrompt = e;
+        (window as any).deferredPrompt = e;
+        this.notifyListeners();
+      });
+
+      window.addEventListener('appinstalled', (e) => {
+        console.log('🎉 [PWA-DIAGNOSTIC] appinstalled event fired directly in PwaManager:', e);
+        this.isInstalled = true;
+        this.deferredPrompt = null;
+        (window as any).deferredPrompt = null;
         this.notifyListeners();
       });
     }
@@ -43,7 +66,7 @@ class PwaManager {
         navigator.serviceWorker
           .register('/sw.js')
           .then((reg) => {
-            console.log('✅ Scalora PWA Service Worker Registered:', reg.scope);
+            console.log('✅ [PWA-DIAGNOSTIC] Scalora PWA Service Worker Registered. Scope:', reg.scope);
 
             // Check for updates
             reg.onupdatefound = () => {
@@ -51,14 +74,14 @@ class PwaManager {
               if (installingWorker) {
                 installingWorker.onstatechange = () => {
                   if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('🚀 New Scalora PWA update available.');
+                    console.log('🚀 [PWA-DIAGNOSTIC] New Scalora PWA update available.');
                   }
                 };
               }
             };
           })
           .catch((err) => {
-            console.warn('⚠️ Service Worker Registration failed:', err);
+            console.warn('⚠️ [PWA-DIAGNOSTIC] Service Worker Registration failed:', err);
           });
       });
     }
@@ -68,7 +91,8 @@ class PwaManager {
    * Check if prompt is available to install
    */
   public canInstall(): boolean {
-    return Boolean(this.deferredPrompt) && !this.isInstalled;
+    const hasPrompt = Boolean(this.deferredPrompt || (typeof window !== 'undefined' && (window as any).deferredPrompt));
+    return hasPrompt && !this.isInstalled;
   }
 
   /**
@@ -82,17 +106,33 @@ class PwaManager {
    * Prompt user to install
    */
   public async promptInstall(): Promise<'accepted' | 'dismissed' | 'unsupported'> {
-    if (!this.deferredPrompt) {
+    console.log('⚡ [PWA-DIAGNOSTIC] install button clicked');
+
+    const promptEvent = this.deferredPrompt || (typeof window !== 'undefined' ? (window as any).deferredPrompt : null);
+
+    if (!promptEvent) {
+      console.warn('⚠️ [PWA-DIAGNOSTIC] prompt() cannot be called: deferredPrompt is null');
       return 'unsupported';
     }
 
     try {
-      this.deferredPrompt.prompt();
-      const choice = await this.deferredPrompt.userChoice;
+      console.log('⚡ [PWA-DIAGNOSTIC] prompt() called on native event');
+      await promptEvent.prompt();
+
+      console.log('⚡ [PWA-DIAGNOSTIC] awaiting userChoice...');
+      const choiceResult = await promptEvent.userChoice;
+
+      console.log('⚡ [PWA-DIAGNOSTIC] userChoice result:', choiceResult.outcome);
+
       this.deferredPrompt = null;
+      if (typeof window !== 'undefined') {
+        (window as any).deferredPrompt = null;
+      }
       this.notifyListeners();
-      return choice.outcome;
-    } catch {
+
+      return choiceResult.outcome;
+    } catch (err) {
+      console.error('❌ [PWA-DIAGNOSTIC] Error during prompt() execution:', err);
       return 'unsupported';
     }
   }
@@ -109,18 +149,9 @@ class PwaManager {
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach((cb) => cb(this.canInstall()));
-  }
-
-  /**
-   * Request Web Push Notification Permission
-   */
-  public async requestNotificationPermission(): Promise<NotificationPermission> {
-    if (!('Notification' in window)) {
-      return 'denied';
-    }
-    const permission = await Notification.requestPermission();
-    return permission;
+    const installable = this.canInstall();
+    console.log('⚡ [PWA-DIAGNOSTIC] Notifying listeners. canInstall =', installable);
+    this.listeners.forEach((cb) => cb(installable));
   }
 }
 

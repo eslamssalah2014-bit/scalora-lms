@@ -27,6 +27,7 @@ export const PwaInstallBanner: React.FC = () => {
 
     // Listen to PWA installable availability
     const unsub = pwa.onInstallChange((available) => {
+      console.log('⚡ [PWA-BANNER] onInstallChange received available =', available);
       setCanInstall(available);
     });
 
@@ -34,12 +35,14 @@ export const PwaInstallBanner: React.FC = () => {
   }, []);
 
   const handleInstallClick = async () => {
+    console.log('⚡ [PWA-BANNER] Install button clicked. isIos =', isIos, 'canInstall =', canInstall);
     if (isIos) {
       setShowIosGuide(true);
       return;
     }
 
     const outcome = await pwa.promptInstall();
+    console.log('⚡ [PWA-BANNER] promptInstall outcome =', outcome);
     if (outcome === 'accepted') {
       setCanInstall(false);
     }
