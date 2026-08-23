@@ -14,6 +14,7 @@ import {
   Shield,
   Sparkles,
   Users,
+  Mail,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -113,6 +114,15 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
+                {/* Messages Shortcut */}
+                <Link
+                  to="/messages"
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all"
+                  title="Direct Messages"
+                >
+                  <Mail className="w-4 h-4" />
+                </Link>
+
                 {/* Community Notifications Bell */}
                 <NotificationDropdown />
 
@@ -160,6 +170,14 @@ export const Navbar: React.FC = () => {
                           <Shield className="w-4 h-4 text-scalora-accent" />
                           <span>Admin Console</span>
                         </Link>
+                      ) : user.role === 'TRAINER' ? (
+                        <Link
+                          to="/trainer"
+                          className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/20 transition-colors font-bold"
+                        >
+                          <Shield className="w-4 h-4 text-cyan-400" />
+                          <span>Trainer Workspace</span>
+                        </Link>
                       ) : (
                         <Link
                           to="/dashboard"
@@ -169,6 +187,14 @@ export const Navbar: React.FC = () => {
                           <span>Student Dashboard</span>
                         </Link>
                       )}
+
+                      <Link
+                        to="/messages"
+                        className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-slate-200 hover:text-white hover:bg-white/10 transition-colors"
+                      >
+                        <Mail className="w-4 h-4 text-cyan-400" />
+                        <span>Direct Inquiries</span>
+                      </Link>
 
                       <Link
                         to="/community"

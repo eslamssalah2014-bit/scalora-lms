@@ -12,6 +12,9 @@ import paymentRoutes from './routes/payment.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import leadRoutes from './routes/lead.routes.js';
 import communityRoutes from './routes/community.routes.js';
+import trainerRoutes from './routes/trainer.routes.js';
+import messageRoutes from './routes/message.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 
 dotenv.config();
 
@@ -108,8 +111,17 @@ app.use('/payments', paymentRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/leads', leadRoutes);
 
+app.use('/api/community/chat', chatRoutes);
+app.use('/community/chat', chatRoutes);
+
 app.use('/api/community', communityRoutes);
 app.use('/community', communityRoutes);
+
+app.use('/api/trainers', trainerRoutes);
+app.use('/trainers', trainerRoutes);
+
+app.use('/api/messages', messageRoutes);
+app.use('/messages', messageRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);

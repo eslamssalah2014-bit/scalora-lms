@@ -8,6 +8,10 @@ import { ChannelInfoPanel } from '../components/community/ChannelInfoPanel';
 import { PostComposer } from '../components/community/PostComposer';
 import { PostCard } from '../components/community/PostCard';
 import { MemberProfileModal } from '../components/community/MemberProfileModal';
+import { CommunityChatRoom } from '../components/community/CommunityChatRoom';
+import { CommunityMembersTab } from '../components/community/CommunityMembersTab';
+import { CommunityResourcesTab } from '../components/community/CommunityResourcesTab';
+import { CommunityEventsTab } from '../components/community/CommunityEventsTab';
 import {
   Lock,
   BookOpen,
@@ -29,6 +33,9 @@ import {
   SlidersHorizontal,
   ChevronRight,
   Info,
+  Calendar,
+  FolderDown,
+  Radio,
 } from 'lucide-react';
 
 export const CommunityPage: React.FC = () => {
@@ -39,6 +46,9 @@ export const CommunityPage: React.FC = () => {
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [loadingChannels, setLoadingChannels] = useState(true);
+
+  // 5-Tab Community Navigation ('FEED' | 'CHAT' | 'MEMBERS' | 'RESOURCES' | 'EVENTS')
+  const [activeMainTab, setActiveMainTab] = useState<'FEED' | 'CHAT' | 'MEMBERS' | 'RESOURCES' | 'EVENTS'>('FEED');
 
   // Feed State
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -370,29 +380,102 @@ export const CommunityPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Feed Filter Chips & Live Search */}
-              <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                {/* Filter Chips */}
+              {/* 5-Tab Community Navigation Switcher */}
+              <div className="pt-3 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab('FEED')}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                    activeMainTab === 'FEED'
+                      ? 'bg-cyan-500 text-white shadow-glow-accent'
+                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Discussion Feed</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab('CHAT')}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                    activeMainTab === 'CHAT'
+                      ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <span className="text-sm">⚡</span>
+                  <span>Group Chat</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab('MEMBERS')}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                    activeMainTab === 'MEMBERS'
+                      ? 'bg-cyan-500 text-white shadow-glow-accent'
+                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Members</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab('RESOURCES')}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                    activeMainTab === 'RESOURCES'
+                      ? 'bg-purple-500 text-white shadow-md'
+                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <FolderDown className="w-3.5 h-3.5" />
+                  <span>Resources</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab('EVENTS')}
+                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
+                    activeMainTab === 'EVENTS'
+                      ? 'bg-rose-500 text-white shadow-md'
+                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Live AMAs</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 1: DISCUSSION FEED */}
+          {activeMainTab === 'FEED' && (
+            <>
+              {/* Feed Sub-Filter Chips & Live Search */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0B1528] p-3 rounded-2xl border border-white/10">
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
                   <button
                     type="button"
                     onClick={() => setFeedFilter('ALL')}
-                    className={`px-3.5 py-1.5 rounded-xl transition-all ${
+                    className={`px-3 py-1.5 rounded-xl transition-all ${
                       feedFilter === 'ALL'
-                        ? 'bg-cyan-500 text-white shadow-glow-accent'
-                        : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                        : 'bg-white/5 text-slate-300 hover:text-white'
                     }`}
                   >
-                    All Discussions
+                    All
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setFeedFilter('ANNOUNCEMENTS')}
-                    className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                    className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
                       feedFilter === 'ANNOUNCEMENTS'
-                        ? 'bg-amber-500 text-white shadow-glow-amber'
-                        : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
+                        : 'bg-white/5 text-slate-300 hover:text-white'
                     }`}
                   >
                     <Megaphone className="w-3 h-3" />
@@ -402,31 +485,17 @@ export const CommunityPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFeedFilter('RESOURCES')}
-                    className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                    className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
                       feedFilter === 'RESOURCES'
-                        ? 'bg-purple-500 text-white shadow-md'
-                        : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
+                        : 'bg-white/5 text-slate-300 hover:text-white'
                     }`}
                   >
                     <Paperclip className="w-3 h-3" />
                     <span>Resources</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFeedFilter('MEDIA')}
-                    className={`px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-                      feedFilter === 'MEDIA'
-                        ? 'bg-emerald-500 text-white shadow-md'
-                        : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <ImageIcon className="w-3 h-3" />
-                    <span>Media</span>
-                  </button>
                 </div>
 
-                {/* Post Live Search */}
                 <div className="relative min-w-[200px]">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
@@ -438,48 +507,68 @@ export const CommunityPage: React.FC = () => {
                   />
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Facebook-Style Post Creator */}
-          {currentChannel && feedFilter !== 'SAVED' && (
-            <PostComposer
-              channelId={currentChannel.id}
-              channelName={currentChannel.name}
-              isLocked={currentChannel.isLocked}
-              onPostCreated={handlePostCreated}
-            />
-          )}
-
-          {/* Posts Feed Stream */}
-          <div className="space-y-4">
-            {loadingPosts ? (
-              <div className="py-20 text-center text-xs text-slate-400 flex flex-col items-center gap-3">
-                <Loader2 className="w-9 h-9 animate-spin text-cyan-400" />
-                <span>Fetching latest discussions...</span>
-              </div>
-            ) : posts.length === 0 ? (
-              <div className="text-center py-16 bg-[#0B1528] rounded-3xl space-y-3 p-8 border border-white/10 shadow-xl">
-                <MessageSquare className="w-12 h-12 text-slate-500 mx-auto" />
-                <h3 className="text-base font-bold text-white">No discussions found</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                  {postSearch
-                    ? `No discussions matching "${postSearch}". Try another keyword.`
-                    : 'Be the first to share an insight, ask an architecture question, or post a code blueprint!'}
-                </p>
-              </div>
-            ) : (
-              posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onPostDeleted={handlePostDeleted}
-                  onPostUpdated={handlePostUpdated}
-                  onUserClick={(uid) => setInspectUserId(uid)}
+              {/* Post Composer */}
+              {currentChannel && feedFilter !== 'SAVED' && (
+                <PostComposer
+                  channelId={currentChannel.id}
+                  channelName={currentChannel.name}
+                  isLocked={currentChannel.isLocked}
+                  onPostCreated={handlePostCreated}
                 />
-              ))
-            )}
-          </div>
+              )}
+
+              {/* Feed Stream */}
+              <div className="space-y-4">
+                {loadingPosts ? (
+                  <div className="py-20 text-center text-xs text-slate-400 flex flex-col items-center gap-3">
+                    <Loader2 className="w-9 h-9 animate-spin text-cyan-400" />
+                    <span>Fetching latest discussions...</span>
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="text-center py-16 bg-[#0B1528] rounded-3xl space-y-3 p-8 border border-white/10 shadow-xl">
+                    <MessageSquare className="w-12 h-12 text-slate-500 mx-auto" />
+                    <h3 className="text-base font-bold text-white">No discussions found</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                      {postSearch
+                        ? `No discussions matching "${postSearch}". Try another keyword.`
+                        : 'Be the first to share an insight, ask an architecture question, or post a code blueprint!'}
+                    </p>
+                  </div>
+                ) : (
+                  posts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onPostDeleted={handlePostDeleted}
+                      onPostUpdated={handlePostUpdated}
+                      onUserClick={(uid) => setInspectUserId(uid)}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {/* TAB 2: LIVE GROUP CHAT ROOM */}
+          {activeMainTab === 'CHAT' && currentChannel && (
+            <CommunityChatRoom channelId={currentChannel.id} channelName={currentChannel.name} />
+          )}
+
+          {/* TAB 3: MEMBERS DIRECTORY */}
+          {activeMainTab === 'MEMBERS' && (
+            <CommunityMembersTab channel={currentChannel} onUserClick={(uid) => setInspectUserId(uid)} />
+          )}
+
+          {/* TAB 4: RESOURCE VAULT */}
+          {activeMainTab === 'RESOURCES' && (
+            <CommunityResourcesTab posts={posts} />
+          )}
+
+          {/* TAB 5: LIVE AMAs & EVENTS */}
+          {activeMainTab === 'EVENTS' && (
+            <CommunityEventsTab />
+          )}
         </main>
 
         {/* RIGHT COLUMN: Community Info & Leaderboard */}

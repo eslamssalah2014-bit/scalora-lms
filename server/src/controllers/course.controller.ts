@@ -15,6 +15,7 @@ const courseSchema = z.object({
   category: z.string().min(2, 'Category is required'),
   level: z.string().optional().default('All Levels'),
   isPublished: z.boolean().optional().default(false),
+  trainerIds: z.array(z.string()).optional(),
 });
 
 const generateSlug = (title: string): string => {
@@ -67,6 +68,13 @@ export const getPublishedCourses = async (req: Request, res: Response): Promise<
         quizzes: {
           select: { id: true, title: true },
         },
+        trainers: {
+          include: {
+            trainer: {
+              select: { id: true, name: true, avatar: true, title: true, bio: true, linkedin: true, website: true },
+            },
+          },
+        },
         _count: {
           select: { enrollments: true },
         },
@@ -92,6 +100,7 @@ export const getPublishedCourses = async (req: Request, res: Response): Promise<
         lessonsCount: allLessons.length,
         quizzesCount: course.quizzes.length,
         studentsCount: course._count.enrollments,
+        trainers: course.trainers.map((t) => t.trainer),
       };
     });
 
@@ -112,8 +121,17 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
           },
         },
         quizzes: true,
+        trainers: {
+          include: {
+            trainer: {
+              select: { id: true, name: true, avatar: true, title: true },
+            },
+          },
+        },
         _count: {
-          select: { enrollments: true },
+          select: {
+            enrollments: true,
+          },
         },
       },
     });
@@ -174,6 +192,13 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
                 explanation: true,
               },
               orderBy: { order: 'asc' },
+            },
+          },
+        },
+        trainers: {
+          include: {
+            trainer: {
+              select: { id: true, name: true, avatar: true, title: true, bio: true, linkedin: true, website: true },
             },
           },
         },
@@ -239,6 +264,7 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
         studentsCount: course._count.enrollments,
         isEnrolled,
         userProgress: progressSummary,
+        trainers: course.trainers.map((t) => t.trainer),
       },
     });
   } catch (error: any) {
@@ -249,8 +275,9 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
 export const createCourse = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const validatedData = courseSchema.parse(req.body);
+    const { trainerIds, ...courseData } = validatedData;
 
-    let slug = validatedData.slug || generateSlug(validatedData.title);
+    let slug = courseData.slug || generateSlug(courseData.title);
 
     const existing = await prisma.course.findUnique({ where: { slug } });
     if (existing) {
@@ -259,17 +286,29 @@ export const createCourse = async (req: AuthenticatedRequest, res: Response): Pr
 
     const course = await prisma.course.create({
       data: {
-        title: validatedData.title,
+        title: courseData.title,
         slug,
-        description: validatedData.description,
-        thumbnail: validatedData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
-        price: validatedData.price,
-        instructor: validatedData.instructor,
-        category: validatedData.category,
-        level: validatedData.level || 'All Levels',
-        isPublished: validatedData.isPublished || false,
+        description: courseData.description,
+        thumbnail: courseData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
+        price: courseData.price,
+        instructor: courseData.instructor,
+        category: courseData.category,
+        level: courseData.level || 'All Levels',
+        isPublished: courseData.isPublished || false,
       },
     });
+
+    // Assign trainers if provided
+    if (trainerIds && trainerIds.length > 0) {
+      for (const trainerId of trainerIds) {
+        await prisma.courseTrainer.create({
+          data: {
+            courseId: course.id,
+            trainerId,
+          },
+        });
+      }
+    }
 
     // Automatically create linked Community Channel for this course
     await communityService.ensureCourseChannel(course.id, course.title, course.description);
@@ -298,6 +337,7 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
   try {
     const id = req.params.id as string;
     const validatedData = courseSchema.partial().parse(req.body);
+    const { trainerIds, ...courseData } = validatedData;
 
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
@@ -307,8 +347,24 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
 
     const updated = await prisma.course.update({
       where: { id },
-      data: validatedData,
+      data: courseData,
     });
+
+    // Sync trainers if array provided
+    if (trainerIds !== undefined) {
+      await prisma.courseTrainer.deleteMany({
+        where: { courseId: id },
+      });
+
+      for (const trainerId of trainerIds) {
+        await prisma.courseTrainer.create({
+          data: {
+            courseId: id,
+            trainerId,
+          },
+        });
+      }
+    }
 
     // Audit Log
     await auditService.log({

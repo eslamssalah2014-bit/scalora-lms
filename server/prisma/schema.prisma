@@ -20,6 +20,9 @@ model User {
   avatar         String?
   bio            String?
   phone          String?
+  title          String?          // Trainer Job Title e.g. "Senior Cloud Architect"
+  linkedin       String?          // LinkedIn profile link
+  website        String?          // Portfolio / Website URL
   status         String           @default("ACTIVE") // "ACTIVE" | "INACTIVE"
   lastLoginAt    DateTime?
   deletedAt      DateTime?
@@ -33,6 +36,12 @@ model User {
   certificates   Certificate[]
   paymentRequests PaymentRequest[]
   passwordSetupTokens PasswordSetupToken[]
+
+  // Trainer & Messaging Relations
+  assignedCourses        CourseTrainer[]
+  sentDirectMessages     DirectMessage[]          @relation("MessageSender")
+  receivedDirectMessages DirectMessage[]          @relation("MessageRecipient")
+  communityChatMessages  CommunityChatMessage[]
 
   // Community Relations
   communityMemberships   CommunityMember[]
@@ -79,6 +88,7 @@ model Course {
   certificates Certificate[]
   paymentRequests PaymentRequest[]
   communityChannel CommunityChannel?
+  trainers    CourseTrainer[]
 
   @@map("courses")
 }
@@ -334,6 +344,7 @@ model CommunityChannel {
   members       CommunityMember[]
   posts         CommunityPost[]
   notifications CommunityNotification[]
+  chatMessages  CommunityChatMessage[]
 
   @@map("community_channels")
 }
@@ -437,6 +448,61 @@ model CommunityNotification {
 
   @@map("community_notifications")
 }
+
+// ============================================================================
+// TRAINERS, MESSAGING & REAL-TIME COMMUNITY CHAT MODELS
+// ============================================================================
+
+model CourseTrainer {
+  id        String    @id @default(cuid())
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  trainerId String
+  trainer   User      @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  role      String    @default("PRIMARY") // "PRIMARY" | "CO_TRAINER" | "ASSISTANT"
+  createdAt DateTime  @default(now())
+
+  @@unique([courseId, trainerId])
+  @@map("course_trainers")
+}
+
+model DirectMessage {
+  id             String    @id @default(cuid())
+  senderId       String
+  sender         User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      User      @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  courseId       String?   // Context course ID
+  content        String
+  attachmentUrl  String?
+  attachmentName String?
+  attachmentType String?   // "IMAGE" | "FILE"
+  isRead         Boolean   @default(false)
+  readAt         DateTime?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@map("direct_messages")
+}
+
+model CommunityChatMessage {
+  id        String           @id @default(cuid())
+  channelId String
+  channel   CommunityChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  mediaUrl  String?
+  fileUrl   String?
+  fileName  String?
+  parentId  String?          // Reply to message ID
+  isPinned  Boolean          @default(false)
+  deletedAt DateTime?
+  createdAt DateTime         @default(now())
+
+  @@map("community_chat_messages")
+}
+
 
 
 

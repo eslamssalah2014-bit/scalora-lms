@@ -251,6 +251,63 @@ export const CourseDetailsPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Assigned Instructors & Trainers Section */}
+          {course.trainers && course.trainers.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <Users className="w-5 h-5 text-cyan-400" />
+                <span>Assigned Instructors & Cohort Trainers</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {course.trainers.map((trainer) => (
+                  <div
+                    key={trainer.id}
+                    className="p-5 rounded-2xl bg-[#0B1528] border border-cyan-500/20 hover:border-cyan-400/40 transition-all space-y-3 shadow-lg"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={
+                          trainer.avatar ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(trainer.name)}&background=0284C7&color=fff`
+                        }
+                        alt={trainer.name}
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-cyan-500/30 shadow-md"
+                      />
+                      <div>
+                        <h4 className="text-sm font-bold text-white leading-tight">{trainer.name}</h4>
+                        <div className="text-xs text-cyan-300 font-semibold mt-0.5">
+                          {trainer.title || 'Course Lead'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {trainer.bio && (
+                      <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed bg-[#091324] p-3 rounded-xl border border-white/5">
+                        {trainer.bio}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-[10px] uppercase font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                        Certified Trainer
+                      </span>
+                      {isEnrolled && (
+                        <Link
+                          to={`/messages?trainer=${trainer.id}`}
+                          className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                        >
+                          <span>Ask Question</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quizzes Preview */}
           {course.quizzes && course.quizzes.length > 0 && (
             <div className="space-y-4">

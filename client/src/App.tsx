@@ -35,6 +35,11 @@ import { AdminEnrollmentsPage } from './pages/admin/AdminEnrollmentsPage';
 import { AdminStudentsPage } from './pages/admin/AdminStudentsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminCommunityPage } from './pages/admin/AdminCommunityPage';
+import { AdminTrainersPage } from './pages/admin/AdminTrainersPage';
+
+// Trainer & Messaging Pages
+import { TrainerDashboardPage } from './pages/trainer/TrainerDashboardPage';
+import { MessagesPage } from './pages/MessagesPage';
 
 // Layout with Header & Footer
 const MainLayout: React.FC = () => {
@@ -76,6 +81,26 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
+          {/* Direct Messages & Student Inquiry Module */}
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <MessagesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Dedicated Trainer Workspace */}
+          <Route
+            path="/trainer"
+            element={
+              <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+                <TrainerDashboardPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* Full-Screen Distraction-Free Classroom Learning Player */}
@@ -108,6 +133,7 @@ export const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="trainers" element={<AdminTrainersPage />} />
           <Route path="community" element={<AdminCommunityPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
           <Route path="leads" element={<AdminLeadsPage />} />

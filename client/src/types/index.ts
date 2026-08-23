@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'STUDENT';
+export type Role = 'ADMIN' | 'STUDENT' | 'TRAINER';
 
 export interface User {
   id: string;
@@ -7,11 +7,38 @@ export interface User {
   role: Role;
   avatar?: string | null;
   bio?: string | null;
+  title?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
   phone?: string | null;
   status?: 'ACTIVE' | 'INACTIVE' | string;
   lastLoginAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Trainer {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  avatar?: string | null;
+  title?: string | null;
+  bio?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | string;
+  assignedCourses?: {
+    id?: string;
+    course: {
+      id: string;
+      title: string;
+      slug: string;
+      thumbnail?: string | null;
+      _count?: { enrollments: number };
+    };
+  }[];
+  createdAt?: string;
 }
 
 export interface StudentStats {
@@ -111,6 +138,8 @@ export interface Course {
   studentsCount?: number;
   modules?: Module[];
   quizzes?: Quiz[];
+  trainers?: Trainer[];
+  trainerIds?: string[];
   isEnrolled?: boolean;
   userProgress?: {
     completedLessonIds: string[];
@@ -455,6 +484,73 @@ export interface CommunityAdminOverview {
     commentsCount: number;
   }[];
 }
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  courseId?: string | null;
+  content: string;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentType?: 'IMAGE' | 'FILE' | null;
+  isRead: boolean;
+  readAt?: string | null;
+  createdAt: string;
+  sender?: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    role: string;
+    title?: string | null;
+  };
+  recipient?: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    role: string;
+    title?: string | null;
+  };
+}
+
+export interface Conversation {
+  partner: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    role: string;
+    title?: string | null;
+  };
+  lastMessage: {
+    id: string;
+    content: string;
+    createdAt: string;
+    isSender: boolean;
+    isRead: boolean;
+  };
+  unreadCount: number;
+}
+
+export interface CommunityChatMessage {
+  id: string;
+  channelId: string;
+  userId: string;
+  content: string;
+  mediaUrl?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  parentId?: string | null;
+  isPinned: boolean;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    role: string;
+    title?: string | null;
+  };
+}
+
 
 
 

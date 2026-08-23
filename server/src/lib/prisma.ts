@@ -38,6 +38,9 @@ export const PROTECTED_TABLES = [
   'CommunityChannel',
   'CommunityPost',
   'CommunityComment',
+  'CourseTrainer',
+  'DirectMessage',
+  'CommunityChatMessage',
 ];
 
 export const SOFT_DELETE_MODELS = [
@@ -56,6 +59,8 @@ export const SOFT_DELETE_MODELS = [
   'CommunityChannel',
   'CommunityPost',
   'CommunityComment',
+  'DirectMessage',
+  'CommunityChatMessage',
 ];
 
 // Prisma Middleware: Intercepts & Blocks Destructive Queries

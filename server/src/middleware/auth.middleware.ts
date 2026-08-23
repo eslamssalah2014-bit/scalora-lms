@@ -92,3 +92,27 @@ export const requireAdmin = (
   }
   next();
 };
+
+export const requireTrainerOrAdmin = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'TRAINER')) {
+    res.status(403).json({ success: false, message: 'Access denied: Trainer or Admin privileges required' });
+    return;
+  }
+  next();
+};
+
+export const requireTrainer = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user || req.user.role !== 'TRAINER') {
+    res.status(403).json({ success: false, message: 'Access denied: Trainer privileges required' });
+    return;
+  }
+  next();
+};

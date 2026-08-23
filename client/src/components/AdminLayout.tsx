@@ -27,6 +27,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
+    { label: 'Trainers', path: '/admin/trainers', icon: Shield },
     { label: 'Community Management', path: '/admin/community', icon: MessageSquare },
     { label: 'Payments Verification', path: '/admin/payments', icon: CreditCard },
     { label: 'Leads Center', path: '/admin/leads', icon: Target },

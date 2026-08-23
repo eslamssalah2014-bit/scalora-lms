@@ -70,10 +70,33 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
           </p>
         </div>
 
-        {/* Instructor & Meta */}
+        {/* Instructor / Assigned Trainers & Meta */}
         <div className="pt-2 border-t border-scalora-blue/15 space-y-3">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-medium text-slate-300">By {course.instructor}</span>
+            {course.trainers && course.trainers.length > 0 ? (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex -space-x-1.5 overflow-hidden">
+                  {course.trainers.slice(0, 3).map((tr) => (
+                    <img
+                      key={tr.id}
+                      src={
+                        tr.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(tr.name)}&background=0284C7&color=fff`
+                      }
+                      alt={tr.name}
+                      title={`${tr.name} - ${tr.title || 'Trainer'}`}
+                      className="inline-block h-5 w-5 rounded-full ring-2 ring-[#0B1528] object-cover"
+                    />
+                  ))}
+                </div>
+                <span className="font-semibold text-slate-200 truncate max-w-[120px]">
+                  {course.trainers.map((t) => t.name).join(', ')}
+                </span>
+              </div>
+            ) : (
+              <span className="font-medium text-slate-300">By {course.instructor}</span>
+            )}
+
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
                 <BookOpen className="w-3.5 h-3.5 text-scalora-blue" />

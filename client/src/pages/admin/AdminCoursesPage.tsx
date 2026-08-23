@@ -48,6 +48,11 @@ export const AdminCoursesPage: React.FC = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Available Trainers State
+  const [availableTrainers, setAvailableTrainers] = useState<any[]>([]);
+  const [selectedTrainerIds, setSelectedTrainerIds] = useState<string[]>([]);
+  const [trainerSearch, setTrainerSearch] = useState('');
+
   // Form Fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -61,7 +66,19 @@ export const AdminCoursesPage: React.FC = () => {
   useEffect(() => {
     fetchCourses();
     fetchCategories();
+    fetchTrainers();
   }, []);
+
+  const fetchTrainers = async () => {
+    try {
+      const res = await api.get<{ success: boolean; trainers: any[] }>('/trainers');
+      if (res.success && Array.isArray(res.trainers)) {
+        setAvailableTrainers(res.trainers);
+      }
+    } catch (err) {
+      console.error('Failed to load trainers:', err);
+    }
+  };
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -155,6 +172,8 @@ export const AdminCoursesPage: React.FC = () => {
     setCategory(categories.length > 0 ? categories[0].name : 'Cloud Architecture');
     setLevel('All Levels');
     setIsPublished(true);
+    setSelectedTrainerIds([]);
+    setTrainerSearch('');
     setFormError(null);
     setIsInlineAddingCat(false);
     setInlineCatName('');
@@ -171,6 +190,8 @@ export const AdminCoursesPage: React.FC = () => {
     setCategory(course.category);
     setLevel(course.level || 'All Levels');
     setIsPublished(course.isPublished);
+    setSelectedTrainerIds(course.trainers ? course.trainers.map((t) => t.id) : []);
+    setTrainerSearch('');
     setFormError(null);
     setIsInlineAddingCat(false);
     setInlineCatName('');
@@ -191,6 +212,7 @@ export const AdminCoursesPage: React.FC = () => {
       category,
       level,
       isPublished,
+      trainerIds: selectedTrainerIds,
     };
 
     try {
@@ -624,6 +646,83 @@ export const AdminCoursesPage: React.FC = () => {
               placeholder="Provide a comprehensive summary of what students will learn..."
               className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
             />
+          </div>
+
+          {/* Assigned Trainers Selection Section */}
+          <div className="space-y-2 p-3.5 rounded-2xl bg-[#0B1528] border border-cyan-500/30">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5" />
+                <span>Assigned Instructors & Trainers</span>
+              </label>
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {selectedTrainerIds.length} selected
+              </span>
+            </div>
+
+            {/* Trainer Search Input */}
+            <div className="relative">
+              <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search trainers..."
+                value={trainerSearch}
+                onChange={(e) => setTrainerSearch(e.target.value)}
+                className="w-full pl-7 pr-3 py-1.5 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+
+            {/* Trainers Chips Grid */}
+            <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+              {availableTrainers
+                .filter((t) => t.name.toLowerCase().includes(trainerSearch.toLowerCase()))
+                .map((t) => {
+                  const isSelected = selectedTrainerIds.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedTrainerIds(selectedTrainerIds.filter((id) => id !== t.id));
+                        } else {
+                          setSelectedTrainerIds([...selectedTrainerIds, t.id]);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs transition-all border ${
+                        isSelected
+                          ? 'bg-cyan-500/20 border-cyan-400/50 text-white shadow-sm'
+                          : 'bg-[#091324] border-white/5 text-slate-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={
+                            t.avatar ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0284C7&color=fff`
+                          }
+                          alt={t.name}
+                          className="w-6 h-6 rounded-lg object-cover border border-white/10"
+                        />
+                        <div>
+                          <div className="font-bold text-white leading-tight">{t.name}</div>
+                          <div className="text-[10px] text-slate-400">{t.title || 'Trainer'}</div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`w-4 h-4 rounded-md flex items-center justify-center border ${
+                          isSelected
+                            ? 'bg-cyan-500 border-cyan-400 text-white'
+                            : 'border-slate-600 bg-transparent'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3" />}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
           </div>
 
           {/* Publish Checkbox */}
