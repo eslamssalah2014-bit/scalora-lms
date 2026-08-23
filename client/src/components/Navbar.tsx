@@ -110,45 +110,49 @@ export const Navbar: React.FC = () => {
             </Link>
           </nav>
 
-          {/* User / Auth CTA */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* User / Auth CTA - Facebook/Messenger Style Top Right Cluster */}
+          <div className="hidden md:flex items-center space-x-2.5">
             {user ? (
-              <div className="flex items-center space-x-3">
-                {/* Messages Shortcut */}
+              <div className="flex items-center space-x-2">
+                {/* 1. Notifications Bell */}
+                <NotificationDropdown />
+
+                {/* 2. Messages Primary Destination */}
                 <Link
                   to="/messages"
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-all"
-                  title="Direct Messages"
+                  className={`p-2.5 rounded-2xl transition-all relative flex items-center justify-center ${
+                    isActive('/messages')
+                      ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                      : 'bg-[#0B1528] hover:bg-[#0F1E3A] text-slate-300 hover:text-cyan-300 border border-white/10'
+                  }`}
+                  title="Messenger & Direct Inquiries"
                 >
                   <Mail className="w-4 h-4" />
                 </Link>
 
-                {/* Community Notifications Bell */}
-                <NotificationDropdown />
-
-                {/* User Profile Button */}
-                <div className="relative">
+                {/* 3. User Profile Button */}
+                <div className="relative pl-1">
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center space-x-3 px-3 py-2 rounded-xl bg-scalora-navy/60 hover:bg-scalora-navy border border-scalora-blue/20 transition-all focus:outline-none"
+                    className="flex items-center space-x-2.5 px-3 py-1.5 rounded-2xl bg-[#0B1528] hover:bg-[#0F1E3A] border border-white/10 transition-all focus:outline-none"
                   >
                     <img
                       src={
                         user.avatar ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
                           user.name
-                        )}&background=2D8CFF&color=fff`
+                        )}&background=0284C7&color=fff`
                       }
                       alt={user.name}
-                      className="w-8 h-8 rounded-lg object-cover border border-scalora-blue/30"
+                      className="w-7 h-7 rounded-xl object-cover border border-cyan-500/30 shadow-sm"
                     />
                     <div className="text-left hidden lg:block">
-                      <div className="text-sm font-semibold text-white leading-none">{user.name}</div>
-                      <div className="text-[11px] font-medium text-scalora-blue/90 mt-0.5 uppercase tracking-wide">
+                      <div className="text-xs font-bold text-white leading-tight">{user.name}</div>
+                      <div className="text-[10px] font-semibold text-cyan-300 uppercase tracking-wider">
                         {user.role}
                       </div>
                     </div>
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                   </button>
 
                   {/* Dropdown Menu */}

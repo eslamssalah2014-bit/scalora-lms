@@ -83,14 +83,14 @@ export const CommunityMembersTab: React.FC<CommunityMembersTabProps> = ({ channe
                 </div>
               </div>
 
-              {isTrainer && (
-                <Link
-                  to={`/messages?trainer=${member.id}`}
-                  className="p-2 rounded-xl bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-all border border-cyan-500/20 flex-shrink-0"
-                  title="Send Direct Message"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                </Link>
+              {isTrainer ? (
+                <span className="px-2.5 py-1 rounded-xl bg-cyan-500/10 text-cyan-300 text-[10px] font-extrabold border border-cyan-500/20">
+                  Lead
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 rounded-xl bg-white/5 text-slate-400 text-[10px] font-bold">
+                  Peer
+                </span>
               )}
             </div>
           );

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { DirectMessage, Conversation, Trainer } from '../types';
+import { DirectMessage, Conversation } from '../types';
 import {
   Mail,
   Send,
@@ -21,6 +21,15 @@ import {
   AlertCircle,
   Clock,
   Sparkles,
+  Phone,
+  Video,
+  Info,
+  Globe,
+  Linkedin,
+  BookOpen,
+  GraduationCap,
+  ChevronRight,
+  MoreVertical,
 } from 'lucide-react';
 
 export const MessagesPage: React.FC = () => {
@@ -36,6 +45,7 @@ export const MessagesPage: React.FC = () => {
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [search, setSearch] = useState('');
+  const [showRightPanel, setShowRightPanel] = useState(true);
 
   // New Message Modal
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -182,59 +192,72 @@ export const MessagesPage: React.FC = () => {
       (c.partner.title && c.partner.title.toLowerCase().includes(search.toLowerCase()))
   );
 
+  // Extract shared media and attachments in this thread
+  const sharedMedia = messages.filter(
+    (m): m is DirectMessage & { attachmentUrl: string } => Boolean(m.attachmentUrl) && m.attachmentType === 'IMAGE'
+  );
+  const sharedFiles = messages.filter(
+    (m): m is DirectMessage & { attachmentUrl: string } => Boolean(m.attachmentUrl) && m.attachmentType === 'FILE'
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="bg-[#0B1528] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col md:flex-row h-[78vh] min-h-[580px]">
-        {/* LEFT PANEL: Conversation Threads List */}
-        <aside className="w-full md:w-80 lg:w-96 border-r border-white/10 flex flex-col flex-shrink-0 bg-[#091324]">
-          {/* Panel Header */}
+    <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4">
+      {/* Messenger App Container */}
+      <div className="bg-[#0B1528] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex h-[84vh] min-h-[620px]">
+        {/* ========================================================================= */}
+        {/* 1. LEFT SIDEBAR: Facebook Messenger Style Conversations List */}
+        {/* ========================================================================= */}
+        <aside className="w-full md:w-80 lg:w-88 border-r border-white/10 flex flex-col flex-shrink-0 bg-[#071326]">
+          {/* Header */}
           <div className="p-4 sm:p-5 border-b border-white/10 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-white flex items-center gap-2">
-                <Mail className="w-5 h-5 text-cyan-400" />
-                <span>Direct Inquiries</span>
+              <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
+                <span>Chats</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                  Messenger
+                </span>
               </h2>
 
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(true)}
-                className="p-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 transition-all border border-cyan-400/30"
-                title="Message an Instructor"
+                className="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent hover:opacity-90 transition-all flex items-center justify-center"
+                title="New Direct Inquiry"
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Conversation Search */}
+            {/* Messenger Search Box */}
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder="Search Messenger..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
+                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-[#0B1A30] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
               />
             </div>
           </div>
 
-          {/* Conversations List Stream */}
+          {/* Conversations Scroll Stream */}
           <div className="flex-1 overflow-y-auto divide-y divide-white/5 scrollbar-thin">
             {loadingConversations ? (
               <div className="p-8 text-center flex flex-col items-center justify-center space-y-2">
                 <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
-                <span className="text-xs text-slate-400">Loading messages...</span>
+                <span className="text-xs text-slate-400">Loading chats...</span>
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="p-8 text-center space-y-3">
                 <Mail className="w-10 h-10 text-slate-600 mx-auto" />
-                <p className="text-xs text-slate-400">No conversations yet.</p>
+                <p className="text-xs text-slate-400">No active conversations yet.</p>
                 <button
                   type="button"
                   onClick={() => setIsNewModalOpen(true)}
                   className="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 text-xs font-bold border border-cyan-500/30"
                 >
-                  Contact Your Instructor
+                  Start Discussion
                 </button>
               </div>
             ) : (
@@ -245,12 +268,13 @@ export const MessagesPage: React.FC = () => {
                     key={conv.partner.id}
                     type="button"
                     onClick={() => setActivePartnerId(conv.partner.id)}
-                    className={`w-full p-4 text-left flex items-start gap-3 transition-all ${
+                    className={`w-full p-3.5 text-left flex items-center gap-3 transition-all ${
                       isSelected
-                        ? 'bg-gradient-to-r from-cyan-500/20 to-scalora-blue/20 border-l-4 border-cyan-400'
+                        ? 'bg-[#0E2242] border-l-4 border-cyan-400 shadow-inner'
                         : 'hover:bg-white/5'
                     }`}
                   >
+                    {/* Avatar with Online Dot */}
                     <div className="relative flex-shrink-0">
                       <img
                         src={
@@ -258,17 +282,16 @@ export const MessagesPage: React.FC = () => {
                           `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.partner.name)}&background=0284C7&color=fff`
                         }
                         alt={conv.partner.name}
-                        className="w-11 h-11 rounded-2xl object-cover border border-white/10"
+                        className="w-12 h-12 rounded-2xl object-cover border border-white/10"
                       />
-                      {conv.unreadCount > 0 && (
-                        <span className="w-3 h-3 rounded-full bg-rose-500 border-2 border-[#091324] absolute -top-0.5 -right-0.5" />
-                      )}
+                      <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#071326] absolute -bottom-0.5 -right-0.5 shadow-sm" />
                     </div>
 
+                    {/* Details */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-bold text-white truncate">{conv.partner.name}</div>
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-[10px] text-slate-500 flex-shrink-0">
                           {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -277,12 +300,19 @@ export const MessagesPage: React.FC = () => {
                       </div>
 
                       <div className="text-[11px] text-cyan-300 font-semibold truncate">
-                        {conv.partner.title || (conv.partner.role === 'TRAINER' ? 'Course Instructor' : 'Student')}
+                        {conv.partner.title || (conv.partner.role === 'TRAINER' ? 'Course Instructor' : 'Enrolled Scholar')}
                       </div>
 
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                        {conv.lastMessage.isSender ? 'You: ' : ''}
-                        {conv.lastMessage.content}
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5 flex items-center justify-between">
+                        <span className="truncate">
+                          {conv.lastMessage.isSender ? 'You: ' : ''}
+                          {conv.lastMessage.content}
+                        </span>
+                        {conv.unreadCount > 0 && (
+                          <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-cyan-500 text-white font-extrabold text-[10px]">
+                            {conv.unreadCount}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </button>
@@ -292,36 +322,61 @@ export const MessagesPage: React.FC = () => {
           </div>
         </aside>
 
-        {/* RIGHT PANEL: Chat History & Input */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#0B1528]">
+        {/* ========================================================================= */}
+        {/* 2. CENTER PANEL: Active Conversation & Speech Bubbles Stream */}
+        {/* ========================================================================= */}
+        <main className="flex-1 flex flex-col min-w-0 bg-[#09152A]">
           {activePartner ? (
             <>
-              {/* Chat Header */}
-              <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-[#0B1528] z-10">
+              {/* Messenger Header */}
+              <div className="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between bg-[#08152B] z-10">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={
-                      activePartner.avatar ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(activePartner.name)}&background=0284C7&color=fff`
-                    }
-                    alt={activePartner.name}
-                    className="w-10 h-10 rounded-2xl object-cover border border-cyan-500/30"
-                  />
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={
+                        activePartner.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(activePartner.name)}&background=0284C7&color=fff`
+                      }
+                      alt={activePartner.name}
+                      className="w-10 h-10 rounded-2xl object-cover border border-cyan-500/30 shadow-md"
+                    />
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#08152B] absolute -bottom-0.5 -right-0.5" />
+                  </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white leading-tight">{activePartner.name}</h3>
-                    <div className="text-xs text-cyan-300 font-semibold">
-                      {activePartner.title || (activePartner.role === 'TRAINER' ? 'Assigned Instructor' : 'Student')}
+                    <h3 className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
+                      <span>{activePartner.name}</span>
+                      {activePartner.role === 'TRAINER' && (
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                          Instructor
+                        </span>
+                      )}
+                    </h3>
+                    <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span>Active now</span>
                     </div>
                   </div>
                 </div>
 
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                  Private Session
-                </span>
+                {/* Header Action Buttons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowRightPanel(!showRightPanel)}
+                    className={`p-2 rounded-xl border transition-all ${
+                      showRightPanel
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30'
+                        : 'bg-white/5 text-slate-400 hover:text-white border-white/10'
+                    }`}
+                    title="Toggle Profile Details"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Messages History Stream */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-thin">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 scrollbar-thin bg-gradient-to-b from-[#09152A] to-[#071122]">
                 {loadingMessages ? (
                   <div className="py-20 text-center flex flex-col items-center justify-center space-y-2">
                     <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
@@ -332,7 +387,7 @@ export const MessagesPage: React.FC = () => {
                     <Sparkles className="w-8 h-8 text-cyan-400 mx-auto" />
                     <h4 className="text-sm font-bold text-white">Start your discussion</h4>
                     <p className="text-xs text-slate-400">
-                      Ask your instructor questions regarding course architecture, assignments, or blueprints.
+                      Send a message to your assigned course instructor.
                     </p>
                   </div>
                 ) : (
@@ -360,7 +415,7 @@ export const MessagesPage: React.FC = () => {
                             className={`p-3.5 rounded-2xl text-xs leading-relaxed ${
                               isMe
                                 ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white rounded-br-none shadow-md'
-                                : 'bg-[#091324] text-slate-200 border border-white/10 rounded-bl-none'
+                                : 'bg-[#0E203C] text-slate-200 border border-white/10 rounded-bl-none shadow-sm'
                             }`}
                           >
                             <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -423,7 +478,7 @@ export const MessagesPage: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Error Toast */}
+              {/* Error Alert */}
               {error && (
                 <div className="mx-4 p-3 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -433,9 +488,9 @@ export const MessagesPage: React.FC = () => {
 
               {/* Attachment Drawer Bar */}
               {showAttachmentBar && (
-                <div className="p-3 bg-[#091324] border-t border-white/10 space-y-2">
+                <div className="p-3 bg-[#08152B] border-t border-white/10 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                    <span>Add Media / File Attachment</span>
+                    <span>Attach Media / Document</span>
                     <button
                       type="button"
                       onClick={() => setShowAttachmentBar(false)}
@@ -447,7 +502,7 @@ export const MessagesPage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <input
                       type="url"
-                      placeholder="Attachment URL (Image or PDF)..."
+                      placeholder="Image / Document URL..."
                       value={attachmentUrl}
                       onChange={(e) => {
                         setAttachmentUrl(e.target.value);
@@ -461,7 +516,7 @@ export const MessagesPage: React.FC = () => {
                     />
                     <input
                       type="text"
-                      placeholder="Display Name (e.g. Architecture_Diagram.png)"
+                      placeholder="Display Name (e.g. Blueprint.png)"
                       value={attachmentName}
                       onChange={(e) => setAttachmentName(e.target.value)}
                       className="w-full px-3 py-1.5 rounded-xl bg-[#050C1A] border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-400"
@@ -471,12 +526,12 @@ export const MessagesPage: React.FC = () => {
               )}
 
               {/* Chat Input Bar */}
-              <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-white/10 bg-[#091324]">
+              <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-white/10 bg-[#08152B]">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setShowAttachmentBar(!showAttachmentBar)}
-                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-cyan-300 transition-all border border-white/10"
+                    className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-cyan-300 transition-all border border-white/10"
                     title="Attach File or Image"
                   >
                     <Paperclip className="w-4 h-4" />
@@ -484,16 +539,16 @@ export const MessagesPage: React.FC = () => {
 
                   <input
                     type="text"
-                    placeholder="Type your message to instructor..."
+                    placeholder="Aa"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
+                    className="flex-1 px-4 py-2.5 rounded-2xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
                   />
 
                   <button
                     type="submit"
                     disabled={sending || (!text.trim() && !attachmentUrl.trim())}
-                    className="p-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent hover:opacity-95 disabled:opacity-40 transition-all flex items-center justify-center"
+                    className="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent hover:opacity-95 disabled:opacity-40 transition-all flex items-center justify-center"
                   >
                     {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
@@ -510,16 +565,137 @@ export const MessagesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(true)}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent"
+                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent"
               >
-                Message Course Instructor
+                Start Discussion
               </button>
             </div>
           )}
         </main>
+
+        {/* ========================================================================= */}
+        {/* 3. RIGHT PANEL: Facebook Messenger Style User Profile & Shared Media */}
+        {/* ========================================================================= */}
+        {activePartner && showRightPanel && (
+          <aside className="hidden lg:flex w-72 lg:w-80 border-l border-white/10 flex-col bg-[#071326] p-5 space-y-6 overflow-y-auto scrollbar-thin">
+            {/* User Profile Card */}
+            <div className="text-center space-y-3 pb-5 border-b border-white/10">
+              <img
+                src={
+                  activePartner.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(activePartner.name)}&background=0284C7&color=fff`
+                }
+                alt={activePartner.name}
+                className="w-20 h-20 rounded-3xl object-cover border-2 border-cyan-400 shadow-glow-accent mx-auto"
+              />
+              <div>
+                <h4 className="text-base font-black text-white">{activePartner.name}</h4>
+                <p className="text-xs text-cyan-300 font-semibold mt-0.5">
+                  {activePartner.title || (activePartner.role === 'TRAINER' ? 'Course Instructor' : 'Enrolled Scholar')}
+                </p>
+              </div>
+
+              {/* Bio Snippet */}
+              {activePartner.bio && (
+                <p className="text-xs text-slate-400 leading-relaxed italic bg-white/5 p-3 rounded-2xl border border-white/5">
+                  "{activePartner.bio}"
+                </p>
+              )}
+
+              {/* Social Links */}
+              <div className="flex items-center justify-center gap-2 pt-1">
+                {activePartner.linkedin && (
+                  <a
+                    href={activePartner.linkedin}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-colors"
+                  >
+                    <Linkedin className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                {activePartner.website && (
+                  <a
+                    href={activePartner.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 rounded-xl bg-white/5 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-300 border border-white/10 transition-colors"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Course Relationship Info */}
+            <div className="space-y-2">
+              <h5 className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Relationship & Permissions</span>
+              </h5>
+              <div className="p-3 rounded-2xl bg-[#09172E] border border-white/5 space-y-1 text-xs text-slate-400 leading-relaxed">
+                <div className="text-white font-semibold flex items-center gap-1.5">
+                  <Shield className="w-3 h-3 text-cyan-400" />
+                  <span>Enrolled Track Connection</span>
+                </div>
+                <p className="text-[11px]">
+                  Direct inquiries are permitted between enrolled students and course instructors.
+                </p>
+              </div>
+            </div>
+
+            {/* Shared Media & Files History */}
+            <div className="space-y-3">
+              <h5 className="text-xs font-bold text-slate-300 flex items-center justify-between">
+                <span>Shared Media & Files</span>
+                <span className="text-[10px] text-slate-500">{sharedMedia.length + sharedFiles.length} items</span>
+              </h5>
+
+              {sharedMedia.length > 0 && (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {sharedMedia.slice(0, 6).map((item, idx) => (
+                    <a
+                      key={idx}
+                      href={item.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl overflow-hidden border border-white/10 hover:opacity-80 transition-opacity"
+                    >
+                      <img src={item.attachmentUrl} alt="" className="w-full h-16 object-cover" />
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {sharedFiles.length > 0 && (
+                <div className="space-y-1.5">
+                  {sharedFiles.slice(0, 3).map((item, idx) => (
+                    <a
+                      key={idx}
+                      href={item.attachmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      download
+                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 flex items-center justify-between text-xs text-cyan-300 transition-colors"
+                    >
+                      <span className="truncate text-[11px] font-semibold">{item.attachmentName || 'Attachment'}</span>
+                      <Download className="w-3 h-3 flex-shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {sharedMedia.length === 0 && sharedFiles.length === 0 && (
+                <p className="text-xs text-slate-500 italic">No shared photos or files yet.</p>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
 
-      {/* NEW CONVERSATION MODAL (Strictly Enforces Course Enrolled Instructors) */}
+      {/* ========================================================================= */}
+      {/* NEW CONVERSATION MODAL (Strictly Enforces Student -> Instructor Rule) */}
+      {/* ========================================================================= */}
       {isNewModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="bg-[#0B1528] w-full max-w-md rounded-3xl border border-white/15 shadow-2xl p-6 space-y-4">
