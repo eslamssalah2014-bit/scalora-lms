@@ -17,6 +17,7 @@ import {
   Shield,
   ChevronRight,
   MessageSquare,
+  Bell,
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
@@ -27,6 +28,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
+    { label: 'Notifications Broadcast', path: '/admin/notifications', icon: Bell },
     { label: 'Trainers', path: '/admin/trainers', icon: Shield },
     { label: 'Community Management', path: '/admin/community', icon: MessageSquare },
     { label: 'Payments Verification', path: '/admin/payments', icon: CreditCard },

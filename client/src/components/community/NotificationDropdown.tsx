@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../lib/api';
+import { realtime } from '../../lib/realtime';
 import { CommunityNotification } from '../../types';
 import {
   Bell,
@@ -13,6 +14,10 @@ import {
   Sparkles,
   Clock,
   Loader2,
+  BookOpen,
+  ArrowRight,
+  Shield,
+  Layers,
 } from 'lucide-react';
 
 export const NotificationDropdown: React.FC = () => {
@@ -20,28 +25,49 @@ export const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<CommunityNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeCategory, setActiveCategory] = useState<'ALL' | 'UNREAD' | 'MESSAGES' | 'COMMUNITY' | 'COURSES'>('ALL');
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (category = activeCategory) => {
     try {
-      const res = await api.get<{ success: boolean; notifications: CommunityNotification[]; unreadCount: number }>(
-        '/community/notifications'
-      );
+      setLoading(true);
+      const res = await api.get<{
+        success: boolean;
+        notifications: CommunityNotification[];
+        unreadCount: number;
+      }>(`/notifications?tab=${category}&limit=20`);
+
       if (res.success && Array.isArray(res.notifications)) {
         setNotifications(res.notifications);
         setUnreadCount(res.unreadCount || 0);
       }
     } catch {
       // Non-blocking fail
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 20000); // 20s polling
-    return () => clearInterval(interval);
-  }, []);
+    fetchNotifications(activeCategory);
+  }, [activeCategory]);
+
+  // Real-time Push Subscription
+  useEffect(() => {
+    const unsub = realtime.on('notification', (data) => {
+      if (data?.notification) {
+        setNotifications((prev) => [data.notification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      } else {
+        fetchNotifications(activeCategory);
+      }
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [activeCategory]);
 
   // Close on outside click
   useEffect(() => {
@@ -60,7 +86,7 @@ export const NotificationDropdown: React.FC = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await api.patch('/community/notifications/read-all');
+      await api.patch('/notifications/read-all');
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -71,7 +97,7 @@ export const NotificationDropdown: React.FC = () => {
   const handleNotificationClick = async (notif: CommunityNotification) => {
     if (!notif.isRead) {
       try {
-        await api.patch(`/community/notifications/${notif.id}/read`);
+        await api.patch(`/notifications/${notif.id}/read`);
         setNotifications((prev) =>
           prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
         );
@@ -80,7 +106,17 @@ export const NotificationDropdown: React.FC = () => {
     }
 
     setIsOpen(false);
-    if (notif.channelId) {
+    const typeUpper = (notif.type || '').toUpperCase();
+
+    if (typeUpper.includes('MESSAGE')) {
+      if (notif.actor?.id) {
+        navigate(`/messages?partner=${notif.actor.id}`);
+      } else {
+        navigate('/messages');
+      }
+    } else if (typeUpper.includes('COURSE') || typeUpper.includes('LESSON')) {
+      navigate('/courses');
+    } else if (notif.channelId) {
       navigate(`/community?channel=${notif.channelId}${notif.postId ? `&post=${notif.postId}` : ''}`);
     } else {
       navigate('/community');
@@ -88,18 +124,26 @@ export const NotificationDropdown: React.FC = () => {
   };
 
   const getIcon = (type: string) => {
-    switch (type) {
-      case 'COMMENT':
-        return <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />;
-      case 'REPLY':
-        return <CornerDownRight className="w-3.5 h-3.5 text-scalora-accent" />;
-      case 'LIKE':
-        return <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />;
-      case 'ANNOUNCEMENT':
-        return <Megaphone className="w-3.5 h-3.5 text-amber-400" />;
-      default:
-        return <Sparkles className="w-3.5 h-3.5 text-cyan-300" />;
+    const t = (type || '').toUpperCase();
+    if (t.includes('MESSAGE')) {
+      return <MessageSquare className="w-3.5 h-3.5 text-cyan-400" />;
     }
+    if (t.includes('LIKE')) {
+      return <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />;
+    }
+    if (t.includes('REPLY')) {
+      return <CornerDownRight className="w-3.5 h-3.5 text-scalora-accent" />;
+    }
+    if (t.includes('COMMENT')) {
+      return <MessageSquare className="w-3.5 h-3.5 text-sky-400" />;
+    }
+    if (t.includes('ANNOUNCEMENT') || t.includes('GLOBAL')) {
+      return <Megaphone className="w-3.5 h-3.5 text-amber-400" />;
+    }
+    if (t.includes('COURSE') || t.includes('LESSON') || t.includes('ENROLLMENT')) {
+      return <BookOpen className="w-3.5 h-3.5 text-emerald-400" />;
+    }
+    return <Sparkles className="w-3.5 h-3.5 text-cyan-300" />;
   };
 
   const formatTimeAgo = (dateStr: string) => {
@@ -117,14 +161,14 @@ export const NotificationDropdown: React.FC = () => {
         type="button"
         onClick={() => {
           setIsOpen(!isOpen);
-          if (!isOpen) fetchNotifications();
+          if (!isOpen) fetchNotifications(activeCategory);
         }}
-        className="relative p-2.5 rounded-xl bg-scalora-navy/60 hover:bg-scalora-navy border border-scalora-blue/20 text-slate-300 hover:text-white transition-all focus:outline-none"
-        title="Community Notifications"
+        className="relative p-2.5 rounded-2xl bg-[#0B1528] hover:bg-[#0F1E3A] border border-white/10 text-slate-300 hover:text-white transition-all focus:outline-none flex items-center justify-center"
+        title="Scalora Notifications"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-glow-rose animate-bounce">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-[#04152D] animate-pulse shadow-glow-rose">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -156,12 +200,41 @@ export const NotificationDropdown: React.FC = () => {
             )}
           </div>
 
+          {/* Category Filter Pills */}
+          <div className="px-3 py-2 bg-[#030E1E] border-b border-white/5 flex items-center gap-1 overflow-x-auto scrollbar-none">
+            {[
+              { id: 'ALL', label: 'All' },
+              { id: 'UNREAD', label: 'Unread' },
+              { id: 'MESSAGES', label: 'Messages' },
+              { id: 'COMMUNITY', label: 'Community' },
+              { id: 'COURSES', label: 'Courses' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setActiveCategory(cat.id as any)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex-shrink-0 ${
+                  activeCategory === cat.id
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
           {/* List */}
-          <div className="max-h-[360px] overflow-y-auto divide-y divide-scalora-blue/10 scrollbar-thin scrollbar-thumb-scalora-blue/30">
-            {notifications.length === 0 ? (
+          <div className="max-h-[340px] overflow-y-auto divide-y divide-scalora-blue/10 scrollbar-thin scrollbar-thumb-scalora-blue/30">
+            {loading ? (
+              <div className="p-8 text-center space-y-2">
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-400 mx-auto" />
+                <p className="text-xs text-slate-400">Loading activity...</p>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="p-8 text-center space-y-2 text-slate-400">
                 <Bell className="w-8 h-8 text-slate-600 mx-auto" />
-                <p className="text-xs font-semibold">No notifications right now.</p>
+                <p className="text-xs font-semibold">No notifications in this category.</p>
                 <p className="text-[11px] text-slate-500">You're all caught up with your courses & channels.</p>
               </div>
             ) : (
@@ -201,7 +274,7 @@ export const NotificationDropdown: React.FC = () => {
                       {notif.channelName && (
                         <>
                           <span>•</span>
-                          <span className="text-cyan-300 font-semibold truncate">{notif.channelName}</span>
+                          <span className="text-cyan-300 font-semibold truncate max-w-[120px]">#{notif.channelName}</span>
                         </>
                       )}
                     </div>
@@ -213,6 +286,18 @@ export const NotificationDropdown: React.FC = () => {
                 </div>
               ))
             )}
+          </div>
+
+          {/* Footer CTA */}
+          <div className="p-3 bg-[#030E1E] border-t border-white/5 text-center">
+            <Link
+              to="/notifications"
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-1.5 py-1"
+            >
+              <span>View All in Notification Center</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       )}

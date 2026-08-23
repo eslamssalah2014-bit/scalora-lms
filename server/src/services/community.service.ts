@@ -1,4 +1,6 @@
 import { prisma } from '../lib/prisma.js';
+import { notificationService } from './notification.service.js';
+import { realtimeService } from './realtime.service.js';
 
 export class CommunityService {
   /**
@@ -85,26 +87,7 @@ export class CommunityService {
     type: 'COMMENT' | 'REPLY' | 'LIKE' | 'ANNOUNCEMENT' | 'SYSTEM' | 'WELCOME' | string;
     message: string;
   }) {
-    try {
-      if (params.actorId && params.userId === params.actorId) {
-        return null; // Do not notify users of their own actions
-      }
-
-      return await prisma.communityNotification.create({
-        data: {
-          userId: params.userId,
-          actorId: params.actorId || null,
-          channelId: params.channelId || null,
-          postId: params.postId || null,
-          type: params.type,
-          message: params.message,
-          isRead: false,
-        },
-      });
-    } catch (error) {
-      console.error('[CommunityService] Error creating notification:', error);
-      return null;
-    }
+    return notificationService.createNotification(params);
   }
 
   /**
@@ -132,19 +115,35 @@ export class CommunityService {
         .map((m) => m.userId)
         .filter((uid) => uid !== params.actorId);
 
+      const messageText = `📢 Important Announcement in ${channel.name}: "${params.announcementTitle}"`;
+
       const notificationsData = recipientIds.map((userId) => ({
         userId,
         actorId: params.actorId,
         channelId: params.channelId,
         postId: params.postId,
         type: 'ANNOUNCEMENT',
-        message: `📢 Important Announcement in ${channel.name}: "${params.announcementTitle}"`,
+        message: messageText,
         isRead: false,
       }));
 
       if (notificationsData.length > 0) {
         await prisma.communityNotification.createMany({
           data: notificationsData,
+        });
+
+        // Real-time SSE push to all recipients
+        recipientIds.forEach((uid) => {
+          realtimeService.sendToUser(uid, 'notification', {
+            notification: {
+              type: 'ANNOUNCEMENT',
+              message: messageText,
+              channelId: params.channelId,
+              postId: params.postId,
+              isRead: false,
+              createdAt: new Date().toISOString(),
+            },
+          });
         });
       }
     } catch (error) {

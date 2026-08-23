@@ -60,6 +60,8 @@ class RealtimeClient {
         'chat_delete',
         'chat_typing',
         'presence',
+        'notification',
+        'notification_read',
       ];
 
       registeredEvents.forEach((eventName) => {

@@ -36,10 +36,12 @@ import { AdminStudentsPage } from './pages/admin/AdminStudentsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminCommunityPage } from './pages/admin/AdminCommunityPage';
 import { AdminTrainersPage } from './pages/admin/AdminTrainersPage';
+import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
 
-// Trainer & Messaging Pages
+// Trainer, Messaging & Notifications Pages
 import { TrainerDashboardPage } from './pages/trainer/TrainerDashboardPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { NotificationCenterPage } from './pages/NotificationCenterPage';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { OfflineBanner } from './components/OfflineBanner';
 import { MobileBottomNav } from './components/MobileBottomNav';
@@ -98,6 +100,16 @@ export const App: React.FC = () => {
             }
           />
 
+          {/* Unified Notification Center */}
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationCenterPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Dedicated Trainer Workspace */}
           <Route
             path="/trainer"
@@ -139,6 +151,7 @@ export const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="trainers" element={<AdminTrainersPage />} />
           <Route path="community" element={<AdminCommunityPage />} />
           <Route path="payments" element={<AdminPaymentsPage />} />
