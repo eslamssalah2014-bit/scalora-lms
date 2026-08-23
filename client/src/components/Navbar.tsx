@@ -96,14 +96,14 @@ export const Navbar: React.FC = () => {
               Home
             </Link>
             <Link
-              to="/services"
+              to="/courses"
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/services')
+                isActive('/courses')
                   ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
-              Services
+              Courses
             </Link>
             <Link
               to="/community"
@@ -116,14 +116,24 @@ export const Navbar: React.FC = () => {
               Community
             </Link>
             <Link
-              to="/courses"
+              to="/messages"
               className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive('/courses')
+                isActive('/messages')
+                  ? 'text-cyan-300 bg-cyan-500/10 border border-cyan-400/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Messages
+            </Link>
+            <Link
+              to="/services"
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isActive('/services')
                   ? 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
               }`}
             >
-              Courses
+              Services
             </Link>
             <Link
               to="/about"

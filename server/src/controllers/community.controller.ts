@@ -88,7 +88,28 @@ export const getCommunityChannels = async (req: AuthenticatedRequest, res: Respo
         orderBy: { createdAt: 'asc' },
         include: {
           course: {
-            select: { id: true, title: true, slug: true, thumbnail: true, category: true, instructor: true },
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              thumbnail: true,
+              category: true,
+              instructor: true,
+              trainers: {
+                include: {
+                  trainer: {
+                    select: {
+                      id: true,
+                      name: true,
+                      avatar: true,
+                      title: true,
+                      bio: true,
+                      role: true,
+                    },
+                  },
+                },
+              },
+            },
           },
           _count: {
             select: { members: true, posts: true },
@@ -121,7 +142,28 @@ export const getCommunityChannels = async (req: AuthenticatedRequest, res: Respo
       orderBy: { createdAt: 'asc' },
       include: {
         course: {
-          select: { id: true, title: true, slug: true, thumbnail: true, category: true, instructor: true },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnail: true,
+            category: true,
+            instructor: true,
+            trainers: {
+              include: {
+                trainer: {
+                  select: {
+                    id: true,
+                    name: true,
+                    avatar: true,
+                    title: true,
+                    bio: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+          },
         },
         _count: {
           select: { members: true, posts: true },
@@ -162,7 +204,28 @@ export const getCommunityChannelById = async (req: AuthenticatedRequest, res: Re
       where: { id: channelId },
       include: {
         course: {
-          select: { id: true, title: true, slug: true, thumbnail: true, category: true, instructor: true },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnail: true,
+            category: true,
+            instructor: true,
+            trainers: {
+              include: {
+                trainer: {
+                  select: {
+                    id: true,
+                    name: true,
+                    avatar: true,
+                    title: true,
+                    bio: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+          },
         },
         _count: {
           select: { members: true, posts: true },

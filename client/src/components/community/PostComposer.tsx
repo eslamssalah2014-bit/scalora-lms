@@ -20,6 +20,8 @@ import {
   Trash2,
   Smile,
   Shield,
+  HelpCircle,
+  FolderDown,
 } from 'lucide-react';
 
 interface PostComposerProps {
@@ -42,7 +44,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
 
   // Form State
-  const [activeTab, setActiveTab] = useState<PostType | 'POLL'>('TEXT');
+  const [activeTab, setActiveTab] = useState<PostType | 'POLL' | 'QUESTION'>('TEXT');
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -55,7 +57,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Poll UI Prototype State
+  // Poll State
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
 
@@ -64,7 +66,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
       <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <span>This channel is currently in announcement-only mode. Only instructors and admins can publish.</span>
+          <span>This community is currently in announcement-only mode. Only instructors and admins can publish.</span>
         </div>
       </div>
     );
@@ -118,7 +120,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
       const payload: any = {
         channelId,
-        type: activeTab === 'POLL' ? 'TEXT' : activeTab,
+        type: activeTab === 'POLL' || activeTab === 'QUESTION' ? 'TEXT' : activeTab,
         title: title.trim() || undefined,
         content: finalContent,
         isPinned: isAdmin && isPinned,
@@ -168,7 +170,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
   return (
     <div className="bg-[#0B1528] rounded-3xl p-4 sm:p-5 border border-white/10 shadow-xl space-y-3 transition-all">
-      {/* 1. COLLAPSED FACEBOOK-STYLE TRIGGER BOX */}
+      {/* 1. COLLAPSED LINKEDIN-STYLE TRIGGER BOX */}
       {!isOpen ? (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
@@ -178,7 +180,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0284C7&color=fff`
               }
               alt={user?.name}
-              className="w-10 h-10 rounded-full object-cover border border-cyan-500/30 shadow-md flex-shrink-0"
+              className="w-11 h-11 rounded-2xl object-cover border border-cyan-400 shadow-md flex-shrink-0"
             />
 
             <button
@@ -187,14 +189,15 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('TEXT');
                 setIsOpen(true);
               }}
-              className="flex-1 text-left px-5 py-3 rounded-2xl bg-[#0F1D38]/80 hover:bg-[#14264A] text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-white/5 transition-all shadow-inner"
+              className="flex-1 text-left px-5 py-3 rounded-2xl bg-[#071324] hover:bg-[#0E203C] text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-white/10 transition-all shadow-inner"
             >
               What's on your mind, {firstName}?
             </button>
           </div>
 
-          {/* Quick Action Pills */}
+          {/* Quick Action Pills matching exact spec */}
           <div className="pt-2 border-t border-white/5 flex items-center justify-around sm:justify-start sm:gap-4 overflow-x-auto scrollbar-none text-xs font-semibold">
+            {/* 1. Create Post */}
             <button
               type="button"
               onClick={() => {
@@ -204,21 +207,24 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
             >
               <FileText className="w-4 h-4 text-cyan-400" />
-              <span>Discussion</span>
+              <span>Create Post</span>
             </button>
 
+            {/* 2. Ask Question */}
             <button
               type="button"
               onClick={() => {
-                setActiveTab('IMAGE');
+                setActiveTab('QUESTION');
+                setTitle('❓ Question: ');
                 setIsOpen(true);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
             >
-              <ImageIcon className="w-4 h-4 text-emerald-400" />
-              <span>Photo/Media</span>
+              <HelpCircle className="w-4 h-4 text-blue-400" />
+              <span>Ask Question</span>
             </button>
 
+            {/* 3. Share Resource */}
             <button
               type="button"
               onClick={() => {
@@ -227,20 +233,21 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-purple-300 hover:bg-purple-500/10 transition-colors"
             >
-              <Paperclip className="w-4 h-4 text-purple-400" />
-              <span>Resource Share</span>
+              <FolderDown className="w-4 h-4 text-purple-400" />
+              <span>Share Resource</span>
             </button>
 
+            {/* 4. Create Poll */}
             <button
               type="button"
               onClick={() => {
                 setActiveTab('POLL');
                 setIsOpen(true);
               }}
-              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
             >
               <BarChart2 className="w-4 h-4 text-amber-400" />
-              <span>Poll</span>
+              <span>Create Poll</span>
             </button>
 
             {isAdmin && (
@@ -250,114 +257,96 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   setActiveTab('ANNOUNCEMENT');
                   setIsOpen(true);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-amber-300 hover:bg-amber-500/10 transition-colors"
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-rose-300 hover:bg-rose-500/10 transition-colors"
               >
-                <Megaphone className="w-4 h-4 text-amber-400" />
+                <Megaphone className="w-4 h-4 text-rose-400" />
                 <span>Announcement</span>
               </button>
             )}
           </div>
         </div>
       ) : (
-        /* 2. EXPANDED FULL POST COMPOSER INTERFACE */
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Header */}
+        /* 2. EXPANDED COMPOSER MODAL-LIKE DRAWER */
+        <form onSubmit={handleSubmit} className="space-y-4 animate-fadeIn">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
-            <div className="flex items-center gap-3">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0284C7&color=fff`
-                }
-                alt={user?.name}
-                className="w-10 h-10 rounded-full object-cover border border-cyan-500/30 shadow-md"
-              />
-              <div>
-                <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <span>{user?.name}</span>
-                  {isAdmin && (
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                      Admin
-                    </span>
-                  )}
-                </div>
-                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                  <span>Posting in</span>
-                  <span className="text-cyan-300 font-semibold">{channelName}</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-cyan-300">
+                Publishing to {channelName}
+              </span>
             </div>
-
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+              className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Post Type Selector Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
+          {/* Post Type Selector */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
             <button
               type="button"
               onClick={() => setActiveTab('TEXT')}
-              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'TEXT'
                   ? 'bg-cyan-500 text-white shadow-glow-accent'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  : 'bg-white/5 text-slate-400 hover:text-white'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Discussion</span>
+              <span>Post</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('QUESTION');
+                if (!title) setTitle('❓ Question: ');
+              }}
+              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                activeTab === 'QUESTION'
+                  ? 'bg-blue-500 text-white shadow-glow-accent'
+                  : 'bg-white/5 text-slate-400 hover:text-white'
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>Question</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('IMAGE')}
-              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'IMAGE'
-                  ? 'bg-emerald-500 text-white shadow-md'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  ? 'bg-emerald-500 text-white shadow-glow-accent'
+                  : 'bg-white/5 text-slate-400 hover:text-white'
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              <span>Photo/Media</span>
+              <span>Media</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('FILE')}
-              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'FILE'
-                  ? 'bg-purple-500 text-white shadow-md'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  ? 'bg-purple-500 text-white shadow-glow-accent'
+                  : 'bg-white/5 text-slate-400 hover:text-white'
               }`}
             >
-              <Paperclip className="w-3.5 h-3.5" />
-              <span>Resource File</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('LINK')}
-              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-                activeTab === 'LINK'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
-              }`}
-            >
-              <LinkIcon className="w-3.5 h-3.5" />
-              <span>Web Link</span>
+              <FolderDown className="w-3.5 h-3.5" />
+              <span>Resource</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('POLL')}
-              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'POLL'
-                  ? 'bg-amber-500 text-white shadow-md'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  ? 'bg-amber-500 text-white shadow-glow-accent'
+                  : 'bg-white/5 text-slate-400 hover:text-white'
               }`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
@@ -368,10 +357,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('ANNOUNCEMENT')}
-                className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                   activeTab === 'ANNOUNCEMENT'
-                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-glow-amber'
-                    : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+                    ? 'bg-rose-500 text-white shadow-glow-accent'
+                    : 'bg-white/5 text-slate-400 hover:text-white'
                 }`}
               >
                 <Megaphone className="w-3.5 h-3.5" />
@@ -381,46 +370,27 @@ export const PostComposer: React.FC<PostComposerProps> = ({
           </div>
 
           {/* Optional Title */}
-          {activeTab !== 'POLL' && (
-            <input
-              type="text"
-              placeholder="Post Title (optional)..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-2xl bg-[#091324] border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm font-semibold focus:outline-none focus:border-cyan-400 transition-all"
-            />
-          )}
+          <input
+            type="text"
+            placeholder="Post Title or Topic (Optional)..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-2xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-cyan-400 transition-all"
+          />
 
-          {/* Main Text / Content Area */}
-          {activeTab !== 'POLL' ? (
-            <textarea
-              rows={4}
-              placeholder="Share your thoughts, ask questions, or provide valuable feedback..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-[#091324] border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-cyan-400 transition-all resize-none"
-            />
-          ) : (
-            /* Poll Creation Interface */
-            <div className="space-y-3 p-4 rounded-2xl bg-[#091324] border border-amber-500/20">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                  <BarChart2 className="w-3.5 h-3.5" />
-                  <span>Poll Question</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ask the community a question..."
-                  value={pollQuestion}
-                  onChange={(e) => setPollQuestion(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-amber-400"
-                />
-              </div>
+          {/* Poll Builder Mode */}
+          {activeTab === 'POLL' ? (
+            <div className="space-y-3 p-4 rounded-2xl bg-[#071324] border border-white/10">
+              <input
+                type="text"
+                placeholder="Ask a community question for the poll..."
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#050C1A] border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-amber-400"
+              />
 
               <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Poll Options (Min 2, Max 6)
-                </label>
+                <label className="text-[11px] font-bold text-slate-400">Poll Choices:</label>
                 {pollOptions.map((opt, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <input
@@ -428,134 +398,97 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                       placeholder={`Option ${idx + 1}...`}
                       value={opt}
                       onChange={(e) => handlePollOptionChange(idx, e.target.value)}
-                      className="flex-1 px-3 py-1.5 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
+                      className="flex-1 px-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400"
                     />
                     {pollOptions.length > 2 && (
                       <button
                         type="button"
                         onClick={() => handleRemovePollOption(idx)}
-                        className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
+                        className="p-2 text-slate-400 hover:text-rose-400"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
                 ))}
-
-                {pollOptions.length < 6 && (
-                  <button
-                    type="button"
-                    onClick={handleAddPollOption}
-                    className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 pt-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Option</span>
-                  </button>
-                )}
               </div>
-            </div>
-          )}
 
-          {/* Tab Specific Inputs */}
-          {activeTab === 'IMAGE' && (
-            <div className="p-3.5 rounded-2xl bg-[#091324] border border-emerald-500/20 space-y-2">
-              <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Image / Screenshot URL</span>
-              </label>
-              <input
-                type="url"
-                placeholder="https://images.unsplash.com/photo-..."
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-400"
-              />
-              {mediaUrl && (
-                <div className="relative rounded-xl overflow-hidden max-h-48 border border-white/10 mt-2">
-                  <img src={mediaUrl} alt="Preview" className="w-full h-48 object-cover" />
-                </div>
+              {pollOptions.length < 6 && (
+                <button
+                  type="button"
+                  onClick={handleAddPollOption}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30 flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Option</span>
+                </button>
               )}
             </div>
+          ) : (
+            /* Main Content Textarea */
+            <textarea
+              rows={4}
+              placeholder={`Share an update, key insight, or question with your peers in ${channelName}...`}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full p-4 rounded-2xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm leading-relaxed focus:outline-none focus:border-cyan-400 transition-all resize-none"
+            />
+          )}
+
+          {/* Media / File Drawer Inputs */}
+          {activeTab === 'IMAGE' && (
+            <input
+              type="url"
+              placeholder="Paste Image URL (e.g. Screenshot, Flowchart, Diagram)..."
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-[#071324] border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-400"
+            />
           )}
 
           {activeTab === 'FILE' && (
-            <div className="p-3.5 rounded-2xl bg-[#091324] border border-purple-500/20 space-y-2.5">
-              <label className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
-                <Paperclip className="w-3.5 h-3.5" />
-                <span>Resource File Details</span>
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="File Name (e.g. Architecture-Diagram.pdf)"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-purple-400"
-                />
-                <input
-                  type="text"
-                  placeholder="File Size (e.g. 4.8 MB)"
-                  value={fileSize}
-                  onChange={(e) => setFileSize(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-purple-400"
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <input
                 type="url"
-                placeholder="Direct Download URL (e.g. https://...)"
+                placeholder="Resource URL (PDF / Template Link)..."
                 value={fileUrl}
                 onChange={(e) => setFileUrl(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-purple-400"
+                className="w-full px-3 py-2 rounded-xl bg-[#071324] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400"
               />
-            </div>
-          )}
-
-          {activeTab === 'LINK' && (
-            <div className="p-3.5 rounded-2xl bg-[#091324] border border-blue-500/20 space-y-2">
-              <label className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
-                <LinkIcon className="w-3.5 h-3.5" />
-                <span>External Link URL</span>
-              </label>
               <input
-                type="url"
-                placeholder="https://github.com/your-org/repo..."
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-blue-400"
+                type="text"
+                placeholder="Resource Name (e.g. Checklist.pdf)"
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[#071324] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400"
               />
             </div>
           )}
 
-          {/* Error Banner */}
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+            <p className="text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
               {error}
-            </div>
+            </p>
           )}
 
-          {/* Footer Controls & Publish CTA */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-white/10">
-            {/* Admin Controls */}
+          {/* Submit Footer */}
+          <div className="flex items-center justify-between pt-2 border-t border-white/10">
             {isAdmin ? (
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
+              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={isPinned}
                   onChange={(e) => setIsPinned(e.target.checked)}
-                  className="rounded border-white/20 bg-scalora-navy text-cyan-400 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
+                  className="rounded border-white/20 bg-black/40 text-cyan-400 focus:ring-0"
                 />
-                <Pin className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Pin this post to top of feed</span>
+                <Pin className="w-3 h-3 text-amber-400" />
+                <span>Pin to top</span>
               </label>
             ) : (
-              <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-cyan-400" />
-                <span>Posts are visible to all enrolled peers</span>
-              </div>
+              <span className="text-[11px] text-slate-500">Markdown formatting supported</span>
             )}
 
-            {/* CTA Buttons */}
-            <div className="flex items-center gap-2.5 justify-end">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -566,8 +499,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
               <button
                 type="submit"
-                disabled={submitting}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue hover:opacity-95 text-white text-xs font-black shadow-glow-accent flex items-center gap-2 transition-all disabled:opacity-50"
+                disabled={submitting || (!content.trim() && !pollQuestion.trim())}
+                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent hover:opacity-95 disabled:opacity-40 transition-all flex items-center gap-2"
               >
                 {submitting ? (
                   <>

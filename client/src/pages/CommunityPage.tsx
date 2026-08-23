@@ -11,7 +11,6 @@ import { MemberProfileModal } from '../components/community/MemberProfileModal';
 import { CommunityChatRoom } from '../components/community/CommunityChatRoom';
 import { CommunityMembersTab } from '../components/community/CommunityMembersTab';
 import { CommunityResourcesTab } from '../components/community/CommunityResourcesTab';
-import { CommunityEventsTab } from '../components/community/CommunityEventsTab';
 import {
   Lock,
   BookOpen,
@@ -20,22 +19,15 @@ import {
   Users,
   Search,
   Megaphone,
-  Paperclip,
-  ImageIcon,
   Bookmark,
-  Layers,
-  ShieldCheck,
-  RefreshCw,
+  Radio,
+  FolderDown,
+  MessageSquare,
+  Shield,
   Loader2,
   Filter,
-  MessageSquare,
-  Compass,
-  SlidersHorizontal,
-  ChevronRight,
-  Info,
-  Calendar,
-  FolderDown,
-  Radio,
+  GraduationCap,
+  Layers,
 } from 'lucide-react';
 
 export const CommunityPage: React.FC = () => {
@@ -47,23 +39,22 @@ export const CommunityPage: React.FC = () => {
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [loadingChannels, setLoadingChannels] = useState(true);
 
-  // 5-Tab Community Navigation ('FEED' | 'CHAT' | 'MEMBERS' | 'RESOURCES' | 'EVENTS')
-  const [activeMainTab, setActiveMainTab] = useState<'FEED' | 'CHAT' | 'MEMBERS' | 'RESOURCES' | 'EVENTS'>('FEED');
+  // 4 Core Facebook Group Style Tabs ('FEED' | 'CHAT' | 'RESOURCES' | 'MEMBERS')
+  const [activeMainTab, setActiveMainTab] = useState<'FEED' | 'CHAT' | 'RESOURCES' | 'MEMBERS' | 'EVENTS'>('FEED');
 
   // Feed State
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
-  const [feedFilter, setFeedFilter] = useState<'ALL' | 'ANNOUNCEMENTS' | 'RESOURCES' | 'MEDIA' | 'SAVED'>('ALL');
+  const [feedFilter, setFeedFilter] = useState<'ALL' | 'ANNOUNCEMENTS' | 'RESOURCES' | 'SAVED'>('ALL');
   const [postSearch, setPostSearch] = useState('');
 
-  // Mobile View Switcher Tab ('FEED' | 'CHANNELS' | 'INFO')
+  // Mobile View Switcher ('FEED' | 'CHANNELS' | 'INFO')
   const [mobileTab, setMobileTab] = useState<'FEED' | 'CHANNELS' | 'INFO'>('FEED');
 
   // Member Profile Modal
   const [inspectUserId, setInspectUserId] = useState<string | null>(null);
 
   const channelParam = searchParams.get('channel');
-  const postParam = searchParams.get('post');
 
   // Fetch Channels on Mount
   useEffect(() => {
@@ -137,81 +128,47 @@ export const CommunityPage: React.FC = () => {
     setSelectedChannelId(channelId);
     setFeedFilter('ALL');
     setSearchParams({ channel: channelId });
-    setMobileTab('FEED'); // Switch back to feed on mobile selection
+    setMobileTab('FEED');
   };
 
   const handleSelectFilter = (filter: string) => {
     if (filter === 'SAVED') {
       setFeedFilter('SAVED');
+      setActiveMainTab('FEED');
     } else if (filter === 'RESOURCES') {
-      setFeedFilter('RESOURCES');
+      setActiveMainTab('RESOURCES');
     } else {
       setFeedFilter('ALL');
-    }
-    setMobileTab('FEED');
-  };
-
-  const handlePostCreated = (newPost: CommunityPost) => {
-    setPosts((prev) => [newPost, ...prev]);
-    setChannels((prev) =>
-      prev.map((c) => (c.id === newPost.channelId ? { ...c, postsCount: c.postsCount + 1 } : c))
-    );
-  };
-
-  const handlePostDeleted = (postId: string) => {
-    setPosts((prev) => prev.filter((p) => p.id !== postId));
-    if (selectedChannelId) {
-      setChannels((prev) =>
-        prev.map((c) => (c.id === selectedChannelId ? { ...c, postsCount: Math.max(0, c.postsCount - 1) } : c))
-      );
+      setActiveMainTab('FEED');
     }
   };
 
-  const handlePostUpdated = (updated: CommunityPost) => {
-    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-  };
+  const selectedChannel = channels.find((c) => c.id === selectedChannelId) || null;
+  const rawTrainers = (selectedChannel?.course as any)?.trainers || [];
+  const assignedTrainers = rawTrainers.map((t: any) => t.trainer).filter(Boolean);
+  const trainersCount = assignedTrainers.length > 0 ? assignedTrainers.length : 2;
 
-  const currentChannel = channels.find((c) => c.id === selectedChannelId) || null;
-  const pinnedAnnouncements = posts.filter((p) => p.isPinned || p.isAnnouncement);
-
-  // =========================================================================
-  // 1. PUBLIC VISITOR TEASER (Not logged in)
-  // =========================================================================
-  if (!user) {
+  // Unauthenticated or Access Denied Screen
+  if (!loadingChannels && (!user || hasAccess === false)) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-16">
-        <div className="text-center space-y-6 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs font-extrabold tracking-widest uppercase shadow-glow-accent">
-            <Users className="w-3.5 h-3.5" />
-            <span>Scalora Social-Learning Network</span>
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="max-w-lg w-full bg-[#0B1528] rounded-3xl p-8 border border-white/10 shadow-2xl text-center space-y-5">
+          <div className="w-16 h-16 rounded-3xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto border border-cyan-500/30">
+            <Lock className="w-8 h-8" />
           </div>
-
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight">
-            Learn with peers.{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-scalora-blue to-scalora-accent">
-              Build together.
-            </span>
-          </h1>
-
-          <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-            Scalora Community is a private, cohort-based social learning platform. Every course enrollment unlocks an
-            exclusive channel with weekly live AMAs, code blueprint vaults, and direct access to instructors.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              to="/login"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white font-bold text-sm shadow-glow-accent hover:opacity-95 transition-all flex items-center justify-center gap-2"
-            >
-              <Users className="w-4 h-4" />
-              <span>Sign In to Community</span>
-            </Link>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-white">Private Learning Community</h2>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              The Scalora Community is exclusively available to enrolled students and certified instructors.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/courses"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-[#0B1528] hover:bg-[#0F1D38] text-white font-bold text-sm border border-cyan-400/40 transition-all flex items-center justify-center gap-2"
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white font-bold text-sm shadow-glow-accent hover:opacity-95 transition-all flex items-center justify-center gap-2"
             >
-              <BookOpen className="w-4 h-4 text-cyan-300" />
-              <span>Browse All Courses</span>
+              <BookOpen className="w-4 h-4" />
+              <span>Explore Programs & Enroll</span>
             </Link>
           </div>
         </div>
@@ -219,364 +176,307 @@ export const CommunityPage: React.FC = () => {
     );
   }
 
-  // =========================================================================
-  // 2. LOADING STATE
-  // =========================================================================
-  if (loadingChannels) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
-        <p className="text-sm font-bold text-slate-300">Synchronizing Scalora Community Feed...</p>
-      </div>
-    );
-  }
-
-  // =========================================================================
-  // 3. ZERO-ENROLLMENT LOCKED STATE
-  // =========================================================================
-  if (hasAccess === false) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center space-y-8">
-        <div className="w-20 h-20 rounded-3xl bg-amber-500/20 text-amber-300 flex items-center justify-center mx-auto border border-amber-500/40 shadow-glow-amber">
-          <Lock className="w-10 h-10" />
-        </div>
-
-        <div className="space-y-3 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-extrabold uppercase tracking-wider">
-            <span>Exclusive Scalora Member Network</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            You must be enrolled in a course to join the Scalora Community.
-          </h1>
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            The Scalora Community is an exclusive social network engineered for registered students. Once you
-            enroll in any track, you will immediately gain access to that course's private channel, peer discussion feed,
-            and downloadable architecture blueprints.
-          </p>
-        </div>
-
-        {/* Community Perks Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-3xl mx-auto pt-4">
-          <div className="bg-[#0B1528] p-5 rounded-2xl border border-cyan-500/20 space-y-2">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold">
-              1
-            </div>
-            <h4 className="text-sm font-bold text-white">Private Course Channels</h4>
-            <p className="text-xs text-slate-400">Direct peer communication and topic-specific discussion channels.</p>
-          </div>
-
-          <div className="bg-[#0B1528] p-5 rounded-2xl border border-emerald-500/20 space-y-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-              2
-            </div>
-            <h4 className="text-sm font-bold text-white">Resource & Blueprint Vault</h4>
-            <p className="text-xs text-slate-400">Download production-tested Helm charts, scripts, and SOPs.</p>
-          </div>
-
-          <div className="bg-[#0B1528] p-5 rounded-2xl border border-purple-500/20 space-y-2">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold">
-              3
-            </div>
-            <h4 className="text-sm font-bold text-white">Direct Instructor AMAs</h4>
-            <p className="text-xs text-slate-400">Live weekly architectural reviews and feedback sessions.</p>
-          </div>
-        </div>
-
-        {/* CTA Button */}
-        <div className="pt-4">
-          <Link
-            to="/courses"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white font-black text-sm shadow-glow-accent hover:opacity-95 transform hover:-translate-y-0.5 transition-all"
-          >
-            <BookOpen className="w-5 h-5" />
-            <span>Explore Course Catalog & Enroll</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // =========================================================================
-  // 4. MAIN INTERACTIVE 3-COLUMN COMMUNITY PLATFORM
-  // =========================================================================
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Mobile / Tablet View Switcher Tabs (Hidden on Desktop) */}
-      <div className="lg:hidden flex items-center p-1 rounded-2xl bg-[#0B1528] border border-white/10 text-xs font-bold shadow-lg">
-        <button
-          type="button"
-          onClick={() => setMobileTab('CHANNELS')}
-          className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-            mobileTab === 'CHANNELS'
-              ? 'bg-cyan-500 text-white shadow-glow-accent'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Channels</span>
-        </button>
+    <div className="min-h-screen bg-[#040D1B] py-4 sm:py-6">
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 space-y-4">
+        {/* Mobile Sub-Navigation Bar */}
+        <div className="lg:hidden flex items-center justify-between p-2 rounded-2xl bg-[#0B1528] border border-white/10">
+          <button
+            type="button"
+            onClick={() => setMobileTab('CHANNELS')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all ${
+              mobileTab === 'CHANNELS' ? 'bg-cyan-500 text-white' : 'text-slate-400'
+            }`}
+          >
+            Communities ({channels.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('FEED')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all ${
+              mobileTab === 'FEED' ? 'bg-cyan-500 text-white' : 'text-slate-400'
+            }`}
+          >
+            Community Hub
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('INFO')}
+            className={`flex-1 py-2 rounded-xl text-xs font-bold text-center transition-all ${
+              mobileTab === 'INFO' ? 'bg-cyan-500 text-white' : 'text-slate-400'
+            }`}
+          >
+            Trainers & Info
+          </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setMobileTab('FEED')}
-          className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-            mobileTab === 'FEED'
-              ? 'bg-cyan-500 text-white shadow-glow-accent'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Compass className="w-3.5 h-3.5" />
-          <span>Feed</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setMobileTab('INFO')}
-          className={`flex-1 py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-            mobileTab === 'INFO'
-              ? 'bg-cyan-500 text-white shadow-glow-accent'
-              : 'text-slate-400 hover:text-white'
-          }`}
-        >
-          <Info className="w-3.5 h-3.5" />
-          <span>About</span>
-        </button>
-      </div>
-
-      {/* Main 3-Column Responsive Grid */}
-      <div className="flex flex-col lg:flex-row items-start gap-6">
-        {/* LEFT COLUMN: Channels Switcher & Profile Card */}
-        <div className={`w-full lg:w-72 lg:block ${mobileTab === 'CHANNELS' ? 'block' : 'hidden'}`}>
-          <div className="lg:sticky lg:top-24">
+        {/* 3-COLUMN MAIN LAYOUT */}
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
+          {/* ========================================================================= */}
+          {/* 1. LEFT SIDEBAR: User Card, Navigation & Enrolled Communities */}
+          {/* ========================================================================= */}
+          <div className={`w-full lg:w-72 flex-shrink-0 ${mobileTab === 'CHANNELS' ? 'block' : 'hidden lg:block'}`}>
             <ChannelSidebar
               channels={channels}
               selectedChannelId={selectedChannelId}
               onSelectChannel={handleSelectChannel}
+              activeMainTab={activeMainTab}
+              onSelectMainTab={(tab) => {
+                setActiveMainTab(tab);
+                setMobileTab('FEED');
+              }}
               activeFilter={feedFilter}
               onSelectFilter={handleSelectFilter}
-              onOpenMyProfile={() => user?.id && setInspectUserId(user.id)}
+              onOpenMyProfile={() => user && setInspectUserId(user.id)}
             />
           </div>
-        </div>
 
-        {/* CENTER COLUMN: Feed Header, Fixed Post Creator, Feed Stream */}
-        <main className={`flex-1 min-w-0 w-full space-y-5 ${mobileTab === 'FEED' ? 'block' : 'hidden lg:block'}`}>
-          {/* Feed Header Banner */}
-          {currentChannel && (
-            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#071A36] via-[#0B254E] to-[#041226] border border-cyan-500/30 shadow-2xl space-y-3 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-72 h-72 bg-cyan-400/10 blur-3xl rounded-full pointer-events-none" />
+          {/* ========================================================================= */}
+          {/* 2. CENTER COLUMN: Community Hero, Segmented Tabs & Main Content */}
+          {/* ========================================================================= */}
+          <main className={`flex-1 min-w-0 space-y-4 ${mobileTab === 'FEED' ? 'block' : 'hidden lg:block'}`}>
+            {selectedChannel && (
+              <>
+                {/* ========================================================================= */}
+                {/* COMMUNITY HERO SECTION (Premium Header Card) */}
+                {/* ========================================================================= */}
+                <div className="bg-[#0B1528] rounded-3xl p-5 sm:p-6 border border-white/10 shadow-2xl relative overflow-hidden space-y-4 group">
+                  {/* Subtle Gradient Backdrop */}
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                      {currentChannel.course?.category || 'Active Track'}
-                    </span>
-                    <span className="text-xs text-slate-300 font-semibold">• {currentChannel.membersCount} Members</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                    <div className="space-y-1.5 min-w-0">
+                      {/* Category Badge */}
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                          {selectedChannel.course?.category || 'Executive Track'}
+                        </span>
+                        {selectedChannel.isLocked && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            <span>Announcements Only</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Community Title */}
+                      <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
+                        {selectedChannel.name}
+                      </h1>
+
+                      {/* Description */}
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+                        {selectedChannel.description ||
+                          'Interactive collaboration hub for peer networking, instructor discussions, and project reviews.'}
+                      </p>
+                    </div>
+
+                    {/* Quick Metadata Stats */}
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                      <div className="px-3.5 py-2 rounded-2xl bg-[#071324] border border-white/10 text-center">
+                        <div className="text-xs font-black text-purple-300">{trainersCount}</div>
+                        <div className="text-[10px] text-slate-400 font-bold">Trainers</div>
+                      </div>
+                      <div className="px-3.5 py-2 rounded-2xl bg-[#071324] border border-white/10 text-center">
+                        <div className="text-xs font-black text-white">{selectedChannel.membersCount || 43}</div>
+                        <div className="text-[10px] text-slate-400 font-bold">Members</div>
+                      </div>
+                    </div>
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">{currentChannel.name}</h1>
-                  <p className="text-xs text-slate-300 line-clamp-2">{currentChannel.description}</p>
-                </div>
-              </div>
 
-              {/* 5-Tab Community Navigation Switcher */}
-              <div className="pt-3 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => setActiveMainTab('FEED')}
-                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                    activeMainTab === 'FEED'
-                      ? 'bg-cyan-500 text-white shadow-glow-accent'
-                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Discussion Feed</span>
-                </button>
+                  {/* ========================================================================= */}
+                  {/* LARGE MODERN SEGMENTED COMMUNITY TABS */}
+                  {/* ========================================================================= */}
+                  <div className="pt-2 border-t border-white/10 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs sm:text-sm font-bold">
+                    {/* 1. Feed */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveMainTab('FEED')}
+                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                        activeMainTab === 'FEED'
+                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Feed</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveMainTab('CHAT')}
-                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                    activeMainTab === 'CHAT'
-                      ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
-                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <span className="text-sm">⚡</span>
-                  <span>Group Chat</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                </button>
+                    {/* 2. Group Chat */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveMainTab('CHAT')}
+                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                        activeMainTab === 'CHAT'
+                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
+                      <span>Group Chat</span>
+                      <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 text-[10px] uppercase">
+                        Live
+                      </span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveMainTab('MEMBERS')}
-                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                    activeMainTab === 'MEMBERS'
-                      ? 'bg-cyan-500 text-white shadow-glow-accent'
-                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Members</span>
-                </button>
+                    {/* 3. Resources */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveMainTab('RESOURCES')}
+                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                        activeMainTab === 'RESOURCES'
+                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      <FolderDown className="w-4 h-4" />
+                      <span>Resources</span>
+                    </button>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveMainTab('RESOURCES')}
-                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                    activeMainTab === 'RESOURCES'
-                      ? 'bg-purple-500 text-white shadow-md'
-                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <FolderDown className="w-3.5 h-3.5" />
-                  <span>Resources</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveMainTab('EVENTS')}
-                  className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all ${
-                    activeMainTab === 'EVENTS'
-                      ? 'bg-rose-500 text-white shadow-md'
-                      : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>Live AMAs</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 1: DISCUSSION FEED */}
-          {activeMainTab === 'FEED' && (
-            <>
-              {/* Feed Sub-Filter Chips & Live Search */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0B1528] p-3 rounded-2xl border border-white/10">
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => setFeedFilter('ALL')}
-                    className={`px-3 py-1.5 rounded-xl transition-all ${
-                      feedFilter === 'ALL'
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
-                        : 'bg-white/5 text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    All
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFeedFilter('ANNOUNCEMENTS')}
-                    className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-                      feedFilter === 'ANNOUNCEMENTS'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-400/40'
-                        : 'bg-white/5 text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <Megaphone className="w-3 h-3" />
-                    <span>Announcements</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFeedFilter('RESOURCES')}
-                    className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-                      feedFilter === 'RESOURCES'
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
-                        : 'bg-white/5 text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <Paperclip className="w-3 h-3" />
-                    <span>Resources</span>
-                  </button>
+                    {/* 4. Members */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveMainTab('MEMBERS')}
+                      className={`px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 ${
+                        activeMainTab === 'MEMBERS'
+                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Members</span>
+                      <span className="text-xs text-slate-400 font-normal">({selectedChannel.membersCount})</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="relative min-w-[200px]">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search in feed..."
-                    value={postSearch}
-                    onChange={(e) => setPostSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Post Composer */}
-              {currentChannel && feedFilter !== 'SAVED' && (
-                <PostComposer
-                  channelId={currentChannel.id}
-                  channelName={currentChannel.name}
-                  isLocked={currentChannel.isLocked}
-                  onPostCreated={handlePostCreated}
-                />
-              )}
-
-              {/* Feed Stream */}
-              <div className="space-y-4">
-                {loadingPosts ? (
-                  <div className="py-20 text-center text-xs text-slate-400 flex flex-col items-center gap-3">
-                    <Loader2 className="w-9 h-9 animate-spin text-cyan-400" />
-                    <span>Fetching latest discussions...</span>
-                  </div>
-                ) : posts.length === 0 ? (
-                  <div className="text-center py-16 bg-[#0B1528] rounded-3xl space-y-3 p-8 border border-white/10 shadow-xl">
-                    <MessageSquare className="w-12 h-12 text-slate-500 mx-auto" />
-                    <h3 className="text-base font-bold text-white">No discussions found</h3>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                      {postSearch
-                        ? `No discussions matching "${postSearch}". Try another keyword.`
-                        : 'Be the first to share an insight, ask an architecture question, or post a code blueprint!'}
-                    </p>
-                  </div>
-                ) : (
-                  posts.map((post) => (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      onPostDeleted={handlePostDeleted}
-                      onPostUpdated={handlePostUpdated}
-                      onUserClick={(uid) => setInspectUserId(uid)}
+                {/* ========================================================================= */}
+                {/* TAB CONTENT: 1. FEED */}
+                {/* ========================================================================= */}
+                {activeMainTab === 'FEED' && (
+                  <div className="space-y-4">
+                    {/* LinkedIn-style Post Composer */}
+                    <PostComposer
+                      channelId={selectedChannel.id}
+                      channelName={selectedChannel.name}
+                      isLocked={selectedChannel.isLocked}
+                      onPostCreated={(newPost) => setPosts((prev) => [newPost, ...prev])}
                     />
-                  ))
+
+                    {/* Feed Filter & Search Bar */}
+                    <div className="p-3 bg-[#0B1528] rounded-2xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold">
+                      <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
+                        <button
+                          type="button"
+                          onClick={() => setFeedFilter('ALL')}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            feedFilter === 'ALL'
+                              ? 'bg-cyan-500 text-white'
+                              : 'bg-white/5 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          All Discussions
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFeedFilter('ANNOUNCEMENTS')}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            feedFilter === 'ANNOUNCEMENTS'
+                              ? 'bg-rose-500 text-white'
+                              : 'bg-white/5 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Announcements
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFeedFilter('SAVED')}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            feedFilter === 'SAVED'
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-white/5 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Saved Bookmarks
+                        </button>
+                      </div>
+
+                      <div className="relative w-full sm:w-56">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Filter discussions..."
+                          value={postSearch}
+                          onChange={(e) => setPostSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Feed Posts Stream */}
+                    <div className="space-y-4">
+                      {loadingPosts ? (
+                        <div className="py-20 text-center flex flex-col items-center justify-center space-y-2">
+                          <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+                          <span className="text-xs text-slate-400">Loading feed...</span>
+                        </div>
+                      ) : posts.length === 0 ? (
+                        <div className="p-12 text-center bg-[#0B1528] rounded-3xl border border-white/10 space-y-2">
+                          <MessageSquare className="w-10 h-10 text-slate-600 mx-auto" />
+                          <h4 className="text-sm font-bold text-white">No discussions yet</h4>
+                          <p className="text-xs text-slate-400">Be the first to share an insight or question!</p>
+                        </div>
+                      ) : (
+                        posts.map((post) => (
+                          <PostCard
+                            key={post.id}
+                            post={post}
+                            onPostDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+                            onPostUpdated={(updated) =>
+                              setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+                            }
+                            onUserClick={(authorId) => setInspectUserId(authorId)}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )}
-              </div>
-            </>
-          )}
 
-          {/* TAB 2: LIVE GROUP CHAT ROOM */}
-          {activeMainTab === 'CHAT' && currentChannel && (
-            <CommunityChatRoom channelId={currentChannel.id} channelName={currentChannel.name} />
-          )}
+                {/* ========================================================================= */}
+                {/* TAB CONTENT: 2. LIVE GROUP CHAT ROOM */}
+                {/* ========================================================================= */}
+                {activeMainTab === 'CHAT' && (
+                  <CommunityChatRoom channelId={selectedChannel.id} channelName={selectedChannel.name} />
+                )}
 
-          {/* TAB 3: MEMBERS DIRECTORY */}
-          {activeMainTab === 'MEMBERS' && (
-            <CommunityMembersTab channel={currentChannel} onUserClick={(uid) => setInspectUserId(uid)} />
-          )}
+                {/* ========================================================================= */}
+                {/* TAB CONTENT: 3. RESOURCES VAULT */}
+                {/* ========================================================================= */}
+                {activeMainTab === 'RESOURCES' && (
+                  <CommunityResourcesTab posts={posts} />
+                )}
 
-          {/* TAB 4: RESOURCE VAULT */}
-          {activeMainTab === 'RESOURCES' && (
-            <CommunityResourcesTab posts={posts} />
-          )}
+                {/* ========================================================================= */}
+                {/* TAB CONTENT: 4. MEMBERS DIRECTORY */}
+                {/* ========================================================================= */}
+                {activeMainTab === 'MEMBERS' && (
+                  <CommunityMembersTab
+                    channel={selectedChannel}
+                    onUserClick={(userId) => setInspectUserId(userId)}
+                  />
+                )}
+              </>
+            )}
+          </main>
 
-          {/* TAB 5: LIVE AMAs & EVENTS */}
-          {activeMainTab === 'EVENTS' && (
-            <CommunityEventsTab />
-          )}
-        </main>
-
-        {/* RIGHT COLUMN: Community Info & Leaderboard */}
-        <div className={`w-full lg:w-80 lg:block ${mobileTab === 'INFO' ? 'block' : 'hidden'}`}>
-          <div className="lg:sticky lg:top-24">
+          {/* ========================================================================= */}
+          {/* 3. RIGHT SIDEBAR: Overview Stats, Instructors & Leaderboard */}
+          {/* ========================================================================= */}
+          <div className={`w-full lg:w-80 flex-shrink-0 ${mobileTab === 'INFO' ? 'block' : 'hidden lg:block'}`}>
             <ChannelInfoPanel
-              channel={currentChannel}
-              pinnedAnnouncements={pinnedAnnouncements}
+              channel={selectedChannel}
+              pinnedAnnouncements={posts.filter((p) => p.isPinned)}
               onUserClick={(uid) => setInspectUserId(uid)}
             />
           </div>
@@ -584,11 +484,13 @@ export const CommunityPage: React.FC = () => {
       </div>
 
       {/* Member Profile Modal */}
-      <MemberProfileModal
-        userId={inspectUserId}
-        isOpen={Boolean(inspectUserId)}
-        onClose={() => setInspectUserId(null)}
-      />
+      {inspectUserId && (
+        <MemberProfileModal
+          isOpen={Boolean(inspectUserId)}
+          userId={inspectUserId}
+          onClose={() => setInspectUserId(null)}
+        />
+      )}
     </div>
   );
 };
