@@ -24,7 +24,9 @@ import {
   ArrowRight,
   Filter,
   CheckCircle2,
+  SlidersHorizontal,
 } from 'lucide-react';
+import { NotificationPreferencesModal } from '../components/NotificationPreferencesModal';
 
 type NotificationTab = 'ALL' | 'UNREAD' | 'MESSAGES' | 'COMMUNITY' | 'COURSES' | 'SYSTEM';
 
@@ -36,6 +38,7 @@ export const NotificationCenterPage: React.FC = () => {
   const [notifications, setNotifications] = useState<CommunityNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({
     all: 0,
     messages: 0,
@@ -258,16 +261,28 @@ export const NotificationCenterPage: React.FC = () => {
           </div>
         </div>
 
-        {unreadCounts.all > 0 && (
+        <div className="flex items-center gap-2.5 relative z-10 self-start md:self-auto">
           <button
             type="button"
-            onClick={handleMarkAllRead}
-            className="px-5 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-cyan-300 hover:text-white font-bold text-xs border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center gap-2 relative z-10 self-start md:self-auto"
+            onClick={() => setPreferencesOpen(true)}
+            className="p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white font-bold text-xs border border-white/10 transition-all flex items-center gap-1.5"
+            title="Notification Preferences"
           >
-            <CheckCheck className="w-4 h-4" />
-            <span>Mark All as Read ({unreadCounts.all})</span>
+            <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
+            <span className="hidden sm:inline">Preferences</span>
           </button>
-        )}
+
+          {unreadCounts.all > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="px-4 py-2.5 rounded-2xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 hover:text-white font-bold text-xs border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center gap-2"
+            >
+              <CheckCheck className="w-4 h-4" />
+              <span>Mark All Read ({unreadCounts.all})</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 2. Search & Tab Filter Bar */}
@@ -393,6 +408,12 @@ export const NotificationCenterPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* 4. Notification Preferences Modal */}
+      <NotificationPreferencesModal
+        isOpen={preferencesOpen}
+        onClose={() => setPreferencesOpen(false)}
+      />
     </div>
   );
 };

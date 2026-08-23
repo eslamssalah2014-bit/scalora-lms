@@ -6,7 +6,8 @@ import {
   markAllNotificationsRead,
   deleteNotification,
   adminBroadcastNotification,
-  adminGetBroadcastCourses,
+  adminGetBroadcastAudience,
+  adminGetBroadcastHistory,
 } from '../controllers/notification.controller.js';
 
 const router = Router();
@@ -19,6 +20,8 @@ router.delete('/:id', authenticate, deleteNotification);
 
 // Admin Broadcast Endpoints
 router.post('/admin/broadcast', authenticate, adminBroadcastNotification);
-router.get('/admin/courses', authenticate, adminGetBroadcastCourses);
+router.get('/admin/audience', authenticate, adminGetBroadcastAudience);
+router.get('/admin/history', authenticate, adminGetBroadcastHistory);
+router.get('/admin/courses', authenticate, adminGetBroadcastAudience);
 
 export default router;

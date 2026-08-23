@@ -4,13 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { notificationService } from '../services/notification.service.js';
 
-const broadcastSchema = z.object({
-  title: z.string().min(1, 'Notification title is required'),
-  message: z.string().min(1, 'Notification message is required'),
-  targetType: z.enum(['ALL', 'COURSE']),
-  courseId: z.string().optional(),
-  type: z.string().optional(),
-});
+
 
 /**
  * Get current user's notifications with rich category filtering & unread metrics
@@ -184,32 +178,49 @@ export const deleteNotification = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
+const broadcastSchema = z.object({
+  title: z.string().min(1, 'Notification title is required'),
+  message: z.string().min(1, 'Notification message is required'),
+  targetType: z.enum(['ALL', 'COURSE', 'TRAINER']),
+  courseId: z.string().optional(),
+  trainerId: z.string().optional(),
+  type: z.string().optional(),
+  imageUrl: z.string().optional().or(z.literal('')),
+  actionUrl: z.string().optional().or(z.literal('')),
+});
+
 /**
- * Admin: Broadcast a notification (Global to all users or specific course)
+ * Admin: Broadcast a notification (Global, Course-specific, or Trainer-specific)
  */
 export const adminBroadcastNotification = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const actorId = req.user?.id;
+    const actorName = req.user?.name || 'Administrator';
     if (req.user?.role !== 'ADMIN') {
       res.status(403).json({ success: false, message: 'Admin role required' });
       return;
     }
 
-    const { title, message, targetType, courseId, type } = broadcastSchema.parse(req.body);
+    const validated = broadcastSchema.parse(req.body);
 
     const result = await notificationService.broadcastNotification({
       actorId,
-      title,
-      message,
-      targetType,
-      courseId,
-      type: type || (targetType === 'COURSE' ? 'COURSE_ANNOUNCEMENT' : 'GLOBAL'),
+      actorName,
+      title: validated.title,
+      message: validated.message,
+      targetType: validated.targetType,
+      courseId: validated.courseId,
+      trainerId: validated.trainerId,
+      type: validated.type,
+      imageUrl: validated.imageUrl,
+      actionUrl: validated.actionUrl,
     });
 
     res.status(201).json({
       success: true,
       message: `Notification broadcast successfully to ${result.count} scholars`,
       count: result.count,
+      broadcast: result.broadcast,
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -221,25 +232,85 @@ export const adminBroadcastNotification = async (req: AuthenticatedRequest, res:
 };
 
 /**
- * Admin: Get available courses for broadcast target selection
+ * Admin: Get broadcast campaign history with live analytics metrics
  */
-export const adminGetBroadcastCourses = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const adminGetBroadcastHistory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     if (req.user?.role !== 'ADMIN') {
       res.status(403).json({ success: false, message: 'Admin role required' });
       return;
     }
 
-    const courses = await prisma.course.findMany({
-      where: { deletedAt: null },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        category: true,
-        _count: { select: { enrollments: true } },
-      },
-      orderBy: { title: 'asc' },
+    const history = await notificationService.getBroadcastHistory();
+    res.json({
+      success: true,
+      history,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error fetching broadcast history' });
+  }
+};
+
+/**
+ * Admin: Get available audience targets (courses and trainers with student counts)
+ */
+export const adminGetBroadcastAudience = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      res.status(403).json({ success: false, message: 'Admin role required' });
+      return;
+    }
+
+    const [courses, trainers] = await Promise.all([
+      prisma.course.findMany({
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          category: true,
+          _count: { select: { enrollments: { where: { status: 'ACTIVE' } } } },
+        },
+        orderBy: { title: 'asc' },
+      }),
+      prisma.user.findMany({
+        where: { role: 'TRAINER', deletedAt: null, status: 'ACTIVE' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          title: true,
+          assignedCourses: {
+            include: {
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                  _count: { select: { enrollments: { where: { status: 'ACTIVE' } } } },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    const formattedTrainers = trainers.map((t) => {
+      const studentCount = t.assignedCourses.reduce(
+        (sum, ac) => sum + (ac.course._count.enrollments || 0),
+        0
+      );
+      return {
+        id: t.id,
+        name: t.name,
+        email: t.email,
+        avatar: t.avatar,
+        title: t.title,
+        coursesCount: t.assignedCourses.length,
+        studentCount,
+      };
     });
 
     res.json({
@@ -251,8 +322,9 @@ export const adminGetBroadcastCourses = async (req: AuthenticatedRequest, res: R
         category: c.category,
         enrolledCount: c._count.enrollments,
       })),
+      trainers: formattedTrainers,
     });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message || 'Error fetching broadcast courses' });
+    res.status(500).json({ success: false, message: error.message || 'Error fetching audience options' });
   }
 };

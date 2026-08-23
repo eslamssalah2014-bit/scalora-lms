@@ -21,6 +21,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { usePwa } from '../hooks/usePwa';
+import { showNativeNotification } from '../lib/pushNotifications';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -47,14 +48,34 @@ export const Navbar: React.FC = () => {
       .catch(() => {});
 
     // Connect and listen to Realtime Push Events
-    const unsub = realtime.on('new_direct_message', () => {
+    const unsubMsg = realtime.on('new_direct_message', (data) => {
       if (location.pathname !== '/messages') {
         setUnreadMsgCount((prev) => prev + 1);
+      }
+      if (data?.message?.sender?.name) {
+        showNativeNotification({
+          title: `Direct Message from ${data.message.sender.name}`,
+          body: data.message.content || 'New message received',
+          type: 'MESSAGE',
+          actionUrl: `/messages?partner=${data.message.senderId}`,
+        });
+      }
+    });
+
+    const unsubNotif = realtime.on('notification', (data) => {
+      if (data?.notification) {
+        showNativeNotification({
+          title: data.notification.title || 'New Scalora Notification',
+          body: data.notification.message || 'You have a new update in Scalora',
+          type: data.notification.type,
+          actionUrl: data.notification.actionUrl || '/notifications',
+        });
       }
     });
 
     return () => {
-      unsub();
+      unsubMsg();
+      unsubNotif();
     };
   }, [user?.id, location.pathname]);
 
