@@ -15,6 +15,7 @@ import communityRoutes from './routes/community.routes.js';
 import trainerRoutes from './routes/trainer.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import chatRoutes from './routes/chat.routes.js';
+import realtimeRoutes from './routes/realtime.routes.js';
 
 dotenv.config();
 
@@ -122,6 +123,9 @@ app.use('/trainers', trainerRoutes);
 
 app.use('/api/messages', messageRoutes);
 app.use('/messages', messageRoutes);
+
+app.use('/api/realtime', realtimeRoutes);
+app.use('/realtime', realtimeRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);

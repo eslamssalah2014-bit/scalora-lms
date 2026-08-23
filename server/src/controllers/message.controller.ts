@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { realtimeService } from '../services/realtime.service.js';
 
 const messageSchema = z.object({
   recipientId: z.string().min(1, 'Recipient ID is required'),
@@ -321,6 +322,10 @@ export const sendMessage = async (
         },
       },
     });
+
+    // Realtime Push Event to Recipient and Sender
+    realtimeService.sendToUser(recipientId, 'new_direct_message', { message });
+    realtimeService.sendToUser(senderId, 'direct_message_sent', { message });
 
     res.status(201).json({ success: true, message });
   } catch (error: any) {

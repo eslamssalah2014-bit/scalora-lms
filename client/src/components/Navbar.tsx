@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NotificationDropdown } from './community/NotificationDropdown';
 import { api } from '../lib/api';
-import { supabase } from '../lib/supabase';
+import { realtime } from '../lib/realtime';
 import {
   GraduationCap,
   BookOpen,
@@ -42,21 +42,15 @@ export const Navbar: React.FC = () => {
       })
       .catch(() => {});
 
-    // Supabase Realtime User Inbox channel
-    const channel = supabase.channel(`navbar-inbox:${user.id}`, {
-      config: { broadcast: { self: false } },
+    // Connect and listen to Realtime Push Events
+    const unsub = realtime.on('new_direct_message', () => {
+      if (location.pathname !== '/messages') {
+        setUnreadMsgCount((prev) => prev + 1);
+      }
     });
 
-    channel
-      .on('broadcast', { event: 'new_direct_message' }, () => {
-        if (location.pathname !== '/messages') {
-          setUnreadMsgCount((prev) => prev + 1);
-        }
-      })
-      .subscribe();
-
     return () => {
-      supabase.removeChannel(channel);
+      unsub();
     };
   }, [user?.id, location.pathname]);
 

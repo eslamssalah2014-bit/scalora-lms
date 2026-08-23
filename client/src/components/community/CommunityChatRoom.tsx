@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
-import { supabase } from '../../lib/supabase';
+import { realtime } from '../../lib/realtime';
 import { CommunityChatMessage } from '../../types';
 import {
   MessageSquare,
@@ -47,7 +47,6 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
   const typingTimerRef = useRef<{ [userId: string]: NodeJS.Timeout }>({});
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -58,38 +57,71 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
   }, [messages, typingUsers]);
 
   // =========================================================================
-  // SUPABASE REALTIME SUBSCRIPTION FOR GROUP CHAT ROOM
+  // REAL-TIME GROUP CHAT SUBSCRIPTIONS (ZERO REFRESH REQUIRED)
   // =========================================================================
   useEffect(() => {
     if (!channelId) return;
 
-    const groupChannel = supabase.channel(`group-chat:${channelId}`, {
-      config: { broadcast: { self: false } },
-    });
+    realtime.connect();
 
-    groupChannel
-      .on('broadcast', { event: 'chat_message' }, ({ payload }) => {
-        const incoming: CommunityChatMessage = payload.message;
-        if (incoming) {
+    // 1. Listen for new group chat messages
+    const unsubChatMessage = realtime.on(
+      'chat_message',
+      ({ channelId: incomingChannelId, message }: { channelId: string; message: CommunityChatMessage }) => {
+        if (incomingChannelId === channelId && message) {
           setMessages((prev) => {
-            if (prev.some((m) => m.id === incoming.id)) return prev;
-            return [...prev, incoming];
+            if (prev.some((m) => m.id === message.id)) return prev;
+            return [...prev, message];
           });
         }
-      })
-      .on('broadcast', { event: 'chat_pin' }, ({ payload }) => {
-        const { messageId, isPinned } = payload;
-        setMessages((prev) =>
-          prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m))
-        );
-      })
-      .on('broadcast', { event: 'chat_delete' }, ({ payload }) => {
-        const { messageId } = payload;
-        setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      })
-      .on('broadcast', { event: 'chat_typing' }, ({ payload }) => {
-        const { userId, userName, isTyping } = payload;
-        if (userId === user?.id) return;
+      }
+    );
+
+    // 2. Listen for pin status updates
+    const unsubPin = realtime.on(
+      'chat_pin',
+      ({
+        channelId: incomingChannelId,
+        messageId,
+        isPinned,
+      }: {
+        channelId: string;
+        messageId: string;
+        isPinned: boolean;
+      }) => {
+        if (incomingChannelId === channelId) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m))
+          );
+        }
+      }
+    );
+
+    // 3. Listen for message deletions
+    const unsubDelete = realtime.on(
+      'chat_delete',
+      ({ channelId: incomingChannelId, messageId }: { channelId: string; messageId: string }) => {
+        if (incomingChannelId === channelId) {
+          setMessages((prev) => prev.filter((m) => m.id !== messageId));
+        }
+      }
+    );
+
+    // 4. Listen for group typing indicators
+    const unsubTyping = realtime.on(
+      'chat_typing',
+      ({
+        channelId: incomingChannelId,
+        userId,
+        userName,
+        isTyping,
+      }: {
+        channelId: string;
+        userId: string;
+        userName: string;
+        isTyping: boolean;
+      }) => {
+        if (incomingChannelId !== channelId || userId === user?.id) return;
 
         setTypingUsers((prev) => {
           if (isTyping) {
@@ -101,7 +133,6 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
           }
         });
 
-        // Auto-clear after 3s
         if (typingTimerRef.current[userId]) clearTimeout(typingTimerRef.current[userId]);
         if (isTyping) {
           typingTimerRef.current[userId] = setTimeout(() => {
@@ -112,13 +143,14 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
             });
           }, 3000);
         }
-      })
-      .subscribe();
-
-    channelRef.current = groupChannel;
+      }
+    );
 
     return () => {
-      supabase.removeChannel(groupChannel);
+      unsubChatMessage();
+      unsubPin();
+      unsubDelete();
+      unsubTyping();
       Object.values(typingTimerRef.current).forEach(clearTimeout);
     };
   }, [channelId, user?.id]);
@@ -141,17 +173,7 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
 
   const handleTypingChange = (val: string) => {
     setText(val);
-    if (channelRef.current && user) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'chat_typing',
-        payload: {
-          userId: user.id,
-          userName: user.name,
-          isTyping: val.trim().length > 0,
-        },
-      });
-    }
+    realtime.sendChatTyping(channelId, val.trim().length > 0);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -164,7 +186,7 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
     const fName = fileName.trim() || undefined;
     const parent = replyingTo?.id || undefined;
 
-    // Optimistic message
+    // Optimistic message (Appears instantly on screen)
     const tempId = `temp-${Date.now()}`;
     const optimisticMessage: CommunityChatMessage = {
       id: tempId,
@@ -196,13 +218,7 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
     setError(null);
 
     // Stop typing broadcast
-    if (channelRef.current && user) {
-      channelRef.current.send({
-        type: 'broadcast',
-        event: 'chat_typing',
-        payload: { userId: user.id, userName: user.name, isTyping: false },
-      });
-    }
+    realtime.sendChatTyping(channelId, false);
 
     try {
       const res = await api.post<{ success: boolean; message: CommunityChatMessage }>(
@@ -219,15 +235,6 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
       if (res.success && res.message) {
         const savedMessage = res.message;
         setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMessage : m)));
-
-        // Broadcast to all connected channel participants
-        if (channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'chat_message',
-            payload: { message: savedMessage },
-          });
-        }
       }
     } catch (err: any) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -249,14 +256,6 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
         setMessages((prev) =>
           prev.map((m) => (m.id === messageId ? { ...m, isPinned: updated.isPinned } : m))
         );
-
-        if (channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'chat_pin',
-            payload: { messageId, isPinned: updated.isPinned },
-          });
-        }
       }
     } catch (err) {
       console.error('Error toggling pin:', err);
@@ -268,14 +267,6 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
       const res = await api.delete<{ success: boolean }>(`/community/chat/${messageId}`);
       if (res.success) {
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
-
-        if (channelRef.current) {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'chat_delete',
-            payload: { messageId },
-          });
-        }
       }
     } catch (err) {
       console.error('Error deleting chat message:', err);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
-import { supabase } from '../lib/supabase';
+import { realtime } from '../lib/realtime';
 import { DirectMessage, Conversation } from '../types';
 import {
   Mail,
@@ -69,8 +69,6 @@ export const MessagesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const activeChannelRef = useRef<any>(null);
-  const userInboxChannelRef = useRef<any>(null);
 
   // Fetch initial conversations on load
   useEffect(() => {
@@ -101,131 +99,82 @@ export const MessagesPage: React.FC = () => {
   }, [messages, isPartnerTyping]);
 
   // =========================================================================
-  // SUPABASE REALTIME SUBSCRIPTIONS
+  // REAL-TIME PUSH SUBSCRIPTIONS (ZERO REFRESH REQUIRED)
   // =========================================================================
-
-  // 1. User Global Inbox Channel (For Real-Time Notifications across threads)
   useEffect(() => {
     if (!user?.id) return;
 
-    const inboxChannel = supabase.channel(`user-inbox:${user.id}`, {
-      config: { broadcast: { self: false } },
-    });
+    // Connect to persistent SSE Stream
+    realtime.connect();
 
-    inboxChannel
-      .on('broadcast', { event: 'new_direct_message' }, ({ payload }) => {
-        const newMsg: DirectMessage = payload.message;
-        if (!newMsg) return;
+    // 1. Listen for new incoming direct messages
+    const unsubNewMessage = realtime.on('new_direct_message', ({ message }: { message: DirectMessage }) => {
+      if (!message) return;
 
-        // If the message belongs to current active thread, append it
-        if (newMsg.senderId === activePartnerId || newMsg.recipientId === activePartnerId) {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
-          });
-        }
-
-        // Update conversation in sidebar
-        setConversations((prev) => {
-          const partnerId = newMsg.senderId === user.id ? newMsg.recipientId : newMsg.senderId;
-          const exists = prev.find((c) => c.partner.id === partnerId);
-
-          if (exists) {
-            return prev.map((c) => {
-              if (c.partner.id === partnerId) {
-                return {
-                  ...c,
-                  lastMessage: {
-                    id: newMsg.id,
-                    content: newMsg.content || (newMsg.attachmentType === 'IMAGE' ? '📷 Image' : '📎 Attachment'),
-                    createdAt: newMsg.createdAt,
-                    isSender: newMsg.senderId === user.id,
-                    isRead: newMsg.isRead,
-                  },
-                  unreadCount: partnerId === activePartnerId ? 0 : c.unreadCount + 1,
-                };
-              }
-              return c;
-            });
-          } else {
-            // Fetch fresh conversation list
-            fetchConversations();
-            return prev;
-          }
+      // If the message is part of current active conversation, append to stream immediately
+      if (message.senderId === activePartnerId || message.recipientId === activePartnerId) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
         });
-      })
-      .subscribe();
+        setIsPartnerTyping(false);
+      }
 
-    userInboxChannelRef.current = inboxChannel;
+      // Update conversations sidebar list & unread counters instantly
+      setConversations((prev) => {
+        const partnerId = message.senderId === user.id ? message.recipientId : message.senderId;
+        const exists = prev.find((c) => c.partner.id === partnerId);
 
-    return () => {
-      supabase.removeChannel(inboxChannel);
-    };
-  }, [user?.id, activePartnerId]);
-
-  // 2. Active Thread Channel (Presence & Typing & Instant WebSocket delivery)
-  useEffect(() => {
-    if (!user?.id || !activePartnerId) return;
-
-    const threadKey = [user.id, activePartnerId].sort().join('_');
-    const channel = supabase.channel(`dm-thread:${threadKey}`, {
-      config: {
-        presence: { key: user.id },
-        broadcast: { self: false },
-      },
-    });
-
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const partnerPresent = Boolean(state[activePartnerId]);
-        setIsPartnerOnline(partnerPresent);
-      })
-      .on('presence', { event: 'join' }, ({ key }) => {
-        if (key === activePartnerId) {
-          setIsPartnerOnline(true);
-        }
-      })
-      .on('presence', { event: 'leave' }, ({ key }) => {
-        if (key === activePartnerId) {
-          setIsPartnerOnline(false);
-        }
-      })
-      .on('broadcast', { event: 'dm_message' }, ({ payload }) => {
-        const incoming: DirectMessage = payload.message;
-        if (incoming) {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === incoming.id)) return prev;
-            return [...prev, incoming];
+        if (exists) {
+          return prev.map((c) => {
+            if (c.partner.id === partnerId) {
+              return {
+                ...c,
+                lastMessage: {
+                  id: message.id,
+                  content: message.content || (message.attachmentType === 'IMAGE' ? '📷 Image' : '📎 Attachment'),
+                  createdAt: message.createdAt,
+                  isSender: message.senderId === user.id,
+                  isRead: message.isRead,
+                },
+                unreadCount: partnerId === activePartnerId ? 0 : c.unreadCount + 1,
+              };
+            }
+            return c;
           });
-          setIsPartnerTyping(false);
-        }
-      })
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        if (payload.userId === activePartnerId) {
-          setIsPartnerTyping(Boolean(payload.isTyping));
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          if (payload.isTyping) {
-            typingTimeoutRef.current = setTimeout(() => {
-              setIsPartnerTyping(false);
-            }, 3000);
-          }
-        }
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            userId: user.id,
-            name: user.name,
-            onlineAt: new Date().toISOString(),
-          });
+        } else {
+          // Re-fetch conversation list to include the new partner
+          fetchConversations();
+          return prev;
         }
       });
+    });
 
-    activeChannelRef.current = channel;
+    // 2. Listen for typing indicators
+    const unsubTyping = realtime.on('typing', ({ senderId, isTyping }: { senderId: string; isTyping: boolean }) => {
+      if (senderId === activePartnerId) {
+        setIsPartnerTyping(Boolean(isTyping));
+
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        if (isTyping) {
+          typingTimeoutRef.current = setTimeout(() => {
+            setIsPartnerTyping(false);
+          }, 3000);
+        }
+      }
+    });
+
+    // 3. Listen for presence changes
+    const unsubPresence = realtime.on('presence', ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
+      if (userId === activePartnerId) {
+        setIsPartnerOnline(Boolean(isOnline));
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubNewMessage();
+      unsubTyping();
+      unsubPresence();
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [user?.id, activePartnerId]);
@@ -289,20 +238,15 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
-  // Broadcast Typing Indicator
+  // Dispatch Typing Indicator
   const handleTypingChange = (val: string) => {
     setText(val);
-
-    if (activeChannelRef.current && user?.id) {
-      activeChannelRef.current.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { userId: user.id, isTyping: val.trim().length > 0 },
-      });
+    if (activePartnerId) {
+      realtime.sendTyping(activePartnerId, val.trim().length > 0);
     }
   };
 
-  // Send Message with Optimistic Update + Realtime Broadcast
+  // Send Message with Optimistic Update + Realtime Server Push
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!text.trim() && !attachmentUrl.trim()) || !activePartnerId || !user) return;
@@ -312,7 +256,7 @@ export const MessagesPage: React.FC = () => {
     const mediaName = attachmentName.trim() || undefined;
     const mediaType = attachmentType || undefined;
 
-    // 1. Optimistic UI update
+    // 1. Optimistic UI update (Appears immediately on sender screen)
     const tempId = `temp-${Date.now()}`;
     const optimisticMessage: DirectMessage = {
       id: tempId,
@@ -349,13 +293,9 @@ export const MessagesPage: React.FC = () => {
     setSending(true);
     setError(null);
 
-    // Stop typing indicator broadcast
-    if (activeChannelRef.current) {
-      activeChannelRef.current.send({
-        type: 'broadcast',
-        event: 'typing',
-        payload: { userId: user.id, isTyping: false },
-      });
+    // Stop typing indicator
+    if (activePartnerId) {
+      realtime.sendTyping(activePartnerId, false);
     }
 
     try {
@@ -370,30 +310,8 @@ export const MessagesPage: React.FC = () => {
       if (res.success && res.message) {
         const savedMessage = res.message;
 
-        // Replace optimistic message with actual DB record
+        // Replace optimistic placeholder with verified DB record
         setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMessage : m)));
-
-        // 2. Broadcast to Thread Channel (Instant WebSocket delivery)
-        if (activeChannelRef.current) {
-          activeChannelRef.current.send({
-            type: 'broadcast',
-            event: 'dm_message',
-            payload: { message: savedMessage },
-          });
-        }
-
-        // 3. Broadcast to Recipient's Inbox Channel (Updates badges & preview)
-        const recipientInbox = supabase.channel(`user-inbox:${activePartnerId}`);
-        recipientInbox.subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            recipientInbox.send({
-              type: 'broadcast',
-              event: 'new_direct_message',
-              payload: { message: savedMessage },
-            });
-            setTimeout(() => supabase.removeChannel(recipientInbox), 1000);
-          }
-        });
 
         // Update local conversation preview in sidebar
         setConversations((prev) =>

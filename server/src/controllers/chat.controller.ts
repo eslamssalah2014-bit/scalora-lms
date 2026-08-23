@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { realtimeService } from '../services/realtime.service.js';
 
 const chatMessageSchema = z.object({
   content: z.string().min(1, 'Message cannot be empty'),
@@ -103,6 +104,9 @@ export const sendChannelChatMessage = async (
       },
     });
 
+    // Realtime Broadcast to Channel
+    realtimeService.broadcastToAll('chat_message', { channelId, message });
+
     res.status(201).json({ success: true, message });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -145,6 +149,13 @@ export const pinChatMessage = async (
       },
     });
 
+    // Realtime Broadcast Pin state
+    realtimeService.broadcastToAll('chat_pin', {
+      channelId: message.channelId,
+      messageId: updated.id,
+      isPinned: updated.isPinned,
+    });
+
     res.json({ success: true, message: updated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error pinning chat message' });
@@ -174,7 +185,14 @@ export const deleteChatMessage = async (
       return;
     }
 
+    const channelId = message.channelId;
     await prisma.communityChatMessage.delete({ where: { id } });
+
+    // Realtime Broadcast Delete state
+    realtimeService.broadcastToAll('chat_delete', {
+      channelId,
+      messageId: id,
+    });
 
     res.json({ success: true, message: 'Chat message deleted successfully' });
   } catch (error: any) {
