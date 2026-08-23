@@ -40,16 +40,20 @@ import { AdminTrainersPage } from './pages/admin/AdminTrainersPage';
 // Trainer & Messaging Pages
 import { TrainerDashboardPage } from './pages/trainer/TrainerDashboardPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { PwaInstallBanner } from './components/PwaInstallBanner';
+import { OfflineBanner } from './components/OfflineBanner';
 
 // Layout with Header & Footer
 const MainLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#04152D]">
+      <OfflineBanner />
       <Navbar />
       <main className="flex-1">
         <Outlet />
       </main>
       <Footer />
+      <PwaInstallBanner />
     </div>
   );
 };
