@@ -1,4 +1,15 @@
-const CACHE_NAME = 'scalora-pwa-v1';
+/**
+ * Scalora LMS - Progressive Web App Service Worker
+ * Cache Strategy: Strict Static Assets Only
+ *
+ * CRITICAL RULE:
+ * Dynamic data (API responses, Messages, Notifications, Feed, Group Chat,
+ * Profile, Courses, and Supabase Realtime) must NEVER be cached.
+ */
+
+const CACHE_NAME = 'scalora-static-v2';
+
+// ONLY immutable static shell assets are precached
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -8,10 +19,31 @@ const STATIC_ASSETS = [
   '/scalora-icon-transparent.png',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
+  '/pwa-512x512-maskable.png',
   '/apple-touch-icon.png',
 ];
 
-// Install Event: Precache core static assets
+// STRICT EXCLUSION LIST: Never intercept or cache these paths
+const EXCLUDED_PATTERNS = [
+  '/api/',
+  '/api/messages',
+  '/api/notifications',
+  '/api/community',
+  '/api/community/chat',
+  '/api/realtime',
+  '/api/courses',
+  '/api/enrollments',
+  '/api/auth',
+  '/api/trainers',
+  '/api/admin',
+  '/api/payments',
+  '/api/progress',
+  '/api/quizzes',
+  '/realtime',
+  'supabase.co',
+];
+
+// 1. Install Event: Precache core static shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -21,13 +53,14 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate Event: Clear stale caches
+// 2. Activate Event: Clear all legacy/stale caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[SW] Purging old cache:', key);
             return caches.delete(key);
           }
         })
@@ -37,82 +70,88 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event: Network-first with offline fallback for navigation, cache-first for static
+// 3. Fetch Event: Strict filtering
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = request.url;
 
-  // Ignore non-HTTP/HTTPS requests or WebSocket/SSE streams
-  if (
-    !request.url.startsWith('http') ||
-    request.url.includes('/api/realtime/stream') ||
-    request.method !== 'GET'
-  ) {
+  // RULE A: Pass-through non-HTTP requests and non-GET mutations immediately
+  if (!url.startsWith('http') || request.method !== 'GET') {
     return;
   }
 
-  // 1. Navigation Requests (HTML Page Navigation)
+  // RULE B: HARD BYPASS for all API endpoints, Realtime streams, and Supabase connections
+  // The Service Worker does NOT touch or cache any dynamic responses
+  const isExcluded = EXCLUDED_PATTERNS.some((pattern) => url.includes(pattern));
+  if (isExcluded) {
+    return; // Let browser make live network request directly
+  }
+
+  // RULE C: HTML Page Navigation (Single-Page App Shell)
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          // Cache a copy of visited pages
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(async () => {
-          // Attempt to retrieve cached page or return offline fallback
-          const cachedResponse = await caches.match(request);
-          if (cachedResponse) return cachedResponse;
-          const offlinePage = await caches.match('/offline.html');
-          return offlinePage || new Response('You are offline. Please reconnect to continue.', {
+      fetch(request).catch(async () => {
+        // Only if network fails completely, return cached index.html or offline fallback
+        const cachedIndex = await caches.match('/index.html');
+        if (cachedIndex) return cachedIndex;
+        const offlinePage = await caches.match('/offline.html');
+        return (
+          offlinePage ||
+          new Response('You are offline. Please reconnect to continue.', {
             headers: { 'Content-Type': 'text/plain' },
-          });
-        })
-    );
-    return;
-  }
-
-  // 2. Static Assets (Images, Fonts, CSS, JS) -> Stale While Revalidate
-  if (
-    request.destination === 'image' ||
-    request.destination === 'style' ||
-    request.destination === 'script' ||
-    request.destination === 'font'
-  ) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        const fetchPromise = fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseClone);
-              });
-            }
-            return networkResponse;
           })
-          .catch(() => cachedResponse);
-
-        return cachedResponse || fetchPromise;
+        );
       })
     );
     return;
   }
 
-  // 3. Default API / Data Requests -> Network first
-  event.respondWith(
-    fetch(request).catch(() => {
-      return caches.match(request);
-    })
-  );
+  // RULE D: Static Assets (Stylesheets, JavaScript bundles, Web Fonts, Images)
+  if (
+    request.destination === 'style' ||
+    request.destination === 'script' ||
+    request.destination === 'font' ||
+    request.destination === 'image' ||
+    url.endsWith('.png') ||
+    url.endsWith('.jpg') ||
+    url.endsWith('.svg') ||
+    url.endsWith('.webp') ||
+    url.endsWith('.woff2') ||
+    url.endsWith('.css') ||
+    url.endsWith('.js')
+  ) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        if (cachedResponse) {
+          // Serve from cache while fetching fresh asset in background (Stale While Revalidate)
+          fetch(request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                const clone = networkResponse.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+              }
+            })
+            .catch(() => {});
+          return cachedResponse;
+        }
+
+        // Not in cache, fetch from network and cache
+        return fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
+  // RULE E: All other requests pass directly to the network
 });
 
-// Push Notification Event Listener
+// 4. Push Notification Event Listener
 self.addEventListener('push', (event) => {
   let data = {
     title: 'Scalora LMS',
@@ -147,7 +186,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-// Notification Click Action
+// 5. Notification Click Handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
