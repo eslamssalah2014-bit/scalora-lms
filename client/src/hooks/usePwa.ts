@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { pwa } from '../lib/pwa';
+import { trackPwaEvent } from '../lib/pwaAnalytics';
 
 export interface UsePwaReturn {
   isInstalled: boolean;
@@ -32,17 +33,26 @@ export const usePwa = (): UsePwaReturn => {
 
     if (isIosDevice && !isStandalone) {
       setIsIos(true);
+      trackPwaEvent('PROMPT_SHOWN');
+    }
+
+    if (canInstall) {
+      trackPwaEvent('PROMPT_SHOWN');
     }
 
     // Subscribe to installable availability
     const unsub = pwa.onInstallChange((available) => {
       setCanInstall(available);
       setIsInstalled(pwa.getIsInstalled());
+      if (available) {
+        trackPwaEvent('PROMPT_SHOWN');
+      }
     });
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setCanInstall(false);
+      trackPwaEvent('APP_INSTALLED');
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -56,6 +66,8 @@ export const usePwa = (): UsePwaReturn => {
   }, []);
 
   const installApp = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unsupported'> => {
+    trackPwaEvent('PROMPT_CLICKED');
+
     if (isIos) {
       setShowIosGuide(true);
       return 'unsupported';
@@ -65,6 +77,7 @@ export const usePwa = (): UsePwaReturn => {
     if (outcome === 'accepted') {
       setIsInstalled(true);
       setCanInstall(false);
+      trackPwaEvent('APP_INSTALLED');
     }
     return outcome;
   }, [isIos]);

@@ -37,6 +37,7 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminCommunityPage } from './pages/admin/AdminCommunityPage';
 import { AdminTrainersPage } from './pages/admin/AdminTrainersPage';
 import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
+import { PwaAnalyticsPage } from './pages/admin/PwaAnalyticsPage';
 
 // Trainer, Messaging & Notifications Pages
 import { TrainerDashboardPage } from './pages/trainer/TrainerDashboardPage';
@@ -151,6 +152,7 @@ export const App: React.FC = () => {
           }
         >
           <Route index element={<AdminDashboardPage />} />
+          <Route path="pwa-analytics" element={<PwaAnalyticsPage />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="trainers" element={<AdminTrainersPage />} />
           <Route path="community" element={<AdminCommunityPage />} />
