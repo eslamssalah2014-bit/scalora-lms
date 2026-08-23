@@ -12,6 +12,7 @@
     
     <!-- Theme & Color Configuration -->
     <meta name="theme-color" content="#04152D" />
+    <meta name="background-color" content="#04152D" />
     <meta name="msapplication-TileColor" content="#04152D" />
     <meta name="msapplication-navbutton-color" content="#04152D" />
     
@@ -46,9 +47,34 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+      @keyframes pwaGlowPulse {
+        0%, 100% { transform: scale(1); opacity: 0.2; }
+        50% { transform: scale(1.15); opacity: 0.35; }
+      }
+      @keyframes pwaDotPulse {
+        0%, 100% { opacity: 0.4; transform: scale(0.9); }
+        50% { opacity: 1; transform: scale(1.1); }
+      }
+    </style>
   </head>
-  <body class="bg-[#04152D] text-slate-100 min-h-screen antialiased selection:bg-scalora-blue selection:text-white">
-    <div id="root"></div>
+  <body class="bg-[#04152D] text-slate-100 min-h-screen antialiased selection:bg-scalora-blue selection:text-white" style="background-color: #04152D; margin: 0;">
+    <div id="root">
+      <!-- Native PWA Launch Splash (Instant Render, Zero White Flash) -->
+      <div id="pwa-startup-splash" style="position: fixed; inset: 0; background-color: #04152D; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+          <!-- Ambient luxury cyan blur glow -->
+          <div style="position: absolute; width: 160px; height: 160px; background: rgba(0, 210, 255, 0.25); border-radius: 50%; filter: blur(40px); pointer-events: none; animation: pwaGlowPulse 2.4s infinite ease-in-out;"></div>
+          <!-- Centered authentic transparent Scalora emblem -->
+          <img src="/pwa-192x192.png" alt="Scalora" style="width: 92px; height: 92px; object-fit: contain; position: relative; z-index: 1;" />
+        </div>
+        <div style="margin-top: 26px; display: flex; align-items: center; gap: 8px;">
+          <div style="width: 7px; height: 7px; border-radius: 50%; background: #00D2FF; animation: pwaDotPulse 1.4s infinite ease-in-out; box-shadow: 0 0 10px #00D2FF;"></div>
+          <span style="font-size: 13px; font-weight: 800; letter-spacing: 0.18em; color: #FFFFFF; text-transform: uppercase;">Scalora</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
