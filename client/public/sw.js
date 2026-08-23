@@ -7,7 +7,7 @@
  * Profile, Courses, and Supabase Realtime) must NEVER be cached.
  */
 
-const CACHE_NAME = 'scalora-static-v2';
+const CACHE_NAME = 'scalora-static-v5';
 
 // ONLY immutable static shell assets are precached
 const STATIC_ASSETS = [
@@ -46,11 +46,18 @@ const EXCLUDED_PATTERNS = [
   'supabase.co',
 ];
 
-// 1. Install Event: Precache core static shell
+// 1. Install Event: Precache core static shell with individual asset resilience
 self.addEventListener('install', (event) => {
+  console.log('[PUSH] Service Worker installing with updated assets');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const asset of STATIC_ASSETS) {
+        try {
+          await cache.add(asset);
+        } catch (err) {
+          console.warn('[SW] Cache asset skipped:', asset);
+        }
+      }
     })
   );
   self.skipWaiting();
@@ -58,6 +65,7 @@ self.addEventListener('install', (event) => {
 
 // 2. Activate Event: Clear all legacy/stale caches immediately
 self.addEventListener('activate', (event) => {
+  console.log('[PUSH] Service Worker activated and claiming clients');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
@@ -101,6 +109,7 @@ self.addEventListener('fetch', (event) => {
         return (
           offlinePage ||
           new Response('You are offline. Please reconnect to continue.', {
+            status: 503,
             headers: { 'Content-Type': 'text/plain' },
           })
         );
@@ -109,17 +118,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // RULE D: Static Assets (Stylesheets, JavaScript bundles, Web Fonts, Images)
+  // RULE D: Static Assets (Stale-While-Revalidate)
   if (
-    request.destination === 'style' ||
-    request.destination === 'script' ||
-    request.destination === 'font' ||
-    request.destination === 'image' ||
     url.endsWith('.png') ||
     url.endsWith('.jpg') ||
+    url.endsWith('.jpeg') ||
     url.endsWith('.svg') ||
     url.endsWith('.webp') ||
+    url.endsWith('.ico') ||
     url.endsWith('.woff2') ||
+    url.endsWith('.woff') ||
+    url.endsWith('.ttf') ||
     url.endsWith('.css') ||
     url.endsWith('.js')
   ) {
@@ -156,7 +165,7 @@ self.addEventListener('fetch', (event) => {
 
 // 4. Push Notification Event Listener (Android System Tray + Desktop Native Push)
 self.addEventListener('push', (event) => {
-  console.log('[SW Push] Background Web Push event received by Service Worker');
+  console.log('[PUSH RECEIVED] Background Web Push event received by Service Worker');
 
   let data = {
     title: 'Scalora LMS',
@@ -170,10 +179,10 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       data = { ...data, ...event.data.json() };
-      console.log('[SW Push] Parsed JSON payload:', data);
+      console.log('[PUSH RECEIVED] Parsed JSON payload:', data);
     } catch {
       data.body = event.data.text();
-      console.log('[SW Push] Plain text payload:', data.body);
+      console.log('[PUSH RECEIVED] Plain text payload:', data.body);
     }
   }
 
@@ -198,27 +207,27 @@ self.addEventListener('push', (event) => {
     ],
   };
 
-  console.log('[SW Push] Invoking self.registration.showNotification with:', title, options);
+  console.log('[PUSH DISPLAYED] Invoking self.registration.showNotification with:', title, options);
   event.waitUntil(
     self.registration
       .showNotification(title, options)
-      .then(() => console.log('[SW Push] Native notification successfully displayed on OS tray with official Scalora logo'))
-      .catch((err) => console.error('[SW Push] Error calling showNotification:', err))
+      .then(() => console.log('[PUSH DISPLAYED] Native notification successfully displayed on Android system tray'))
+      .catch((err) => console.error('[PUSH ERROR] Failed to display notification on system tray:', err))
   );
 });
 
 // 5. Notification Click Handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW NotificationClick] User clicked native notification action:', event.action);
+  console.log('[PUSH CLICKED] User clicked native notification action:', event.action);
   event.notification.close();
 
   if (event.action === 'close') {
-    console.log('[SW NotificationClick] Notification dismissed by user');
+    console.log('[PUSH CLICKED] Notification dismissed by user');
     return;
   }
 
   const targetUrl = event.notification.data?.url || '/notifications';
-  console.log('[SW NotificationClick] Navigating app to target URL:', targetUrl);
+  console.log('[PUSH CLICKED] Navigating app to target URL:', targetUrl);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
