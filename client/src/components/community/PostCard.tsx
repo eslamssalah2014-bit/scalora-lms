@@ -12,7 +12,7 @@ import {
   Megaphone,
   Download,
   ExternalLink,
-  MoreVertical,
+  MoreHorizontal,
   Trash2,
   Edit,
   Send,
@@ -22,8 +22,11 @@ import {
   Code2,
   Shield,
   FileText,
-  User,
   Sparkles,
+  BarChart2,
+  CheckCircle2,
+  X,
+  Hash,
 } from 'lucide-react';
 
 interface PostCardProps {
@@ -58,18 +61,43 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+  // Content Expansion State
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // Edit Modal State
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(post.title || '');
   const [editContent, setEditContent] = useState(post.content);
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Poll Vote UI State (Prototype)
+  const [selectedPollOption, setSelectedPollOption] = useState<number | null>(null);
+  const [hasVotedPoll, setHasVotedPoll] = useState(false);
+
+  // Check if content contains poll JSON data
+  const hasPoll = post.content.includes('[POLL_DATA]:');
+  let cleanContent = post.content;
+  let parsedPoll: { question: string; options: { text: string; votes: number }[] } | null = null;
+
+  if (hasPoll) {
+    const parts = post.content.split('[POLL_DATA]:');
+    cleanContent = parts[0].trim();
+    try {
+      parsedPoll = JSON.parse(parts[1]);
+    } catch {
+      parsedPoll = null;
+    }
+  }
+
   const formatTimeAgo = (dateStr: string) => {
     const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
     if (diff < 60) return 'just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
+    const days = Math.floor(diff / 86400);
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const handleToggleLike = async () => {
@@ -77,7 +105,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     const prevCount = likesCount;
 
     setIsLiked(!prevLiked);
-    setLikesCount(prevLiked ? prevCount - 1 : prevCount + 1);
+    setLikesCount(prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1);
 
     try {
       const res = await api.post<{ success: boolean; isLiked: boolean; likesCount: number }>(
@@ -120,7 +148,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   const handleDeletePost = async () => {
-    if (!confirm('Are you sure you want to permanently delete this post?')) return;
+    if (!confirm('Are you sure you want to delete this post?')) return;
     try {
       const res = await api.delete<{ success: boolean }>(`/community/posts/${post.id}`);
       if (res.success) {
@@ -132,21 +160,16 @@ export const PostCard: React.FC<PostCardProps> = ({
     setShowMenu(false);
   };
 
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) return;
     setSavingEdit(true);
     try {
-      const res = await api.put<{ success: boolean; post: any }>(`/community/posts/${post.id}`, {
+      const res = await api.patch<{ success: boolean; post: CommunityPost }>(`/community/posts/${post.id}`, {
         title: editTitle.trim() || undefined,
         content: editContent.trim(),
       });
       if (res.success && res.post) {
-        onPostUpdated({
-          ...post,
-          title: res.post.title,
-          content: res.post.content,
-          updatedAt: res.post.updatedAt,
-        });
+        onPostUpdated(res.post);
         setIsEditing(false);
       }
     } catch (err) {
@@ -156,33 +179,37 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   };
 
-  const handleShare = () => {
-    const url = `${window.location.origin}/community?post=${post.id}`;
+  const handleSharePost = () => {
+    const url = `${window.location.origin}/community?channel=${post.channelId}&post=${post.id}`;
     navigator.clipboard.writeText(url);
     setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+    setTimeout(() => setCopiedLink(false), 2000);
+    setShowMenu(false);
   };
 
-  const handleToggleComments = async () => {
-    if (!showComments && comments.length === 0) {
-      setLoadingComments(true);
-      try {
-        const res = await api.get<{ success: boolean; comments: CommunityComment[] }>(
-          `/community/posts/${post.id}/comments`
-        );
-        if (res.success && Array.isArray(res.comments)) {
-          setComments(res.comments);
-        }
-      } catch (err) {
-        console.error('Error loading comments:', err);
-      } finally {
-        setLoadingComments(false);
-      }
+  const loadComments = async () => {
+    if (comments.length > 0) {
+      setShowComments(!showComments);
+      return;
     }
-    setShowComments(!showComments);
+
+    setShowComments(true);
+    setLoadingComments(true);
+    try {
+      const res = await api.get<{ success: boolean; comments: CommunityComment[] }>(
+        `/community/posts/${post.id}/comments`
+      );
+      if (res.success && Array.isArray(res.comments)) {
+        setComments(res.comments);
+      }
+    } catch (err) {
+      console.error('Error loading comments:', err);
+    } finally {
+      setLoadingComments(false);
+    }
   };
 
-  const handleAddComment = async (e: React.FormEvent) => {
+  const handleCreateComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCommentText.trim()) return;
 
@@ -190,186 +217,157 @@ export const PostCard: React.FC<PostCardProps> = ({
     try {
       const res = await api.post<{ success: boolean; comment: CommunityComment }>(
         `/community/posts/${post.id}/comments`,
-        { content: newCommentText.trim() }
+        {
+          content: newCommentText.trim(),
+        }
       );
+
       if (res.success && res.comment) {
-        setComments((prev) => [...prev, res.comment]);
+        setComments((prev) => [...prev, { ...res.comment, replies: [] }]);
         setCommentsCount((prev) => prev + 1);
         setNewCommentText('');
       }
     } catch (err) {
-      console.error('Error adding comment:', err);
+      console.error('Error creating comment:', err);
     } finally {
       setSubmittingComment(false);
     }
   };
 
-  const handleCommentDeleted = (commentId: string) => {
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
-    setCommentsCount((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleReplyAdded = (reply: CommentReply) => {
-    setComments((prev) =>
-      prev.map((c) => {
-        if (c.id === reply.parentId) {
-          return {
-            ...c,
-            replies: [...(c.replies || []), reply],
-          };
-        }
-        return c;
-      })
-    );
-  };
+  const isLongContent = cleanContent.length > 320;
+  const displayContent = isLongContent && !isExpanded ? `${cleanContent.slice(0, 320)}...` : cleanContent;
 
   return (
-    <div
-      className={`glass-card rounded-3xl p-5 sm:p-6 space-y-4 border transition-all ${
-        post.isAnnouncement
-          ? 'border-amber-500/40 shadow-glow-amber bg-[#061B3B]/90'
-          : post.isPinned
-          ? 'border-cyan-500/40 shadow-glow-accent bg-[#04152D]'
-          : 'border-scalora-blue/20 hover:border-scalora-blue/40 bg-[#04152D]/90'
-      }`}
-    >
-      {/* Top Badges (Pinned & Announcement) */}
+    <article className="bg-[#0B1528] rounded-3xl p-5 sm:p-6 border border-white/10 hover:border-cyan-500/30 transition-all shadow-xl space-y-4 relative group">
+      {/* Pinned / Announcement Top Ribbon */}
       {(post.isPinned || post.isAnnouncement) && (
-        <div className="flex items-center gap-2 pb-2 border-b border-scalora-blue/15 text-xs font-bold">
-          {post.isPinned && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
-              <Pin className="w-3 h-3 text-cyan-300" />
-              <span>Pinned Post</span>
-            </span>
-          )}
-          {post.isAnnouncement && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              <Megaphone className="w-3 h-3 text-amber-300" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold w-fit mb-1">
+          {post.isAnnouncement ? (
+            <>
+              <Megaphone className="w-3.5 h-3.5 text-amber-400" />
               <span>Official Announcement</span>
-            </span>
+            </>
+          ) : (
+            <>
+              <Pin className="w-3.5 h-3.5 text-amber-400" />
+              <span>Pinned Post</span>
+            </>
           )}
         </div>
       )}
 
-      {/* Post Header: Author info & 3-dots Menu */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Header Row: Author Info + Meta + Dropdown Menu */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={() => onUserClick && onUserClick(post.author.id)}
-            className="focus:outline-none flex-shrink-0"
+            className="flex-shrink-0 focus:outline-none relative group/avatar"
           >
             <img
               src={
                 post.author.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name)}&background=2D8CFF&color=fff`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name)}&background=0284C7&color=fff`
               }
               alt={post.author.name}
-              className="w-11 h-11 rounded-2xl object-cover border border-cyan-400/30 shadow-md hover:scale-105 transition-transform"
+              className={`w-11 h-11 rounded-full object-cover border-2 transition-transform group-hover/avatar:scale-105 shadow-md ${
+                post.author.role === 'ADMIN' ? 'border-amber-400 shadow-glow-amber' : 'border-cyan-400/40'
+              }`}
             />
           </button>
 
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
                 onClick={() => onUserClick && onUserClick(post.author.id)}
-                className="text-sm font-bold text-white hover:text-cyan-300 transition-colors"
+                className="font-black text-white hover:text-cyan-300 text-sm truncate transition-colors text-left"
               >
                 {post.author.name}
               </button>
 
               {post.author.role === 'ADMIN' ? (
-                <span className="px-2 py-0.2 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center gap-1">
+                <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center gap-1">
                   <Shield className="w-2.5 h-2.5" />
                   <span>Admin</span>
                 </span>
               ) : (
-                <span className="px-2 py-0.2 rounded-full text-[10px] font-extrabold uppercase bg-scalora-blue/20 text-scalora-accent border border-scalora-blue/30">
-                  Learner
+                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase bg-white/5 text-slate-400 border border-white/5">
+                  Member
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3 text-slate-500" />
-                <span>{formatTimeAgo(post.createdAt)}</span>
-              </span>
-              {post.author.bio && (
-                <>
-                  <span>•</span>
-                  <span className="truncate max-w-[200px] text-slate-500 text-[11px]">{post.author.bio}</span>
-                </>
-              )}
+            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+              <Clock className="w-3 h-3 text-slate-500" />
+              <span>{formatTimeAgo(post.createdAt)}</span>
             </div>
           </div>
         </div>
 
-        {/* 3-Dots Menu Dropdown */}
+        {/* 3-Dots Dropdown Options Menu */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors focus:outline-none"
+            title="Options"
           >
-            <MoreVertical className="w-4 h-4" />
+            <MoreHorizontal className="w-5 h-5" />
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 mt-1 w-44 rounded-2xl glass-panel py-1.5 shadow-2xl border border-scalora-blue/30 z-20 text-xs animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 mt-1 w-48 rounded-2xl bg-[#091324] border border-white/10 shadow-2xl p-1.5 z-30 text-xs font-semibold space-y-0.5 animate-in fade-in zoom-in-95">
               <button
                 type="button"
-                onClick={handleShare}
-                className="w-full px-3.5 py-2 text-left text-slate-200 hover:text-white hover:bg-white/5 flex items-center gap-2"
+                onClick={handleToggleSave}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
               >
-                <Share2 className="w-3.5 h-3.5 text-cyan-300" />
-                <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
+                <Bookmark className={`w-4 h-4 ${isSaved ? 'text-amber-400 fill-amber-400' : ''}`} />
+                <span>{isSaved ? 'Unsave Bookmark' : 'Save Bookmark'}</span>
               </button>
 
               <button
                 type="button"
-                onClick={handleToggleSave}
-                className="w-full px-3.5 py-2 text-left text-slate-200 hover:text-white hover:bg-white/5 flex items-center gap-2"
+                onClick={handleSharePost}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
               >
-                <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'text-amber-400' : 'text-slate-400'}`} />
-                <span>{isSaved ? 'Remove Bookmark' : 'Bookmark Post'}</span>
+                {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                <span>{copiedLink ? 'Link Copied!' : 'Copy Post Link'}</span>
               </button>
 
               {isAdmin && (
                 <button
                   type="button"
                   onClick={handleTogglePin}
-                  className="w-full px-3.5 py-2 text-left text-slate-200 hover:text-white hover:bg-white/5 flex items-center gap-2"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-300 hover:bg-amber-500/10 transition-colors"
                 >
-                  <Pin className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{post.isPinned ? 'Unpin from Top' : 'Pin to Top'}</span>
+                  <Pin className="w-4 h-4" />
+                  <span>{post.isPinned ? 'Unpin from Top' : 'Pin to Top of Feed'}</span>
                 </button>
               )}
 
               {(isAuthor || isAdmin) && (
                 <>
-                  <div className="my-1 border-t border-scalora-blue/15" />
-                  {isAuthor && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(true);
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-3.5 py-2 text-left text-slate-200 hover:text-white hover:bg-white/5 flex items-center gap-2"
-                    >
-                      <Edit className="w-3.5 h-3.5 text-scalora-blue" />
-                      <span>Edit Post</span>
-                    </button>
-                  )}
+                  <div className="my-1 border-t border-white/5" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit Content</span>
+                  </button>
 
                   <button
                     type="button"
                     onClick={handleDeletePost}
-                    className="w-full px-3.5 py-2 text-left text-rose-400 hover:bg-rose-500/10 flex items-center gap-2"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                     <span>Delete Post</span>
                   </button>
                 </>
@@ -379,174 +377,236 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       </div>
 
-      {/* Post Content / Title */}
-      <div className="space-y-3 text-sm text-slate-200 leading-relaxed">
-        {post.title && <h3 className="text-base font-extrabold text-white leading-snug">{post.title}</h3>}
+      {/* Post Title (if present) */}
+      {post.title && <h2 className="text-base sm:text-lg font-black text-white leading-snug">{post.title}</h2>}
 
-        <p className="whitespace-pre-wrap leading-relaxed text-slate-200">{post.content}</p>
-
-        {/* Embedded Image */}
-        {post.mediaUrl && (
-          <div
-            onClick={() => setLightboxImage(post.mediaUrl || null)}
-            className="rounded-2xl overflow-hidden border border-scalora-blue/30 cursor-pointer group relative max-h-96 bg-black/40"
+      {/* Main Post Text Content */}
+      <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+        {displayContent}
+        {isLongContent && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-cyan-400 hover:text-cyan-300 font-bold ml-1 transition-colors"
           >
-            <img
-              src={post.mediaUrl}
-              alt={post.title || 'Post attachment'}
-              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
-            />
-          </div>
+            {isExpanded ? 'See less' : 'See more'}
+          </button>
         )}
+      </div>
 
-        {/* File Attachment Card */}
-        {post.fileUrl && (
+      {/* Attached Media Image with Lightbox */}
+      {post.mediaUrl && (
+        <div className="rounded-2xl overflow-hidden border border-white/10 max-h-[460px] bg-black/40">
+          <img
+            src={post.mediaUrl}
+            alt={post.title || 'Attached media'}
+            onClick={() => setLightboxImage(post.mediaUrl || null)}
+            className="w-full h-full object-cover max-h-[460px] cursor-pointer hover:scale-[1.01] transition-transform"
+          />
+        </div>
+      )}
+
+      {/* Attached Downloadable Resource Card */}
+      {post.fileUrl && (
+        <div className="p-4 rounded-2xl bg-[#091324] border border-purple-500/20 hover:border-purple-500/40 transition-all flex items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center flex-shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white truncate">{post.fileName || 'Download Resource'}</div>
+              <div className="text-[10px] text-purple-300 font-semibold uppercase">{post.fileSize || 'Direct File'}</div>
+            </div>
+          </div>
+
           <a
             href={post.fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-400 text-emerald-300 transition-all group"
+            download
+            className="px-4 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-bold flex items-center gap-1.5 transition-all flex-shrink-0"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-white truncate group-hover:text-emerald-300 transition-colors">
-                  {post.fileName || 'Download Resource Blueprint'}
-                </div>
-                <div className="text-[11px] text-emerald-400/80">{post.fileSize || 'Downloadable attachment'}</div>
-              </div>
-            </div>
-            <div className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md flex-shrink-0">
-              <Download className="w-3.5 h-3.5" />
-              <span>Download</span>
-            </div>
+            <Download className="w-3.5 h-3.5" />
+            <span>Download</span>
           </a>
-        )}
+        </div>
+      )}
 
-        {/* External Link Card */}
-        {post.linkUrl && (
-          <a
-            href={post.linkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-3 rounded-2xl bg-scalora-blue/10 border border-scalora-blue/30 hover:border-cyan-400 text-slate-200 text-xs transition-all group"
-          >
-            <div className="flex items-center gap-2.5 truncate">
-              <ExternalLink className="w-4 h-4 text-cyan-300 flex-shrink-0" />
-              <span className="truncate font-semibold text-cyan-300 group-hover:underline">{post.linkUrl}</span>
+      {/* Attached External Link Preview */}
+      {post.linkUrl && (
+        <a
+          href={post.linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-3.5 rounded-2xl bg-[#091324] border border-blue-500/20 hover:border-blue-500/40 transition-all flex items-center justify-between gap-3 group/link block"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-300 flex items-center justify-center flex-shrink-0">
+              <ExternalLink className="w-4 h-4" />
             </div>
-            <span className="text-[11px] text-slate-400 uppercase tracking-wide font-bold">Open</span>
-          </a>
-        )}
-      </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white group-hover/link:text-cyan-300 transition-colors truncate">
+                {post.linkUrl}
+              </div>
+              <div className="text-[10px] text-slate-400">External Resource Link</div>
+            </div>
+          </div>
+          <ExternalLink className="w-4 h-4 text-slate-500 group-hover/link:text-cyan-300 transition-colors flex-shrink-0" />
+        </a>
+      )}
 
-      {/* Post Action Bar (Like, Comment, Save, Share) */}
-      <div className="flex items-center justify-between pt-3 border-t border-scalora-blue/15 text-xs text-slate-400 font-semibold">
-        <div className="flex items-center gap-1 sm:gap-2">
-          {/* Like Button */}
-          <button
-            type="button"
-            onClick={handleToggleLike}
-            className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-              isLiked
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                : 'hover:bg-white/5 hover:text-slate-200'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-500 text-rose-500 animate-pulse' : ''}`} />
-            <span>{likesCount}</span>
-          </button>
+      {/* Poll Card Preview (UI Prototype) */}
+      {parsedPoll && (
+        <div className="p-4 rounded-2xl bg-[#091324] border border-amber-500/20 space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+            <BarChart2 className="w-4 h-4" />
+            <span>{parsedPoll.question}</span>
+          </div>
 
-          {/* Comments Toggle Button */}
-          <button
-            type="button"
-            onClick={handleToggleComments}
-            className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-              showComments
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
-                : 'hover:bg-white/5 hover:text-slate-200'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>{commentsCount}</span>
-          </button>
+          <div className="space-y-2">
+            {parsedPoll.options.map((option, idx) => {
+              const isSelected = selectedPollOption === idx;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPollOption(idx);
+                    setHasVotedPoll(true);
+                  }}
+                  className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between text-xs font-semibold ${
+                    isSelected
+                      ? 'bg-amber-500/20 border-amber-400 text-white'
+                      : 'bg-black/30 border-white/5 text-slate-300 hover:bg-white/5'
+                  }`}
+                >
+                  <span>{option.text}</span>
+                  {hasVotedPoll && isSelected && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Save / Bookmark Button */}
-          <button
-            type="button"
-            onClick={handleToggleSave}
-            className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
-              isSaved
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                : 'hover:bg-white/5 hover:text-slate-200'
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-400 text-amber-400' : ''}`} />
-            <span className="hidden sm:inline">{isSaved ? 'Saved' : 'Save'}</span>
+          {hasVotedPoll && (
+            <p className="text-[11px] text-emerald-400 font-semibold text-right">Vote registered!</p>
+          )}
+        </div>
+      )}
+
+      {/* Reaction Summary Bar */}
+      <div className="pt-2 flex items-center justify-between text-xs text-slate-400 px-1 border-t border-white/5">
+        <div className="flex items-center gap-1.5">
+          <span className="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center">
+            <Heart className="w-3 h-3 fill-rose-400" />
+          </span>
+          <span className="font-semibold text-slate-300">{likesCount} likes</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={loadComments} className="hover:underline text-slate-400">
+            {commentsCount} comments
           </button>
         </div>
+      </div>
+
+      {/* Facebook-Style Action Buttons Row */}
+      <div className="grid grid-cols-4 gap-1 pt-1 border-t border-white/5 text-xs font-bold">
+        {/* Like Button */}
+        <button
+          type="button"
+          onClick={handleToggleLike}
+          className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${
+            isLiked
+              ? 'text-rose-400 bg-rose-500/10 shadow-sm font-black'
+              : 'text-slate-300 hover:bg-white/5 hover:text-rose-400'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${isLiked ? 'fill-rose-400 text-rose-400' : ''}`} />
+          <span className="hidden sm:inline">Like</span>
+        </button>
+
+        {/* Comment Button */}
+        <button
+          type="button"
+          onClick={loadComments}
+          className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${
+            showComments
+              ? 'text-cyan-300 bg-cyan-500/10 font-black'
+              : 'text-slate-300 hover:bg-white/5 hover:text-cyan-300'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span className="hidden sm:inline">Comment</span>
+        </button>
+
+        {/* Save Button */}
+        <button
+          type="button"
+          onClick={handleToggleSave}
+          className={`py-2.5 rounded-xl flex items-center justify-center gap-2 transition-all ${
+            isSaved
+              ? 'text-amber-300 bg-amber-500/10 font-black'
+              : 'text-slate-300 hover:bg-white/5 hover:text-amber-300'
+          }`}
+        >
+          <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-400 text-amber-400' : ''}`} />
+          <span className="hidden sm:inline">Bookmark</span>
+        </button>
 
         {/* Share Button */}
         <button
           type="button"
-          onClick={handleShare}
-          className="px-3 py-1.5 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors"
+          onClick={handleSharePost}
+          className="py-2.5 rounded-xl flex items-center justify-center gap-2 text-slate-300 hover:bg-white/5 hover:text-cyan-300 transition-all"
         >
-          {copiedLink ? (
-            <>
-              <Check className="w-4 h-4 text-emerald-400" />
-              <span className="text-emerald-400">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Share2 className="w-4 h-4" />
-              <span>Share</span>
-            </>
-          )}
+          {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+          <span className="hidden sm:inline">{copiedLink ? 'Copied' : 'Share'}</span>
         </button>
       </div>
 
-      {/* Comments Section Accordion */}
+      {/* Expandable Comments Drawer */}
       {showComments && (
-        <div className="space-y-4 pt-2">
-          {/* Comment Composer Input */}
-          <form onSubmit={handleAddComment} className="flex items-center gap-2 pt-2">
+        <div className="pt-4 border-t border-white/5 space-y-4 animate-in fade-in duration-200">
+          {/* Inline Comment Composer */}
+          <form onSubmit={handleCreateComment} className="flex items-center gap-3">
             <img
               src={
                 user?.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=2D8CFF&color=fff`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0284C7&color=fff`
               }
               alt={user?.name}
-              className="w-8 h-8 rounded-lg object-cover border border-scalora-blue/30 flex-shrink-0"
+              className="w-9 h-9 rounded-full object-cover border border-cyan-500/30 flex-shrink-0"
             />
-            <input
-              type="text"
-              placeholder="Write a constructive comment or answer..."
-              value={newCommentText}
-              onChange={(e) => setNewCommentText(e.target.value)}
-              className="flex-1 px-3.5 py-2.5 rounded-xl bg-scalora-navy/80 border border-scalora-blue/20 text-white placeholder-slate-400 text-xs focus:outline-none focus:border-cyan-400"
-            />
-            <button
-              type="submit"
-              disabled={submittingComment || !newCommentText.trim()}
-              className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-xs flex items-center gap-1 transition-all disabled:opacity-40"
-            >
-              {submittingComment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            </button>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="Write a constructive comment..."
+                value={newCommentText}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                className="w-full pl-4 pr-11 py-2.5 rounded-2xl bg-[#091324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
+              />
+              <button
+                type="submit"
+                disabled={submittingComment || !newCommentText.trim()}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white transition-all disabled:opacity-30 disabled:hover:bg-cyan-500"
+              >
+                {submittingComment ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
           </form>
 
           {/* Comments List */}
           {loadingComments ? (
-            <div className="text-center py-4 text-xs text-slate-400 flex items-center justify-center gap-2">
+            <div className="py-6 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-              <span>Loading discussion thread...</span>
+              <span>Loading discussion...</span>
             </div>
           ) : comments.length === 0 ? (
-            <p className="text-center py-4 text-xs text-slate-500 italic">
-              No comments yet. Be the first to start the conversation!
-            </p>
+            <p className="text-center py-4 text-xs text-slate-500 italic">No comments yet. Start the conversation!</p>
           ) : (
             <div className="space-y-3">
               {comments.map((comment) => (
@@ -554,8 +614,19 @@ export const PostCard: React.FC<PostCardProps> = ({
                   key={comment.id}
                   comment={comment}
                   postId={post.id}
-                  onCommentDeleted={handleCommentDeleted}
-                  onReplyAdded={handleReplyAdded}
+                  onCommentDeleted={(cid) => {
+                    setComments((prev) => prev.filter((c) => c.id !== cid));
+                    setCommentsCount((prev) => Math.max(0, prev - 1));
+                  }}
+                  onReplyAdded={(reply) => {
+                    setComments((prev) =>
+                      prev.map((c) =>
+                        c.id === reply.parentId
+                          ? { ...c, replies: [...(c.replies || []), reply] }
+                          : c
+                      )
+                    );
+                  }}
                   onUserClick={onUserClick}
                 />
               ))}
@@ -564,62 +635,77 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       )}
 
-      {/* Lightbox Modal for Image */}
+      {/* Lightbox Modal */}
       {lightboxImage && (
         <div
           onClick={() => setLightboxImage(null)}
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
         >
-          <img src={lightboxImage} alt="Enlarged view" className="max-w-full max-h-[90vh] object-contain rounded-2xl" />
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-6 right-6 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={lightboxImage}
+            alt="Preview"
+            className="max-w-full max-h-[85vh] rounded-2xl object-contain shadow-2xl"
+          />
         </div>
       )}
 
-      {/* Edit Post Modal */}
+      {/* Edit Content Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-card rounded-3xl p-6 w-full max-w-lg space-y-4 border border-cyan-500/30 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Edit className="w-5 h-5 text-cyan-400" />
-              <span>Edit Post</span>
-            </h3>
+          <div className="bg-[#0B1528] rounded-3xl p-6 border border-white/10 max-w-lg w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <h3 className="text-base font-bold text-white">Edit Post</h3>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Title (optional)"
-                className="w-full px-3 py-2 rounded-xl bg-scalora-navy border border-scalora-blue/30 text-white text-xs"
-              />
+            <input
+              type="text"
+              placeholder="Title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-[#091324] border border-white/10 text-white text-xs font-bold"
+            />
 
-              <textarea
-                rows={5}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-scalora-navy border border-scalora-blue/30 text-white text-xs leading-relaxed"
-                required
-              />
+            <textarea
+              rows={5}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl bg-[#091324] border border-white/10 text-white text-xs resize-none"
+            />
 
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEdit}
-                  className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold flex items-center gap-1.5"
-                >
-                  {savingEdit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-4 py-2 rounded-xl bg-white/5 text-slate-300 text-xs font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="px-5 py-2 rounded-xl bg-cyan-500 text-white text-xs font-bold"
+              >
+                {savingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
 };

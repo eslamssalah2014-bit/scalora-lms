@@ -15,6 +15,11 @@ import {
   X,
   Eye,
   CheckCircle2,
+  BarChart2,
+  Plus,
+  Trash2,
+  Smile,
+  Shield,
 } from 'lucide-react';
 
 interface PostComposerProps {
@@ -33,7 +38,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
 
-  const [activeTab, setActiveTab] = useState<PostType>('TEXT');
+  // Composer expanded state
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Form State
+  const [activeTab, setActiveTab] = useState<PostType | 'POLL'>('TEXT');
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -46,21 +55,48 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Poll UI Prototype State
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
+
   if (isLocked && !isAdmin) {
     return (
-      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-4 h-4 text-amber-400" />
-          <span>This channel is currently locked by administrators for announcement-only mode.</span>
+          <Megaphone className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span>This channel is currently in announcement-only mode. Only instructors and admins can publish.</span>
         </div>
       </div>
     );
   }
 
+  const handleAddPollOption = () => {
+    if (pollOptions.length < 6) {
+      setPollOptions([...pollOptions, '']);
+    }
+  };
+
+  const handleRemovePollOption = (index: number) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, i) => i !== index));
+    }
+  };
+
+  const handlePollOptionChange = (index: number, val: string) => {
+    const updated = [...pollOptions];
+    updated[index] = val;
+    setPollOptions(updated);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) {
+    if (!content.trim() && activeTab !== 'POLL') {
       setError('Please enter your post message.');
+      return;
+    }
+
+    if (activeTab === 'POLL' && !pollQuestion.trim()) {
+      setError('Please enter a question for your poll.');
       return;
     }
 
@@ -68,11 +104,23 @@ export const PostComposer: React.FC<PostComposerProps> = ({
     setError(null);
 
     try {
+      let finalContent = content.trim();
+
+      // If poll, format poll choices into content structure
+      if (activeTab === 'POLL') {
+        const validOptions = pollOptions.filter((opt) => opt.trim());
+        const pollData = {
+          question: pollQuestion.trim(),
+          options: validOptions.map((opt) => ({ text: opt.trim(), votes: 0 })),
+        };
+        finalContent = `${pollQuestion.trim()}\n\n[POLL_DATA]:${JSON.stringify(pollData)}`;
+      }
+
       const payload: any = {
         channelId,
-        type: activeTab,
+        type: activeTab === 'POLL' ? 'TEXT' : activeTab,
         title: title.trim() || undefined,
-        content: content.trim(),
+        content: finalContent,
         isPinned: isAdmin && isPinned,
         isAnnouncement: isAdmin && activeTab === 'ANNOUNCEMENT',
       };
@@ -98,311 +146,445 @@ export const PostComposer: React.FC<PostComposerProps> = ({
         setContent('');
         setTitle('');
         setMediaUrl('');
-        setFileName('');
         setFileUrl('');
+        setFileName('');
         setFileSize('');
         setLinkUrl('');
+        setPollQuestion('');
+        setPollOptions(['', '']);
         setIsPinned(false);
         setIsPreview(false);
-        setActiveTab('TEXT');
+        setIsOpen(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to publish post. Please try again.');
+      console.error('Error creating post:', err);
+      setError(err.message || 'Failed to publish post. Please check connection.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const firstName = user?.name ? user.name.split(' ')[0] : 'there';
+
   return (
-    <div
-      className={`glass-card rounded-3xl p-5 sm:p-6 border transition-all ${
-        activeTab === 'ANNOUNCEMENT'
-          ? 'border-amber-500/50 shadow-glow-amber bg-[#0B254A]/90'
-          : 'border-cyan-500/20 hover:border-cyan-400/40 bg-[#04152D]/90'
-      }`}
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Composer Header: User Avatar & Role */}
-        <div className="flex items-center justify-between pb-3 border-b border-scalora-blue/15">
+    <div className="bg-[#0B1528] rounded-3xl p-4 sm:p-5 border border-white/10 shadow-xl space-y-3 transition-all">
+      {/* 1. COLLAPSED FACEBOOK-STYLE TRIGGER BOX */}
+      {!isOpen ? (
+        <div className="space-y-3">
           <div className="flex items-center gap-3">
             <img
               src={
                 user?.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=2D8CFF&color=fff`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0284C7&color=fff`
               }
               alt={user?.name}
-              className="w-10 h-10 rounded-xl object-cover border border-cyan-400/30 shadow-md"
+              className="w-10 h-10 rounded-full object-cover border border-cyan-500/30 shadow-md flex-shrink-0"
             />
-            <div>
-              <div className="text-sm font-bold text-white flex items-center gap-2">
-                <span>{user?.name}</span>
-                {isAdmin ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
-                    Administrator
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-scalora-blue/20 text-scalora-accent border border-scalora-blue/30">
-                    Enrolled Learner
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400">
-                Posting to <strong className="text-slate-200">{channelName}</strong>
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setIsPreview(!isPreview)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                isPreview
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`}
+              onClick={() => {
+                setActiveTab('TEXT');
+                setIsOpen(true);
+              }}
+              className="flex-1 text-left px-5 py-3 rounded-2xl bg-[#0F1D38]/80 hover:bg-[#14264A] text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-white/5 transition-all shadow-inner"
             >
-              <Eye className="w-3.5 h-3.5" />
-              <span>{isPreview ? 'Edit' : 'Preview'}</span>
+              What's on your mind, {firstName}?
             </button>
           </div>
-        </div>
 
-        {/* Tab Switcher (Text, Image, File, Link, Announcement) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab('TEXT')}
-            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              activeTab === 'TEXT'
-                ? 'bg-cyan-500 text-white shadow-glow-accent'
-                : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Discussion Post</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('IMAGE')}
-            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              activeTab === 'IMAGE'
-                ? 'bg-cyan-500 text-white shadow-glow-accent'
-                : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>Image / Screenshot</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('FILE')}
-            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              activeTab === 'FILE'
-                ? 'bg-emerald-500 text-white shadow-md'
-                : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Paperclip className="w-3.5 h-3.5" />
-            <span>Resource Blueprint</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('LINK')}
-            className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-              activeTab === 'LINK'
-                ? 'bg-scalora-blue text-white shadow-glow-blue'
-                : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <LinkIcon className="w-3.5 h-3.5" />
-            <span>External Link</span>
-          </button>
-
-          {isAdmin && (
+          {/* Quick Action Pills */}
+          <div className="pt-2 border-t border-white/5 flex items-center justify-around sm:justify-start sm:gap-4 overflow-x-auto scrollbar-none text-xs font-semibold">
             <button
               type="button"
-              onClick={() => setActiveTab('ANNOUNCEMENT')}
-              className={`px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === 'ANNOUNCEMENT'
-                  ? 'bg-amber-500 text-white shadow-glow-amber'
-                  : 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30'
-              }`}
+              onClick={() => {
+                setActiveTab('TEXT');
+                setIsOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-cyan-300 hover:bg-cyan-500/10 transition-colors"
             >
-              <Megaphone className="w-3.5 h-3.5" />
-              <span>Broadcast Announcement</span>
+              <FileText className="w-4 h-4 text-cyan-400" />
+              <span>Discussion</span>
             </button>
-          )}
-        </div>
 
-        {/* Optional Title */}
-        <div>
-          <input
-            type="text"
-            placeholder={
-              activeTab === 'ANNOUNCEMENT'
-                ? 'Announcement Headline (e.g. 📢 Important Cohort Update...)'
-                : 'Post Title / Topic (Optional)'
-            }
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl bg-scalora-navy/80 border border-scalora-blue/20 text-white placeholder-slate-500 text-sm font-semibold focus:outline-none focus:border-cyan-400 transition-colors"
-          />
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('IMAGE');
+                setIsOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+            >
+              <ImageIcon className="w-4 h-4 text-emerald-400" />
+              <span>Photo/Media</span>
+            </button>
 
-        {/* Dynamic Fields Based on Tab */}
-        {activeTab === 'IMAGE' && (
-          <div className="p-3 rounded-2xl bg-scalora-navy/60 border border-cyan-500/20 space-y-2">
-            <label className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Image URL / Media Source</span>
-            </label>
-            <input
-              type="url"
-              placeholder="https://images.unsplash.com/... or direct image link"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#020C1B] border border-scalora-blue/20 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
-            />
-            {mediaUrl && (
-              <div className="relative rounded-xl overflow-hidden max-h-48 border border-cyan-500/30 bg-black/40">
-                <img src={mediaUrl} alt="Preview" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => setMediaUrl('')}
-                  className="absolute top-2 right-2 p-1 rounded-lg bg-rose-500/80 text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('FILE');
+                setIsOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-purple-300 hover:bg-purple-500/10 transition-colors"
+            >
+              <Paperclip className="w-4 h-4 text-purple-400" />
+              <span>Resource Share</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('POLL');
+                setIsOpen(true);
+              }}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl text-slate-300 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+            >
+              <BarChart2 className="w-4 h-4 text-amber-400" />
+              <span>Poll</span>
+            </button>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('ANNOUNCEMENT');
+                  setIsOpen(true);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-amber-300 hover:bg-amber-500/10 transition-colors"
+              >
+                <Megaphone className="w-4 h-4 text-amber-400" />
+                <span>Announcement</span>
+              </button>
             )}
           </div>
-        )}
-
-        {activeTab === 'FILE' && (
-          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
-            <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-              <Paperclip className="w-3.5 h-3.5" />
-              <span>Attach Resource Blueprint / Code Zip</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div className="sm:col-span-2">
-                <input
-                  type="text"
-                  placeholder="File Name (e.g. Scalora-Architecture-Template.zip)"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#020C1B] border border-emerald-500/30 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-400"
-                />
-              </div>
+        </div>
+      ) : (
+        /* 2. EXPANDED FULL POST COMPOSER INTERFACE */
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <img
+                src={
+                  user?.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0284C7&color=fff`
+                }
+                alt={user?.name}
+                className="w-10 h-10 rounded-full object-cover border border-cyan-500/30 shadow-md"
+              />
               <div>
-                <input
-                  type="text"
-                  placeholder="Size (e.g. 4.2 MB)"
-                  value={fileSize}
-                  onChange={(e) => setFileSize(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#020C1B] border border-emerald-500/30 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-400"
-                />
+                <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                  <span>{user?.name}</span>
+                  {isAdmin && (
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                  <span>Posting in</span>
+                  <span className="text-cyan-300 font-semibold">{channelName}</span>
+                </div>
               </div>
             </div>
-            <input
-              type="url"
-              placeholder="Download URL (e.g. https://github.com/... or Google Drive / S3)"
-              value={fileUrl}
-              onChange={(e) => setFileUrl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#020C1B] border border-emerald-500/30 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-400"
-            />
-          </div>
-        )}
 
-        {activeTab === 'LINK' && (
-          <div className="p-3 rounded-2xl bg-scalora-blue/10 border border-scalora-blue/30 space-y-2">
-            <label className="text-xs font-bold text-scalora-accent flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Post Type Selector Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setActiveTab('TEXT')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'TEXT'
+                  ? 'bg-cyan-500 text-white shadow-glow-accent'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Discussion</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('IMAGE')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'IMAGE'
+                  ? 'bg-emerald-500 text-white shadow-md'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Photo/Media</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('FILE')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'FILE'
+                  ? 'bg-purple-500 text-white shadow-md'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              <Paperclip className="w-3.5 h-3.5" />
+              <span>Resource File</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('LINK')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'LINK'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
               <LinkIcon className="w-3.5 h-3.5" />
-              <span>External Resource / GitHub / Documentation Link</span>
-            </label>
-            <input
-              type="url"
-              placeholder="https://github.com/... or https://kubernetes.io/docs/..."
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#020C1B] border border-scalora-blue/30 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-scalora-accent"
-            />
-          </div>
-        )}
+              <span>Web Link</span>
+            </button>
 
-        {/* Content Area / Live Preview */}
-        {isPreview ? (
-          <div className="p-4 rounded-2xl bg-scalora-navy/70 border border-cyan-500/30 min-h-[120px] text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
-            {title && <h3 className="text-base font-bold text-white mb-2">{title}</h3>}
-            {content || <span className="text-slate-500 italic">No content typed yet...</span>}
+            <button
+              type="button"
+              onClick={() => setActiveTab('POLL')}
+              className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                activeTab === 'POLL'
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+              }`}
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+              <span>Poll</span>
+            </button>
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('ANNOUNCEMENT')}
+                className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                  activeTab === 'ANNOUNCEMENT'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-glow-amber'
+                    : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+                }`}
+              >
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Announcement</span>
+              </button>
+            )}
           </div>
-        ) : (
-          <div>
+
+          {/* Optional Title */}
+          {activeTab !== 'POLL' && (
+            <input
+              type="text"
+              placeholder="Post Title (optional)..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-2xl bg-[#091324] border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm font-semibold focus:outline-none focus:border-cyan-400 transition-all"
+            />
+          )}
+
+          {/* Main Text / Content Area */}
+          {activeTab !== 'POLL' ? (
             <textarea
               rows={4}
-              placeholder={
-                activeTab === 'ANNOUNCEMENT'
-                  ? 'Type your announcement details here. All enrolled students in this channel will receive an instant notification...'
-                  : `What's on your mind regarding ${channelName}? Ask a question, share an architectural breakthrough, or discuss lesson concepts...`
-              }
+              placeholder="Share your thoughts, ask questions, or provide valuable feedback..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-scalora-navy/80 border border-scalora-blue/20 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-cyan-400 transition-colors resize-y leading-relaxed"
+              className="w-full px-4 py-3 rounded-2xl bg-[#091324] border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-cyan-400 transition-all resize-none"
             />
-          </div>
-        )}
+          ) : (
+            /* Poll Creation Interface */
+            <div className="space-y-3 p-4 rounded-2xl bg-[#091324] border border-amber-500/20">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <BarChart2 className="w-3.5 h-3.5" />
+                  <span>Poll Question</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ask the community a question..."
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-amber-400"
+                />
+              </div>
 
-        {/* Error message */}
-        {error && (
-          <p className="text-xs font-bold text-rose-400 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
-            {error}
-          </p>
-        )}
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Poll Options (Min 2, Max 6)
+                </label>
+                {pollOptions.map((opt, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={`Option ${idx + 1}...`}
+                      value={opt}
+                      onChange={(e) => handlePollOptionChange(idx, e.target.value)}
+                      className="flex-1 px-3 py-1.5 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400"
+                    />
+                    {pollOptions.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePollOption(idx)}
+                        className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
 
-        {/* Footer Actions: Pin toggle & Submit */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-          <div className="flex items-center gap-4">
-            {isAdmin && (
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300 hover:text-white select-none">
+                {pollOptions.length < 6 && (
+                  <button
+                    type="button"
+                    onClick={handleAddPollOption}
+                    className="text-xs font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 pt-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Option</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab Specific Inputs */}
+          {activeTab === 'IMAGE' && (
+            <div className="p-3.5 rounded-2xl bg-[#091324] border border-emerald-500/20 space-y-2">
+              <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Image / Screenshot URL</span>
+              </label>
+              <input
+                type="url"
+                placeholder="https://images.unsplash.com/photo-..."
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-400"
+              />
+              {mediaUrl && (
+                <div className="relative rounded-xl overflow-hidden max-h-48 border border-white/10 mt-2">
+                  <img src={mediaUrl} alt="Preview" className="w-full h-48 object-cover" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'FILE' && (
+            <div className="p-3.5 rounded-2xl bg-[#091324] border border-purple-500/20 space-y-2.5">
+              <label className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>Resource File Details</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="File Name (e.g. Architecture-Diagram.pdf)"
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-purple-400"
+                />
+                <input
+                  type="text"
+                  placeholder="File Size (e.g. 4.8 MB)"
+                  value={fileSize}
+                  onChange={(e) => setFileSize(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-purple-400"
+                />
+              </div>
+              <input
+                type="url"
+                placeholder="Direct Download URL (e.g. https://...)"
+                value={fileUrl}
+                onChange={(e) => setFileUrl(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-purple-400"
+              />
+            </div>
+          )}
+
+          {activeTab === 'LINK' && (
+            <div className="p-3.5 rounded-2xl bg-[#091324] border border-blue-500/20 space-y-2">
+              <label className="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5" />
+                <span>External Link URL</span>
+              </label>
+              <input
+                type="url"
+                placeholder="https://github.com/your-org/repo..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-blue-400"
+              />
+            </div>
+          )}
+
+          {/* Error Banner */}
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              {error}
+            </div>
+          )}
+
+          {/* Footer Controls & Publish CTA */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-white/10">
+            {/* Admin Controls */}
+            {isAdmin ? (
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300 select-none">
                 <input
                   type="checkbox"
                   checked={isPinned}
                   onChange={(e) => setIsPinned(e.target.checked)}
-                  className="rounded bg-scalora-navy border-scalora-blue/30 text-cyan-500 focus:ring-0"
+                  className="rounded border-white/20 bg-scalora-navy text-cyan-400 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5"
                 />
-                <Pin className="w-3.5 h-3.5 text-amber-400" />
-                <span>Pin to top of feed</span>
+                <Pin className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Pin this post to top of feed</span>
               </label>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className={`px-6 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
-              activeTab === 'ANNOUNCEMENT'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-glow-amber'
-                : 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
-            }`}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Publishing...</span>
-              </>
             ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>{activeTab === 'ANNOUNCEMENT' ? 'Broadcast Announcement' : 'Publish to Feed'}</span>
-              </>
+              <div className="text-[11px] text-slate-400 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                <span>Posts are visible to all enrolled peers</span>
+              </div>
             )}
-          </button>
-        </div>
-      </form>
+
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-2.5 justify-end">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-all"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue hover:opacity-95 text-white text-xs font-black shadow-glow-accent flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Publishing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Publish Post</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
     </div>
   );
 };
