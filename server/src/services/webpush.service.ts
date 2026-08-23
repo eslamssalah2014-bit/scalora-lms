@@ -179,8 +179,8 @@ class WebPushService {
     const jsonPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
-      icon: payload.icon || '/pwa-192x192.png',
-      badge: payload.badge || '/pwa-192x192.png',
+      icon: payload.icon || '/icons/notification-icon-192.png',
+      badge: payload.badge || '/icons/badge-icon.png',
       image: payload.image || undefined,
       url: payload.url || '/',
       tag: payload.tag || `scalora-${Date.now()}`,

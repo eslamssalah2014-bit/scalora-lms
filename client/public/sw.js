@@ -17,6 +17,9 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/scalora-logo.png',
   '/scalora-icon-transparent.png',
+  '/icons/notification-icon-96.png',
+  '/icons/notification-icon-192.png',
+  '/icons/badge-icon.png',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
   '/pwa-512x512-maskable.png',
@@ -158,8 +161,8 @@ self.addEventListener('push', (event) => {
   let data = {
     title: 'Scalora LMS',
     body: 'You have a new update in your courses or community.',
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    icon: '/icons/notification-icon-192.png',
+    badge: '/icons/badge-icon.png',
     url: '/notifications',
     tag: 'scalora-push',
   };
@@ -175,13 +178,15 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || 'Scalora LMS';
+  const notificationId = data.tag || data.notificationId || data.id || `scalora-${Date.now()}`;
+
   const options = {
-    body: data.body || data.message || 'New update available',
-    icon: data.icon || '/pwa-192x192.png',
-    badge: data.badge || '/pwa-192x192.png',
+    body: data.body || data.message || 'You have a new update in your courses or community.',
+    icon: data.icon || '/icons/notification-icon-192.png',
+    badge: data.badge || '/icons/badge-icon.png',
     image: data.image || undefined,
     vibrate: [200, 100, 200],
-    tag: data.tag || `scalora-${Date.now()}`,
+    tag: notificationId,
     renotify: true,
     requireInteraction: false,
     data: {
@@ -197,7 +202,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration
       .showNotification(title, options)
-      .then(() => console.log('[SW Push] Native notification successfully displayed on OS tray'))
+      .then(() => console.log('[SW Push] Native notification successfully displayed on OS tray with official Scalora logo'))
       .catch((err) => console.error('[SW Push] Error calling showNotification:', err))
   );
 });

@@ -179,8 +179,8 @@ export const showNativeNotification = async (params: {
   const title = params.title.startsWith('Scalora') ? params.title : `Scalora • ${params.title}`;
   const options: NotificationOptions = {
     body: params.body,
-    icon: params.icon || '/scalora-icon-transparent.png',
-    badge: '/scalora-icon-transparent.png',
+    icon: params.icon || '/icons/notification-icon-192.png',
+    badge: '/icons/badge-icon.png',
     data: {
       url: params.actionUrl || '/notifications',
     },
