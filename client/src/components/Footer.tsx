@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, ShieldCheck, Award, Globe, Mail, ArrowUpRight } from 'lucide-react';
+import { GraduationCap, ShieldCheck, Award, Globe, Mail, ArrowUpRight, Download, CheckCircle2 } from 'lucide-react';
+import { usePwa } from '../hooks/usePwa';
 
 export const Footer: React.FC = () => {
+  const { isInstalled, installApp } = usePwa();
+
   return (
     <footer className="bg-[#020C1B] border-t border-scalora-blue/20 pt-16 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +21,7 @@ export const Footer: React.FC = () => {
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
               Operations & Business Systems Consulting. We help businesses build scalable systems, streamline operations, and implement smart automations.
             </p>
-            <div className="flex items-center space-x-4 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <div className="flex items-center space-x-1.5 text-xs text-slate-400">
                 <ShieldCheck className="w-4 h-4 text-scalora-blue" />
                 <span>Enterprise Verified</span>
@@ -27,6 +30,21 @@ export const Footer: React.FC = () => {
                 <Award className="w-4 h-4 text-scalora-accent" />
                 <span>Accredited Credentials</span>
               </div>
+              {isInstalled ? (
+                <div className="flex items-center space-x-1.5 text-xs text-emerald-400 font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Scalora App Installed ✓</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={installApp}
+                  className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:text-white text-xs font-semibold transition-all"
+                >
+                  <Download className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Install App</span>
+                </button>
+              )}
             </div>
           </div>
 

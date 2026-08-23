@@ -30,6 +30,7 @@ import {
   Globe,
   BookOpen,
 } from 'lucide-react';
+import { PwaHeroCard } from '../components/pwa/PwaHeroCard';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
@@ -96,6 +97,9 @@ export const HomePage: React.FC = () => {
                 </Link>
               )}
             </div>
+
+            {/* Permanent PWA Installation CTA Card */}
+            <PwaHeroCard />
           </div>
         </div>
       </section>

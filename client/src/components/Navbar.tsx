@@ -17,7 +17,10 @@ import {
   Sparkles,
   Users,
   Mail,
+  Download,
+  CheckCircle2,
 } from 'lucide-react';
+import { usePwa } from '../hooks/usePwa';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -26,6 +29,7 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+  const { isInstalled, installApp } = usePwa();
 
   // Fetch unread count & subscribe to Realtime User Inbox
   useEffect(() => {
@@ -268,6 +272,26 @@ export const Navbar: React.FC = () => {
                         <span>My Enrolled Courses</span>
                       </Link>
 
+                      {/* PWA Install Option */}
+                      {isInstalled ? (
+                        <div className="flex items-center space-x-2.5 px-4 py-2 text-xs font-semibold text-emerald-400">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span>App Installed ✓</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            installApp();
+                          }}
+                          className="w-full flex items-center space-x-2.5 px-4 py-2.5 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/20 transition-colors text-left font-semibold"
+                        >
+                          <Download className="w-4 h-4 text-cyan-400" />
+                          <span>Install Scalora App</span>
+                        </button>
+                      )}
+
                       <div className="border-t border-scalora-blue/15 my-1" />
 
                       <button
@@ -393,6 +417,26 @@ export const Navbar: React.FC = () => {
                 >
                   Student Dashboard
                 </Link>
+              )}
+
+              {/* PWA Mobile Button */}
+              {isInstalled ? (
+                <div className="flex items-center space-x-2 px-3 py-2 text-xs font-semibold text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Scalora App Installed ✓</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    installApp();
+                  }}
+                  className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-base font-semibold text-cyan-300 bg-cyan-500/10 border border-cyan-400/20 text-left"
+                >
+                  <Download className="w-4 h-4 text-cyan-400" />
+                  <span>Install Scalora App</span>
+                </button>
               )}
 
               <button
