@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { PwaHeroCard } from '../pwa/PwaHeroCard';
+import { getCoursePricing } from '../../lib/currency';
 
 export const MobileNativeHome: React.FC = () => {
   const { user } = useAuth();
@@ -178,13 +179,27 @@ export const MobileNativeHome: React.FC = () => {
                     </h4>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                    <span>${course.price}</span>
-                    <span className="text-cyan-400 font-bold flex items-center gap-1">
-                      <span>View Course</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </span>
-                  </div>
+                  {(() => {
+                    const pricing = getCoursePricing(course);
+                    return (
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                        <div className="flex items-center gap-1.5">
+                          {pricing.hasDiscount && (
+                            <span className="line-through text-slate-400 text-[10px]">
+                              {pricing.formattedBase}
+                            </span>
+                          )}
+                          <span className="font-extrabold text-white">
+                            {pricing.formattedEffective}
+                          </span>
+                        </div>
+                        <span className="text-cyan-400 font-bold flex items-center gap-1">
+                          <span>View Course</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </Link>

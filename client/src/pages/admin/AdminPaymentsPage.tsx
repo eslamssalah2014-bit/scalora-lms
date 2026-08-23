@@ -28,6 +28,7 @@ import {
   Mail,
   Key,
 } from 'lucide-react';
+import { formatCurrency } from '../../lib/currency';
 
 const STATUS_CONFIG: Record<
   PaymentRequestStatus,
@@ -401,10 +402,10 @@ export const AdminPaymentsPage: React.FC = () => {
         {/* Total Verified Revenue */}
         <div className="glass-card p-5 rounded-2xl border border-cyan-500/30 space-y-2 hover:border-cyan-400 transition-all">
           <div className="flex items-center justify-between text-cyan-300">
-            <span className="text-xs font-bold uppercase tracking-wider">Verified Revenue</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Verified Revenue (EGP)</span>
             <TrendingUp className="w-4 h-4 text-cyan-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">${stats.totalRevenue.toFixed(2)}</div>
+          <div className="text-2xl sm:text-3xl font-black text-white">{formatCurrency(stats.totalRevenue, { showDecimals: true })}</div>
           <div className="text-[11px] text-slate-400">From approved InstaPay</div>
         </div>
       </div>
@@ -491,7 +492,7 @@ export const AdminPaymentsPage: React.FC = () => {
                 <tr className="border-b border-scalora-blue/15 bg-scalora-navy/40 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                   <th className="py-4 px-4">Student</th>
                   <th className="py-4 px-4">Course</th>
-                  <th className="py-4 px-4">Amount</th>
+                  <th className="py-4 px-4">Amount (EGP)</th>
                   <th className="py-4 px-4">InstaPay Ref</th>
                   <th className="py-4 px-4">Proof Receipt</th>
                   <th className="py-4 px-4">Submitted</th>
@@ -545,7 +546,7 @@ export const AdminPaymentsPage: React.FC = () => {
 
                       {/* Amount */}
                       <td className="py-4 px-4 font-black text-white whitespace-nowrap">
-                        ${reqItem.amount.toFixed(2)}
+                        {formatCurrency(reqItem.amount, { showDecimals: true })}
                       </td>
 
                       {/* Reference Number */}
@@ -829,7 +830,7 @@ export const AdminPaymentsPage: React.FC = () => {
                 <div className="space-y-1 text-xs">
                   <div className="font-bold text-white text-sm">{selectedRequest.course?.title}</div>
                   <div className="text-slate-300 font-black text-emerald-400">
-                    Amount: ${selectedRequest.amount.toFixed(2)} USD
+                    Amount: {formatCurrency(selectedRequest.amount, { showDecimals: true })}
                   </div>
                   <div className="text-slate-400 text-[11px]">
                     Method: <strong className="text-white font-mono">InstaPay Egyptian Bank Transfer</strong>

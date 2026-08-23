@@ -7,6 +7,7 @@ import {
   updateCourse,
   deleteCourse,
   togglePublishCourse,
+  updateCoursePricing,
   getCategories,
   createCategory,
   deleteCategory,
@@ -27,6 +28,7 @@ router.get('/details/:slug', optionalAuth, getCourseBySlug);
 // Admin-only routes
 router.get('/admin/all', authenticate, requireAdmin, getAllCoursesAdmin);
 router.post('/', authenticate, requireAdmin, createCourse);
+router.put('/:id/pricing', authenticate, requireAdmin, updateCoursePricing);
 router.put('/:id', authenticate, requireAdmin, updateCourse);
 router.delete('/:id', authenticate, requireAdmin, deleteCourse);
 router.patch('/:id/publish', authenticate, requireAdmin, togglePublishCourse);

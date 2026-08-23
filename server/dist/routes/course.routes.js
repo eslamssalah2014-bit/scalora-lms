@@ -14,6 +14,7 @@ router.get('/details/:slug', auth_middleware_js_1.optionalAuth, course_controlle
 // Admin-only routes
 router.get('/admin/all', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.getAllCoursesAdmin);
 router.post('/', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.createCourse);
+router.put('/:id/pricing', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.updateCoursePricing);
 router.put('/:id', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.updateCourse);
 router.delete('/:id', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.deleteCourse);
 router.patch('/:id/publish', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.togglePublishCourse);

@@ -17,7 +17,9 @@ import {
   Sparkles,
   RefreshCw,
   AlertCircle,
+  Layers,
 } from 'lucide-react';
+import { formatCurrency } from '../../lib/currency';
 
 interface DashboardData {
   stats: AdminStats;
@@ -88,15 +90,8 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/admin/payments"
-            className="px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold hover:bg-emerald-500 hover:text-black transition-all flex items-center gap-1.5"
-          >
-            <CreditCard className="w-4 h-4" />
-            <span>Payments Verification</span>
-          </Link>
-          <Link
             to="/admin/courses"
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-2"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Create Course</span>
@@ -104,82 +99,74 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Top Metric Cards (Courses, Students, Enrollments, Revenue) */}
+      {/* 2. Top Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* Total Courses */}
         <div className="glass-card p-5 rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Courses</span>
-            <div className="w-8 h-8 rounded-lg bg-scalora-blue/20 text-scalora-blue flex items-center justify-center">
-              <BookOpen className="w-4 h-4" />
-            </div>
+            <BookOpen className="w-4 h-4 text-scalora-blue" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">{stats.totalCourses}</div>
           <p className="text-[11px] text-emerald-400 font-semibold">
-            {stats.publishedCoursesCount} Published & Active
+            {stats.publishedCoursesCount} Published
           </p>
         </div>
 
-        {/* Total Students */}
         <div className="glass-card p-5 rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Students</span>
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
+            <Users className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">{stats.totalStudents}</div>
           <p className="text-[11px] text-slate-400">Registered learners</p>
         </div>
 
-        {/* Total Enrollments */}
         <div className="glass-card p-5 rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Enrollments</span>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-              <CreditCard className="w-4 h-4" />
-            </div>
+            <CreditCard className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-2xl sm:text-3xl font-black text-scalora-accent">{stats.totalEnrollments}</div>
           <p className="text-[11px] text-slate-400">Course seat allocations</p>
         </div>
 
-        {/* Revenue */}
+        {/* Revenue (EGP) */}
         <div className="glass-card p-5 rounded-2xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Revenue</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <DollarSign className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Revenue (EGP)</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+              ج.م
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400">
-            ${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {formatCurrency(stats.totalRevenue, { showDecimals: true })}
           </div>
           <p className="text-[11px] text-slate-400">Gross processed volume</p>
         </div>
       </div>
 
-      {/* 3. Middle Section: Category Distribution & Top Performing Courses */}
+      {/* 3. Mid Grid: Categories (1/3) & Top Courses (2/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Breakdown (1/3) */}
         <div className="glass-panel p-6 rounded-2xl border border-scalora-blue/20 space-y-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-scalora-accent" />
-            <span>Track Distribution</span>
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Layers className="w-4 h-4 text-scalora-accent" />
+              <span>Category Distribution</span>
+            </h3>
+          </div>
 
-          <div className="space-y-3 pt-1">
-            {categoryDistribution.map((item) => (
-              <div key={item.category} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300 font-medium">{item.category}</span>
-                  <span className="font-bold text-white">{item.count} courses</span>
+          <div className="space-y-3 pt-2">
+            {(categoryDistribution || []).map((item: any) => (
+              <div key={item.category || item.name} className="space-y-1">
+                <div className="flex justify-between text-xs font-semibold">
+                  <span className="text-slate-300">{item.category || item.name}</span>
+                  <span className="text-scalora-accent">{item.count} courses</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-scalora-navy overflow-hidden">
+                <div className="w-full bg-scalora-navy/80 h-2 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-scalora-blue to-scalora-accent rounded-full"
                     style={{
-                      width: `${Math.min(100, Math.round((item.count / stats.totalCourses) * 100))}%`,
+                      width: `${Math.min(100, Math.round((item.count / (stats.totalCourses || 1)) * 100))}%`,
                     }}
                   />
                 </div>
@@ -188,16 +175,12 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Top Courses by Enrollments (2/3) */}
         <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-scalora-blue/20 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-scalora-blue" />
               <span>Top Enrolled Courses</span>
             </h3>
-            <Link to="/admin/courses" className="text-xs font-bold text-scalora-blue hover:text-scalora-accent">
-              Manage All
-            </Link>
           </div>
 
           <div className="overflow-x-auto">
@@ -206,7 +189,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <tr className="border-b border-scalora-blue/15 text-slate-400 uppercase tracking-wider">
                   <th className="pb-3 font-semibold">Course Title</th>
                   <th className="pb-3 font-semibold">Category</th>
-                  <th className="pb-3 font-semibold">Price</th>
+                  <th className="pb-3 font-semibold">Price (EGP)</th>
                   <th className="pb-3 font-semibold text-right">Students</th>
                 </tr>
               </thead>
@@ -219,7 +202,7 @@ export const AdminDashboardPage: React.FC = () => {
                       <td className="py-3 font-bold text-white max-w-xs truncate">{c.title}</td>
                       <td className="py-3 text-slate-300">{c.category || 'General'}</td>
                       <td className="py-3 font-semibold text-white">
-                        {p === 0 ? 'Free' : `$${p.toFixed(2)}`}
+                        {p === 0 ? 'Free' : formatCurrency(p)}
                       </td>
                       <td className="py-3 text-right font-black text-scalora-accent">{stdCount}</td>
                     </tr>
@@ -238,9 +221,6 @@ export const AdminDashboardPage: React.FC = () => {
             <Clock className="w-4 h-4 text-scalora-accent" />
             <span>Recent Student Enrollments</span>
           </h3>
-          <Link to="/admin/enrollments" className="text-xs font-bold text-scalora-blue hover:text-scalora-accent">
-            View All Transactions
-          </Link>
         </div>
 
         <div className="overflow-x-auto">
@@ -276,13 +256,17 @@ export const AdminDashboardPage: React.FC = () => {
                     </td>
                     <td className="py-3 text-slate-300 truncate max-w-xs">{enr.course?.title || 'Enrolled Course'}</td>
                     <td className="py-3 font-bold text-white">
-                      {amt === 0 ? 'Free' : `$${amt.toFixed(2)}`}
+                      {amt === 0 ? 'Free' : formatCurrency(amt)}
                     </td>
                     <td className="py-3 text-slate-400">
-                      {new Date(dateStr).toLocaleDateString()}
+                      {new Date(dateStr).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
                     </td>
                     <td className="py-3 text-right">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                         {enr.status || 'ACTIVE'}
                       </span>
                     </td>

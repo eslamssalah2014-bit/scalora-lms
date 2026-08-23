@@ -4,7 +4,7 @@ import { Settings, CreditCard, Shield, Globe, Save, CheckCircle2, Zap } from 'lu
 
 export const AdminSettingsPage: React.FC = () => {
   const [platformName, setPlatformName] = useState('Scalora LMS Platform');
-  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [defaultCurrency, setDefaultCurrency] = useState('EGP');
   const [allowRegistration, setAllowRegistration] = useState(true);
 
   // Gateway Toggles
@@ -22,7 +22,7 @@ export const AdminSettingsPage: React.FC = () => {
       const res = await api.get<{ success: boolean; settings: any }>('/admin/settings');
       if (res.success && res.settings) {
         setPlatformName(res.settings.platformName || 'Scalora LMS');
-        setDefaultCurrency(res.settings.defaultCurrency || 'USD');
+        setDefaultCurrency(res.settings.defaultCurrency || 'EGP');
         setAllowRegistration(res.settings.allowRegistration ?? true);
         if (res.settings.paymentGateways) {
           setMockEnabled(res.settings.paymentGateways.mock?.enabled ?? true);
@@ -88,8 +88,8 @@ export const AdminSettingsPage: React.FC = () => {
                 onChange={(e) => setDefaultCurrency(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs bg-[#04152D]"
               >
+                <option value="EGP">EGP (ج.م - Egyptian Pound - Primary Default)</option>
                 <option value="USD">USD ($ - US Dollar)</option>
-                <option value="EGP">EGP (E£ - Egyptian Pound)</option>
                 <option value="EUR">EUR (€ - Euro)</option>
                 <option value="GBP">GBP (£ - British Pound)</option>
               </select>

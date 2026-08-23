@@ -24,8 +24,10 @@ import {
   User,
   Mail,
   Phone,
+  Tag,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { getCoursePricing, formatCurrency } from '../lib/currency';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -75,6 +77,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!course) return null;
 
+  const pricing = getCoursePricing(course);
+
   // Copy helper
   const handleCopyLink = () => {
     navigator.clipboard.writeText(INSTAPAY_LINK);
@@ -98,11 +102,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    setFileName(file.name);
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      setError('Invalid file format. Please upload a PNG, JPG, or PDF file.');
+      return;
+    }
+
     setError(null);
+    setFileName(file.name);
 
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onload = () => {
       setScreenshotUrl(reader.result as string);
     };
     reader.readAsDataURL(file);
@@ -238,7 +247,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="p-5 rounded-2xl bg-scalora-navy/70 border border-scalora-blue/25 text-left space-y-3 text-xs text-slate-300">
             <p className="leading-relaxed">
-              Your payment of <strong className="text-white">${course.price.toFixed(2)}</strong> for{' '}
+              Your payment of <strong className="text-white">{pricing.formattedEffective}</strong> for{' '}
               <strong className="text-white">"{course.title}"</strong> (Ref: <code className="text-scalora-blue font-mono font-bold">{referenceNumber}</code>) has been submitted to the Scalora finance team.
             </p>
             <p className="leading-relaxed text-slate-400">
@@ -287,10 +296,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <p className="text-xs text-slate-400">Instructor: {course.instructor}</p>
             </div>
             <div className="text-right">
-              <span className="text-xs text-slate-400 block">Total</span>
-              <span className="text-xl font-black text-white">
-                {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
-              </span>
+              <span className="text-xs text-slate-400 block font-medium">Total Tuition</span>
+              {pricing.hasDiscount ? (
+                <div>
+                  <span className="text-xs line-through text-slate-400 block">
+                    {pricing.formattedBase}
+                  </span>
+                  <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
+                    {pricing.formattedEffective}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-xl font-black text-white">
+                  {pricing.formattedEffective}
+                </span>
+              )}
             </div>
           </div>
 
@@ -375,7 +395,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                   </div>
                   <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                    ${course.price.toFixed(2)}
+                    {pricing.formattedEffective}
                   </span>
                 </div>
 
@@ -605,7 +625,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 ) : (
                   <>
                     <Lock className="w-4 h-4" />
-                    <span>Instant Enroll Access ({course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`})</span>
+                    <span>Instant Enroll Access ({pricing.formattedEffective})</span>
                   </>
                 )}
               </button>

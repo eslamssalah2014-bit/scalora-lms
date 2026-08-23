@@ -128,6 +128,10 @@ export interface Course {
   description: string;
   thumbnail?: string | null;
   price: number;
+  basePrice?: number;
+  discountPrice?: number;
+  discountPercent?: number;
+  currency?: string;
   instructor: string;
   category: string;
   level: string;

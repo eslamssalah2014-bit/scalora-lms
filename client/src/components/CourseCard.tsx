@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Course } from '../types';
-import { BookOpen, Users, HelpCircle, ArrowRight, PlayCircle, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Users, HelpCircle, ArrowRight, PlayCircle, CheckCircle2, Tag } from 'lucide-react';
+import { getCoursePricing } from '../lib/currency';
 
 interface CourseCardProps {
   course: Course;
@@ -11,6 +12,7 @@ interface CourseCardProps {
 
 export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, isEnrolled }) => {
   const navigate = useNavigate();
+  const pricing = getCoursePricing(course);
 
   const handleAction = (e: React.MouseEvent) => {
     if (isEnrolled || course.isEnrolled) {
@@ -37,6 +39,14 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
           alt={course.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
         />
+
+        {/* Discount Badge on top left if active */}
+        {pricing.hasDiscount && (
+          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-gradient-to-r from-amber-500 to-rose-500 text-white flex items-center gap-1 shadow-lg backdrop-blur-md z-10 animate-pulse">
+            <Tag className="w-3 h-3" />
+            <span>{pricing.discountPercent}% OFF</span>
+          </div>
+        )}
 
         {/* Enrolled Badge if applicable */}
         {(isEnrolled || course.isEnrolled) && (
@@ -112,12 +122,30 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
           </div>
 
           {/* Pricing & CTA */}
-          <div className="flex items-center justify-between pt-1">
-            <div>
-              <span className="text-xs text-slate-400 block font-medium">Tuition</span>
-              <span className="text-xl font-extrabold text-white">
-                {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
-              </span>
+          <div className="flex items-end justify-between pt-1">
+            <div className="space-y-0.5">
+              {pricing.hasDiscount ? (
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] line-through text-slate-400 font-medium">
+                      {pricing.formattedBase}
+                    </span>
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/30">
+                      {pricing.discountPercent}% OFF
+                    </span>
+                  </div>
+                  <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
+                    {pricing.formattedEffective}
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-[11px] text-slate-400 block font-medium">Tuition</span>
+                  <span className="text-xl font-extrabold text-white">
+                    {pricing.formattedEffective}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">

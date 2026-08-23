@@ -14,6 +14,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react';
+import { formatCurrency } from '../../lib/currency';
 
 interface EnrollmentRow {
   id: string;
@@ -274,7 +275,7 @@ export const AdminEnrollmentsPage: React.FC = () => {
             >
               {courses.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.title} ({c.price === 0 ? 'Free' : `$${c.price}`})
+                  {c.title} ({c.price === 0 ? 'Free' : formatCurrency(c.price)})
                 </option>
               ))}
             </select>

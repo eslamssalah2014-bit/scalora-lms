@@ -23,7 +23,9 @@ import {
   Users,
   RefreshCw,
   AlertCircle,
+  Tag,
 } from 'lucide-react';
+import { getCoursePricing } from '../lib/currency';
 
 export const CourseDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -359,19 +361,45 @@ export const CourseDetailsPage: React.FC = () => {
             </div>
 
             {/* Pricing Tag */}
-            <div className="space-y-1">
-              <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tuition Fee</span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-white">
-                  {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
-                </span>
-                {course.price > 0 && (
-                  <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
-                    Lifetime Access
-                  </span>
-                )}
-              </div>
-            </div>
+            {(() => {
+              const pricing = getCoursePricing(course);
+              return (
+                <div className="space-y-2">
+                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tuition Fee</span>
+                  {pricing.hasDiscount ? (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm line-through text-slate-400 font-semibold">
+                          {pricing.formattedBase}
+                        </span>
+                        <span className="text-xs font-black text-white bg-gradient-to-r from-amber-500 to-rose-500 px-2 py-0.5 rounded-md shadow-md animate-pulse">
+                          {pricing.discountPercent}% OFF
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
+                          {pricing.formattedEffective}
+                        </span>
+                        <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                          Save {pricing.formattedSavings}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-white">
+                        {pricing.formattedEffective}
+                      </span>
+                      {!pricing.isFree && (
+                        <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
+                          Lifetime Access
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Action CTA */}
             {isEnrolled ? (

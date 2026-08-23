@@ -22,7 +22,10 @@ import {
   Plus,
   X,
   Check,
+  DollarSign,
+  Percent,
 } from 'lucide-react';
+import { formatCurrency, getCoursePricing, calculateDiscountPercent } from '../../lib/currency';
 
 export const AdminCoursesPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -57,6 +60,8 @@ export const AdminCoursesPage: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [thumbnail, setThumbnail] = useState('');
+  const [basePrice, setBasePrice] = useState<number>(5000);
+  const [discountPrice, setDiscountPrice] = useState<number>(3000);
   const [price, setPrice] = useState<number>(0);
   const [instructor, setInstructor] = useState('');
   const [category, setCategory] = useState('Cloud Architecture');
@@ -167,7 +172,9 @@ export const AdminCoursesPage: React.FC = () => {
     setTitle('');
     setDescription('');
     setThumbnail('');
-    setPrice(0);
+    setBasePrice(5000);
+    setDiscountPrice(3000);
+    setPrice(3000);
     setInstructor('Scalora Master Instructor');
     setCategory(categories.length > 0 ? categories[0].name : 'Cloud Architecture');
     setLevel('All Levels');
@@ -185,7 +192,18 @@ export const AdminCoursesPage: React.FC = () => {
     setTitle(course.title);
     setDescription(course.description);
     setThumbnail(course.thumbnail || '');
-    setPrice(course.price);
+    
+    const initialBase = typeof course.basePrice === 'number' && course.basePrice > 0
+      ? course.basePrice
+      : (typeof course.price === 'number' && course.price > 0 ? course.price : 5000);
+    const initialDiscount = typeof course.discountPrice === 'number' && course.discountPrice > 0
+      ? course.discountPrice
+      : (typeof course.price === 'number' && course.price > 0 ? course.price : initialBase);
+
+    setBasePrice(initialBase);
+    setDiscountPrice(initialDiscount);
+    setPrice(initialDiscount);
+
     setInstructor(course.instructor);
     setCategory(course.category);
     setLevel(course.level || 'All Levels');
@@ -207,11 +225,36 @@ export const AdminCoursesPage: React.FC = () => {
     setFormLoading(true);
     setFormError(null);
 
+    const base = Number(basePrice);
+    const discount = Number(discountPrice);
+
+    if (isNaN(base) || base < 0) {
+      setFormError('Base Price must be a valid positive number');
+      setFormLoading(false);
+      return;
+    }
+
+    if (isNaN(discount) || discount < 0) {
+      setFormError('Discounted Price cannot be negative');
+      setFormLoading(false);
+      return;
+    }
+
+    if (discount > base) {
+      setFormError('Discounted Price cannot be greater than Base Price (Original Price)');
+      setFormLoading(false);
+      return;
+    }
+
+    const effectivePrice = discount > 0 && discount < base ? discount : base;
+
     const payload = {
       title,
       description,
       thumbnail: thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
-      price: Number(price),
+      price: effectivePrice,
+      basePrice: base,
+      discountPrice: discount,
       instructor: instructor || 'Scalora Master Instructor',
       category,
       level,
@@ -316,7 +359,7 @@ export const AdminCoursesPage: React.FC = () => {
               <tr className="border-b border-scalora-blue/20 bg-scalora-navy/50 text-slate-400 uppercase tracking-wider">
                 <th className="py-3.5 px-4 font-semibold">Course</th>
                 <th className="py-3.5 px-4 font-semibold">Category & Level</th>
-                <th className="py-3.5 px-4 font-semibold">Price</th>
+                <th className="py-3.5 px-4 font-semibold">Pricing (EGP)</th>
                 <th className="py-3.5 px-4 font-semibold">Content</th>
                 <th className="py-3.5 px-4 font-semibold">Students</th>
                 <th className="py-3.5 px-4 font-semibold text-center">Status</th>
@@ -368,9 +411,28 @@ export const AdminCoursesPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Price */}
-                    <td className="py-4 px-4 font-black text-white">
-                      {c.price === 0 ? 'Free' : `$${c.price.toFixed(2)}`}
+                    {/* Price (EGP) */}
+                    <td className="py-4 px-4 font-bold">
+                      {(() => {
+                        const pricing = getCoursePricing(c);
+                        if (pricing.isFree) {
+                          return <span className="text-emerald-400 font-extrabold">Free</span>;
+                        }
+                        if (pricing.hasDiscount) {
+                          return (
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1">
+                                <span className="line-through text-slate-400 text-[10px]">{pricing.formattedBase}</span>
+                                <span className="text-[9px] font-black text-amber-400 bg-amber-500/10 px-1 rounded border border-amber-500/30">
+                                  {pricing.discountPercent}% OFF
+                                </span>
+                              </div>
+                              <span className="font-extrabold text-white block">{pricing.formattedEffective}</span>
+                            </div>
+                          );
+                        }
+                        return <span className="font-extrabold text-white">{pricing.formattedEffective}</span>;
+                      })()}
                     </td>
 
                     {/* Content Count */}
@@ -590,37 +652,99 @@ export const AdminCoursesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Instructor & Price */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Instructor Name
-              </label>
-              <input
-                type="text"
-                required
-                value={instructor}
-                onChange={(e) => setInstructor(e.target.value)}
-                placeholder="Dr. Tariq Al-Mansoor"
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
-              />
+          {/* Instructor Name */}
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              Instructor Name
+            </label>
+            <input
+              type="text"
+              required
+              value={instructor}
+              onChange={(e) => setInstructor(e.target.value)}
+              placeholder="Dr. Tariq Al-Mansoor"
+              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
+            />
+          </div>
+
+          {/* Dedicated Course Pricing & Discount System (EGP) */}
+          <div className="p-4 rounded-2xl bg-[#031024] border border-cyan-500/30 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-white">
+                  Course Pricing & Discount (EGP / ج.م)
+                </span>
+              </div>
+              {basePrice > 0 && discountPrice > 0 && discountPrice < basePrice && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md animate-pulse">
+                  {calculateDiscountPercent(basePrice, discountPrice)}% OFF Active
+                </span>
+              )}
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Tuition Price ($ USD)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={price}
-                onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                placeholder="89.99"
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Base Price (Original Tuition EGP)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={basePrice}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      setBasePrice(val);
+                      if (discountPrice > val) setDiscountPrice(val);
+                    }}
+                    placeholder="5000"
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs pr-12 font-bold text-white"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-bold">EGP</span>
+                </div>
+                <span className="text-[10px] text-slate-400">Regular course tuition before discount</span>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  Discounted Price (Checkout Tuition EGP)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={discountPrice}
+                    onChange={(e) => setDiscountPrice(parseFloat(e.target.value) || 0)}
+                    placeholder="3000"
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs pr-12 font-bold text-emerald-400"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-emerald-400 font-bold">EGP</span>
+                </div>
+                <span className="text-[10px] text-slate-400">Actual amount students are charged at checkout</span>
+              </div>
             </div>
+
+            {/* Live Calculation Preview Banner */}
+            {basePrice > 0 && discountPrice > 0 && (
+              <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/20 flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-medium">
+                  {discountPrice < basePrice ? (
+                    <>
+                      Students Save: <strong className="text-emerald-400">{formatCurrency(basePrice - discountPrice)}</strong> ({calculateDiscountPercent(basePrice, discountPrice)}% Discount)
+                    </>
+                  ) : (
+                    'No discount applied (Standard full price tuition)'
+                  )}
+                </span>
+                <span className="text-xs font-black text-white bg-black/40 px-2.5 py-0.5 rounded border border-white/10">
+                  Checkout: {formatCurrency(discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Thumbnail URL */}

@@ -1,16 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
+exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCoursePricing = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
 const community_service_js_1 = require("../services/community.service.js");
 const audit_service_js_1 = require("../services/audit.service.js");
+const course_pricing_service_js_1 = require("../services/course-pricing.service.js");
 const courseSchema = zod_1.z.object({
     title: zod_1.z.string().min(3, 'Title must be at least 3 characters'),
     slug: zod_1.z.string().optional(),
     description: zod_1.z.string().min(10, 'Description must be at least 10 characters'),
     thumbnail: zod_1.z.string().url('Invalid thumbnail URL').optional().or(zod_1.z.literal('')),
     price: zod_1.z.number().min(0, 'Price must be 0 or positive').default(0),
+    basePrice: zod_1.z.number().min(0, 'Base price must be 0 or positive').optional(),
+    discountPrice: zod_1.z.number().min(0, 'Discount price must be 0 or positive').optional(),
+    discountedPrice: zod_1.z.number().min(0, 'Discount price must be 0 or positive').optional(),
     instructor: zod_1.z.string().min(2, 'Instructor name is required'),
     category: zod_1.z.string().min(2, 'Category is required'),
     level: zod_1.z.string().optional().default('All Levels'),
@@ -77,13 +81,21 @@ const getPublishedCourses = async (req, res) => {
         });
         const formatted = courses.map((course) => {
             const allLessons = course.modules.flatMap((m) => m.lessons);
+            const pricing = course_pricing_service_js_1.coursePricingService.getPricing(course.id, course.price);
+            const basePrice = pricing.basePrice > 0 ? pricing.basePrice : (course.price > 0 ? course.price : 0);
+            const discountPrice = pricing.discountPrice > 0 ? pricing.discountPrice : basePrice;
+            const effectivePrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
             return {
                 id: course.id,
                 title: course.title,
                 slug: course.slug,
                 description: course.description,
                 thumbnail: course.thumbnail,
-                price: course.price,
+                price: effectivePrice,
+                basePrice,
+                discountPrice,
+                discountPercent: pricing.discountPercent,
+                currency: 'EGP',
                 instructor: course.instructor,
                 category: course.category,
                 level: course.level,
@@ -131,8 +143,17 @@ const getAllCoursesAdmin = async (_req, res) => {
         });
         const formatted = courses.map((course) => {
             const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
+            const pricing = course_pricing_service_js_1.coursePricingService.getPricing(course.id, course.price);
+            const basePrice = pricing.basePrice > 0 ? pricing.basePrice : (course.price > 0 ? course.price : 0);
+            const discountPrice = pricing.discountPrice > 0 ? pricing.discountPrice : basePrice;
+            const effectivePrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
             return {
                 ...course,
+                price: effectivePrice,
+                basePrice,
+                discountPrice,
+                discountPercent: pricing.discountPercent,
+                currency: 'EGP',
                 lessonsCount: totalLessons,
                 quizzesCount: course.quizzes.length,
                 studentsCount: course._count.enrollments,
@@ -240,10 +261,19 @@ const getCourseBySlug = async (req, res) => {
             }
         }
         const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
+        const pricing = course_pricing_service_js_1.coursePricingService.getPricing(course.id, course.price);
+        const basePrice = pricing.basePrice > 0 ? pricing.basePrice : (course.price > 0 ? course.price : 0);
+        const discountPrice = pricing.discountPrice > 0 ? pricing.discountPrice : basePrice;
+        const effectivePrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
         res.json({
             success: true,
             course: {
                 ...course,
+                price: effectivePrice,
+                basePrice,
+                discountPrice,
+                discountPercent: pricing.discountPercent,
+                currency: 'EGP',
                 lessonsCount: totalLessons,
                 studentsCount: course._count.enrollments,
                 isEnrolled,
@@ -260,25 +290,32 @@ exports.getCourseBySlug = getCourseBySlug;
 const createCourse = async (req, res) => {
     try {
         const validatedData = courseSchema.parse(req.body);
-        const { trainerIds, ...courseData } = validatedData;
+        const { trainerIds, basePrice, discountPrice, discountedPrice, ...courseData } = validatedData;
         let slug = courseData.slug || generateSlug(courseData.title);
         const existing = await prisma_js_1.prisma.course.findUnique({ where: { slug } });
         if (existing) {
             slug = `${slug}-${Date.now().toString().slice(-4)}`;
         }
+        const initialBase = typeof basePrice === 'number' ? basePrice : (courseData.price || 0);
+        const initialDiscount = typeof discountPrice === 'number'
+            ? discountPrice
+            : (typeof discountedPrice === 'number' ? discountedPrice : initialBase);
+        const effectivePrice = initialDiscount > 0 && initialDiscount < initialBase ? initialDiscount : initialBase;
         const course = await prisma_js_1.prisma.course.create({
             data: {
                 title: courseData.title,
                 slug,
                 description: courseData.description,
                 thumbnail: courseData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
-                price: courseData.price,
+                price: effectivePrice,
                 instructor: courseData.instructor,
                 category: courseData.category,
                 level: courseData.level || 'All Levels',
                 isPublished: courseData.isPublished || false,
             },
         });
+        // Save custom pricing
+        const pricing = course_pricing_service_js_1.coursePricingService.setPricing(course.id, initialBase, initialDiscount);
         // Assign trainers if provided
         if (trainerIds && trainerIds.length > 0) {
             const uniqueTrainerIds = Array.from(new Set(trainerIds.filter(Boolean)));
@@ -307,7 +344,18 @@ const createCourse = async (req, res) => {
             newData: course,
             metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
         });
-        res.status(201).json({ success: true, message: 'Course created successfully', course });
+        res.status(201).json({
+            success: true,
+            message: 'Course created successfully',
+            course: {
+                ...course,
+                price: effectivePrice,
+                basePrice: pricing.basePrice,
+                discountPrice: pricing.discountPrice,
+                discountPercent: pricing.discountPercent,
+                currency: 'EGP',
+            },
+        });
     }
     catch (error) {
         if (error instanceof zod_1.z.ZodError) {
@@ -322,11 +370,27 @@ const updateCourse = async (req, res) => {
     try {
         const id = req.params.id;
         const validatedData = courseSchema.partial().parse(req.body);
-        const { trainerIds, ...courseData } = validatedData;
+        const { trainerIds, basePrice, discountPrice, discountedPrice, ...courseData } = validatedData;
         const existing = await prisma_js_1.prisma.course.findUnique({ where: { id } });
         if (!existing) {
             res.status(404).json({ success: false, message: 'Course not found' });
             return;
+        }
+        // Handle pricing updates
+        let effectivePrice = existing.price;
+        if (basePrice !== undefined || discountPrice !== undefined || discountedPrice !== undefined || courseData.price !== undefined) {
+            const currentPricing = course_pricing_service_js_1.coursePricingService.getPricing(id, existing.price);
+            const newBase = typeof basePrice === 'number'
+                ? basePrice
+                : (typeof courseData.price === 'number' ? courseData.price : currentPricing.basePrice);
+            const newDiscount = typeof discountPrice === 'number'
+                ? discountPrice
+                : (typeof discountedPrice === 'number' ? discountedPrice : (typeof basePrice === 'number' ? basePrice : currentPricing.discountPrice));
+            const updatedPricing = course_pricing_service_js_1.coursePricingService.setPricing(id, newBase, newDiscount);
+            effectivePrice = updatedPricing.discountPrice > 0 && updatedPricing.discountPrice < updatedPricing.basePrice
+                ? updatedPricing.discountPrice
+                : updatedPricing.basePrice;
+            courseData.price = effectivePrice;
         }
         const updated = await prisma_js_1.prisma.course.update({
             where: { id },
@@ -364,7 +428,19 @@ const updateCourse = async (req, res) => {
             newData: updated,
             metadata: { adminEmail: req.user?.email, adminName: req.user?.name },
         });
-        res.json({ success: true, message: 'Course updated successfully', course: updated });
+        const finalPricing = course_pricing_service_js_1.coursePricingService.getPricing(id, updated.price);
+        res.json({
+            success: true,
+            message: 'Course updated successfully',
+            course: {
+                ...updated,
+                price: effectivePrice,
+                basePrice: finalPricing.basePrice,
+                discountPrice: finalPricing.discountPrice,
+                discountPercent: finalPricing.discountPercent,
+                currency: 'EGP',
+            },
+        });
     }
     catch (error) {
         if (error instanceof zod_1.z.ZodError) {
@@ -375,6 +451,54 @@ const updateCourse = async (req, res) => {
     }
 };
 exports.updateCourse = updateCourse;
+const updateCoursePricing = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const { basePrice, discountPrice, discountedPrice } = req.body;
+        const base = Number(basePrice);
+        if (isNaN(base) || base < 0) {
+            res.status(400).json({ success: false, message: 'Valid basePrice is required' });
+            return;
+        }
+        const discountRaw = discountPrice !== undefined ? discountPrice : discountedPrice;
+        const discount = discountRaw !== undefined && discountRaw !== null && discountRaw !== ''
+            ? Number(discountRaw)
+            : base;
+        if (isNaN(discount) || discount < 0) {
+            res.status(400).json({ success: false, message: 'Discounted price cannot be negative' });
+            return;
+        }
+        if (discount > base) {
+            res.status(400).json({ success: false, message: 'Discounted price cannot be greater than Base Price' });
+            return;
+        }
+        const course = await prisma_js_1.prisma.course.findUnique({ where: { id } });
+        if (!course) {
+            res.status(404).json({ success: false, message: 'Course not found' });
+            return;
+        }
+        const pricing = course_pricing_service_js_1.coursePricingService.setPricing(id, base, discount);
+        const effectivePrice = pricing.discountPrice > 0 && pricing.discountPrice < pricing.basePrice
+            ? pricing.discountPrice
+            : pricing.basePrice;
+        await prisma_js_1.prisma.course.update({
+            where: { id },
+            data: { price: effectivePrice },
+        });
+        res.json({
+            success: true,
+            message: 'Course pricing updated successfully',
+            pricing: {
+                ...pricing,
+                effectivePrice,
+            },
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error updating course pricing' });
+    }
+};
+exports.updateCoursePricing = updateCoursePricing;
 const deleteCourse = async (req, res) => {
     try {
         const id = req.params.id;
