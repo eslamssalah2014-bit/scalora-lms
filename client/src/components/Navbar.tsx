@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NotificationDropdown } from './community/NotificationDropdown';
+import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import {
   GraduationCap,
   BookOpen,
@@ -23,6 +25,47 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+
+  // Fetch unread count & subscribe to Realtime User Inbox
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Fetch initial count
+    api
+      .get<{ success: boolean; conversations: any[] }>('/messages/conversations')
+      .then((res) => {
+        if (res.success && Array.isArray(res.conversations)) {
+          const totalUnread = res.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+          setUnreadMsgCount(totalUnread);
+        }
+      })
+      .catch(() => {});
+
+    // Supabase Realtime User Inbox channel
+    const channel = supabase.channel(`navbar-inbox:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'new_direct_message' }, () => {
+        if (location.pathname !== '/messages') {
+          setUnreadMsgCount((prev) => prev + 1);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, location.pathname]);
+
+  // Clear unread count when viewing messages page
+  useEffect(() => {
+    if (location.pathname === '/messages') {
+      setUnreadMsgCount(0);
+    }
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -128,6 +171,11 @@ export const Navbar: React.FC = () => {
                   title="Messenger & Direct Inquiries"
                 >
                   <Mail className="w-4 h-4" />
+                  {unreadMsgCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-extrabold text-[10px] border-2 border-[#04152D] animate-pulse">
+                      {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
+                    </span>
+                  )}
                 </Link>
 
                 {/* 3. User Profile Button */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
+import { supabase } from '../../lib/supabase';
 import { CommunityChatMessage } from '../../types';
 import {
   MessageSquare,
@@ -41,7 +42,12 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Realtime Group Typing State
+  const [typingUsers, setTypingUsers] = useState<{ [userId: string]: string }>({});
+  const typingTimerRef = useRef<{ [userId: string]: NodeJS.Timeout }>({});
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     fetchMessages();
@@ -49,7 +55,73 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, typingUsers]);
+
+  // =========================================================================
+  // SUPABASE REALTIME SUBSCRIPTION FOR GROUP CHAT ROOM
+  // =========================================================================
+  useEffect(() => {
+    if (!channelId) return;
+
+    const groupChannel = supabase.channel(`group-chat:${channelId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    groupChannel
+      .on('broadcast', { event: 'chat_message' }, ({ payload }) => {
+        const incoming: CommunityChatMessage = payload.message;
+        if (incoming) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === incoming.id)) return prev;
+            return [...prev, incoming];
+          });
+        }
+      })
+      .on('broadcast', { event: 'chat_pin' }, ({ payload }) => {
+        const { messageId, isPinned } = payload;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, isPinned } : m))
+        );
+      })
+      .on('broadcast', { event: 'chat_delete' }, ({ payload }) => {
+        const { messageId } = payload;
+        setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      })
+      .on('broadcast', { event: 'chat_typing' }, ({ payload }) => {
+        const { userId, userName, isTyping } = payload;
+        if (userId === user?.id) return;
+
+        setTypingUsers((prev) => {
+          if (isTyping) {
+            return { ...prev, [userId]: userName };
+          } else {
+            const copy = { ...prev };
+            delete copy[userId];
+            return copy;
+          }
+        });
+
+        // Auto-clear after 3s
+        if (typingTimerRef.current[userId]) clearTimeout(typingTimerRef.current[userId]);
+        if (isTyping) {
+          typingTimerRef.current[userId] = setTimeout(() => {
+            setTypingUsers((prev) => {
+              const copy = { ...prev };
+              delete copy[userId];
+              return copy;
+            });
+          }, 3000);
+        }
+      })
+      .subscribe();
+
+    channelRef.current = groupChannel;
+
+    return () => {
+      supabase.removeChannel(groupChannel);
+      Object.values(typingTimerRef.current).forEach(clearTimeout);
+    };
+  }, [channelId, user?.id]);
 
   const fetchMessages = async () => {
     setLoading(true);
@@ -67,35 +139,98 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
     }
   };
 
+  const handleTypingChange = (val: string) => {
+    setText(val);
+    if (channelRef.current && user) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'chat_typing',
+        payload: {
+          userId: user.id,
+          userName: user.name,
+          isTyping: val.trim().length > 0,
+        },
+      });
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() && !mediaUrl.trim() && !fileUrl.trim()) return;
 
+    const messageContent = text.trim();
+    const media = mediaUrl.trim() || undefined;
+    const file = fileUrl.trim() || undefined;
+    const fName = fileName.trim() || undefined;
+    const parent = replyingTo?.id || undefined;
+
+    // Optimistic message
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: CommunityChatMessage = {
+      id: tempId,
+      channelId,
+      userId: user?.id || '',
+      content: messageContent,
+      mediaUrl: media,
+      fileUrl: file,
+      fileName: fName,
+      parentId: parent,
+      isPinned: false,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: user?.id || '',
+        name: user?.name || '',
+        avatar: user?.avatar,
+        role: user?.role || 'STUDENT',
+      },
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setText('');
+    setMediaUrl('');
+    setFileUrl('');
+    setFileName('');
+    setShowAttachmentBar(false);
+    setReplyingTo(null);
     setSending(true);
     setError(null);
+
+    // Stop typing broadcast
+    if (channelRef.current && user) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'chat_typing',
+        payload: { userId: user.id, userName: user.name, isTyping: false },
+      });
+    }
 
     try {
       const res = await api.post<{ success: boolean; message: CommunityChatMessage }>(
         `/community/chat/channels/${channelId}`,
         {
-          content: text.trim(),
-          mediaUrl: mediaUrl.trim() || undefined,
-          fileUrl: fileUrl.trim() || undefined,
-          fileName: fileName.trim() || undefined,
-          parentId: replyingTo?.id || undefined,
+          content: messageContent,
+          mediaUrl: media,
+          fileUrl: file,
+          fileName: fName,
+          parentId: parent,
         }
       );
 
       if (res.success && res.message) {
-        setMessages((prev) => [...prev, res.message]);
-        setText('');
-        setMediaUrl('');
-        setFileUrl('');
-        setFileName('');
-        setShowAttachmentBar(false);
-        setReplyingTo(null);
+        const savedMessage = res.message;
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMessage : m)));
+
+        // Broadcast to all connected channel participants
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'chat_message',
+            payload: { message: savedMessage },
+          });
+        }
       }
     } catch (err: any) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setError(err.message || 'Failed to send chat message.');
     } finally {
       setSending(false);
@@ -110,9 +245,18 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
         {}
       );
       if (res.success) {
+        const updated = res.message;
         setMessages((prev) =>
-          prev.map((m) => (m.id === messageId ? { ...m, isPinned: !m.isPinned } : m))
+          prev.map((m) => (m.id === messageId ? { ...m, isPinned: updated.isPinned } : m))
         );
+
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'chat_pin',
+            payload: { messageId, isPinned: updated.isPinned },
+          });
+        }
       }
     } catch (err) {
       console.error('Error toggling pin:', err);
@@ -124,6 +268,14 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
       const res = await api.delete<{ success: boolean }>(`/community/chat/${messageId}`);
       if (res.success) {
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
+
+        if (channelRef.current) {
+          channelRef.current.send({
+            type: 'broadcast',
+            event: 'chat_delete',
+            payload: { messageId },
+          });
+        }
       }
     } catch (err) {
       console.error('Error deleting chat message:', err);
@@ -131,6 +283,7 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
   };
 
   const pinnedMessages = messages.filter((m) => m.isPinned);
+  const typingList = Object.values(typingUsers);
 
   return (
     <div className="bg-[#0B1528] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col h-[74vh] min-h-[560px]">
@@ -175,7 +328,7 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
         {loading ? (
           <div className="py-20 text-center flex flex-col items-center justify-center space-y-2">
             <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-            <span className="text-xs text-slate-400">Connecting to channel stream...</span>
+            <span className="text-xs text-slate-400">Connecting to live group stream...</span>
           </div>
         ) : messages.length === 0 ? (
           <div className="py-20 text-center space-y-2 max-w-sm mx-auto">
@@ -305,6 +458,21 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
             );
           })
         )}
+
+        {/* Realtime Group Typing Indicator */}
+        {typingList.length > 0 && (
+          <div className="flex items-center gap-2 text-slate-400 text-xs py-1">
+            <div className="px-4 py-2 rounded-2xl bg-[#091324] border border-white/10 rounded-bl-none flex items-center gap-1.5 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+              <span className="text-[11px] text-slate-400 ml-1.5 font-medium">
+                {typingList.join(', ')} {typingList.length === 1 ? 'is' : 'are'} typing...
+              </span>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -373,7 +541,7 @@ export const CommunityChatRoom: React.FC<CommunityChatRoomProps> = ({ channelId,
             type="text"
             placeholder="Type your message in community chat..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => handleTypingChange(e.target.value)}
             className="flex-1 px-4 py-2.5 rounded-xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
           />
 

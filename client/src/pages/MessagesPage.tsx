@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { DirectMessage, Conversation } from '../types';
 import {
   Mail,
@@ -30,6 +31,7 @@ import {
   GraduationCap,
   ChevronRight,
   MoreVertical,
+  Smile,
 } from 'lucide-react';
 
 export const MessagesPage: React.FC = () => {
@@ -47,6 +49,11 @@ export const MessagesPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showRightPanel, setShowRightPanel] = useState(true);
 
+  // Realtime Presence & Typing Indicator State
+  const [isPartnerOnline, setIsPartnerOnline] = useState(false);
+  const [isPartnerTyping, setIsPartnerTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // New Message Modal
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [availableTrainers, setAvailableTrainers] = useState<any[]>([]);
@@ -62,8 +69,10 @@ export const MessagesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeChannelRef = useRef<any>(null);
+  const userInboxChannelRef = useRef<any>(null);
 
-  // Fetch conversations on load
+  // Fetch initial conversations on load
   useEffect(() => {
     fetchConversations();
     if (user?.role === 'STUDENT' || user?.role === 'ADMIN') {
@@ -89,7 +98,141 @@ export const MessagesPage: React.FC = () => {
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isPartnerTyping]);
+
+  // =========================================================================
+  // SUPABASE REALTIME SUBSCRIPTIONS
+  // =========================================================================
+
+  // 1. User Global Inbox Channel (For Real-Time Notifications across threads)
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const inboxChannel = supabase.channel(`user-inbox:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    inboxChannel
+      .on('broadcast', { event: 'new_direct_message' }, ({ payload }) => {
+        const newMsg: DirectMessage = payload.message;
+        if (!newMsg) return;
+
+        // If the message belongs to current active thread, append it
+        if (newMsg.senderId === activePartnerId || newMsg.recipientId === activePartnerId) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+        }
+
+        // Update conversation in sidebar
+        setConversations((prev) => {
+          const partnerId = newMsg.senderId === user.id ? newMsg.recipientId : newMsg.senderId;
+          const exists = prev.find((c) => c.partner.id === partnerId);
+
+          if (exists) {
+            return prev.map((c) => {
+              if (c.partner.id === partnerId) {
+                return {
+                  ...c,
+                  lastMessage: {
+                    id: newMsg.id,
+                    content: newMsg.content || (newMsg.attachmentType === 'IMAGE' ? '📷 Image' : '📎 Attachment'),
+                    createdAt: newMsg.createdAt,
+                    isSender: newMsg.senderId === user.id,
+                    isRead: newMsg.isRead,
+                  },
+                  unreadCount: partnerId === activePartnerId ? 0 : c.unreadCount + 1,
+                };
+              }
+              return c;
+            });
+          } else {
+            // Fetch fresh conversation list
+            fetchConversations();
+            return prev;
+          }
+        });
+      })
+      .subscribe();
+
+    userInboxChannelRef.current = inboxChannel;
+
+    return () => {
+      supabase.removeChannel(inboxChannel);
+    };
+  }, [user?.id, activePartnerId]);
+
+  // 2. Active Thread Channel (Presence & Typing & Instant WebSocket delivery)
+  useEffect(() => {
+    if (!user?.id || !activePartnerId) return;
+
+    const threadKey = [user.id, activePartnerId].sort().join('_');
+    const channel = supabase.channel(`dm-thread:${threadKey}`, {
+      config: {
+        presence: { key: user.id },
+        broadcast: { self: false },
+      },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const partnerPresent = Boolean(state[activePartnerId]);
+        setIsPartnerOnline(partnerPresent);
+      })
+      .on('presence', { event: 'join' }, ({ key }) => {
+        if (key === activePartnerId) {
+          setIsPartnerOnline(true);
+        }
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        if (key === activePartnerId) {
+          setIsPartnerOnline(false);
+        }
+      })
+      .on('broadcast', { event: 'dm_message' }, ({ payload }) => {
+        const incoming: DirectMessage = payload.message;
+        if (incoming) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === incoming.id)) return prev;
+            return [...prev, incoming];
+          });
+          setIsPartnerTyping(false);
+        }
+      })
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.userId === activePartnerId) {
+          setIsPartnerTyping(Boolean(payload.isTyping));
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          if (payload.isTyping) {
+            typingTimeoutRef.current = setTimeout(() => {
+              setIsPartnerTyping(false);
+            }, 3000);
+          }
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            userId: user.id,
+            name: user.name,
+            onlineAt: new Date().toISOString(),
+          });
+        }
+      });
+
+    activeChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [user?.id, activePartnerId]);
+
+  // =========================================================================
+  // DATA FETCHING METHODS
+  // =========================================================================
 
   const fetchConversations = async () => {
     setLoadingConversations(true);
@@ -146,34 +289,133 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
+  // Broadcast Typing Indicator
+  const handleTypingChange = (val: string) => {
+    setText(val);
+
+    if (activeChannelRef.current && user?.id) {
+      activeChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: user.id, isTyping: val.trim().length > 0 },
+      });
+    }
+  };
+
+  // Send Message with Optimistic Update + Realtime Broadcast
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!text.trim() && !attachmentUrl.trim()) || !activePartnerId) return;
+    if ((!text.trim() && !attachmentUrl.trim()) || !activePartnerId || !user) return;
 
+    const messageContent = text.trim();
+    const mediaUrl = attachmentUrl.trim() || undefined;
+    const mediaName = attachmentName.trim() || undefined;
+    const mediaType = attachmentType || undefined;
+
+    // 1. Optimistic UI update
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage: DirectMessage = {
+      id: tempId,
+      senderId: user.id,
+      recipientId: activePartnerId,
+      content: messageContent,
+      attachmentUrl: mediaUrl,
+      attachmentName: mediaName,
+      attachmentType: mediaType,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+        role: user.role,
+      },
+      recipient: activePartner
+        ? {
+            id: activePartner.id,
+            name: activePartner.name,
+            avatar: activePartner.avatar,
+            role: activePartner.role,
+          }
+        : undefined,
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setText('');
+    setAttachmentUrl('');
+    setAttachmentName('');
+    setAttachmentType(null);
+    setShowAttachmentBar(false);
     setSending(true);
     setError(null);
+
+    // Stop typing indicator broadcast
+    if (activeChannelRef.current) {
+      activeChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: user.id, isTyping: false },
+      });
+    }
 
     try {
       const res = await api.post<{ success: boolean; message: DirectMessage }>('/messages', {
         recipientId: activePartnerId,
-        content: text.trim(),
-        attachmentUrl: attachmentUrl.trim() || undefined,
-        attachmentName: attachmentName.trim() || undefined,
-        attachmentType: attachmentType || undefined,
+        content: messageContent,
+        attachmentUrl: mediaUrl,
+        attachmentName: mediaName,
+        attachmentType: mediaType,
       });
 
       if (res.success && res.message) {
-        setMessages((prev) => [...prev, res.message]);
-        setText('');
-        setAttachmentUrl('');
-        setAttachmentName('');
-        setAttachmentType(null);
-        setShowAttachmentBar(false);
+        const savedMessage = res.message;
 
-        // Update conversation preview
-        fetchConversations();
+        // Replace optimistic message with actual DB record
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? savedMessage : m)));
+
+        // 2. Broadcast to Thread Channel (Instant WebSocket delivery)
+        if (activeChannelRef.current) {
+          activeChannelRef.current.send({
+            type: 'broadcast',
+            event: 'dm_message',
+            payload: { message: savedMessage },
+          });
+        }
+
+        // 3. Broadcast to Recipient's Inbox Channel (Updates badges & preview)
+        const recipientInbox = supabase.channel(`user-inbox:${activePartnerId}`);
+        recipientInbox.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            recipientInbox.send({
+              type: 'broadcast',
+              event: 'new_direct_message',
+              payload: { message: savedMessage },
+            });
+            setTimeout(() => supabase.removeChannel(recipientInbox), 1000);
+          }
+        });
+
+        // Update local conversation preview in sidebar
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.partner.id === activePartnerId
+              ? {
+                  ...c,
+                  lastMessage: {
+                    id: savedMessage.id,
+                    content: savedMessage.content || (savedMessage.attachmentType === 'IMAGE' ? '📷 Image' : '📎 Attachment'),
+                    createdAt: savedMessage.createdAt,
+                    isSender: true,
+                    isRead: true,
+                  },
+                }
+              : c
+          )
+        );
       }
     } catch (err: any) {
+      // Revert optimistic message on failure
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setError(err.message || 'Failed to send message.');
     } finally {
       setSending(false);
@@ -214,7 +456,7 @@ export const MessagesPage: React.FC = () => {
               <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
                 <span>Chats</span>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                  Messenger
+                  Realtime
                 </span>
               </h2>
 
@@ -340,7 +582,11 @@ export const MessagesPage: React.FC = () => {
                       alt={activePartner.name}
                       className="w-10 h-10 rounded-2xl object-cover border border-cyan-500/30 shadow-md"
                     />
-                    <span className="w-3 h-3 rounded-full bg-emerald-400 border-2 border-[#08152B] absolute -bottom-0.5 -right-0.5" />
+                    <span
+                      className={`w-3 h-3 rounded-full border-2 border-[#08152B] absolute -bottom-0.5 -right-0.5 ${
+                        isPartnerOnline ? 'bg-emerald-400' : 'bg-slate-400'
+                      }`}
+                    />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
@@ -351,9 +597,17 @@ export const MessagesPage: React.FC = () => {
                         </span>
                       )}
                     </h3>
-                    <div className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>Active now</span>
+                    <div
+                      className={`text-[11px] font-semibold flex items-center gap-1 ${
+                        isPartnerOnline ? 'text-emerald-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isPartnerOnline ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'
+                        }`}
+                      />
+                      <span>{isPartnerOnline ? 'Active now' : 'Online'}</span>
                     </div>
                   </div>
                 </div>
@@ -380,19 +634,21 @@ export const MessagesPage: React.FC = () => {
                 {loadingMessages ? (
                   <div className="py-20 text-center flex flex-col items-center justify-center space-y-2">
                     <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-                    <span className="text-xs text-slate-400">Loading conversation...</span>
+                    <span className="text-xs text-slate-400">Connecting to secure stream...</span>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="py-20 text-center space-y-2 max-w-sm mx-auto">
                     <Sparkles className="w-8 h-8 text-cyan-400 mx-auto" />
                     <h4 className="text-sm font-bold text-white">Start your discussion</h4>
                     <p className="text-xs text-slate-400">
-                      Send a message to your assigned course instructor.
+                      Send an instant message to your assigned course instructor.
                     </p>
                   </div>
                 ) : (
                   messages.map((msg) => {
                     const isMe = msg.senderId === user?.id;
+                    const isOptimistic = msg.id.startsWith('temp-');
+
                     return (
                       <div
                         key={msg.id}
@@ -462,7 +718,9 @@ export const MessagesPage: React.FC = () => {
                             </span>
                             {isMe && (
                               <span>
-                                {msg.isRead ? (
+                                {isOptimistic ? (
+                                  <Clock className="w-3 h-3 text-cyan-300 animate-spin" />
+                                ) : msg.isRead ? (
                                   <CheckCheck className="w-3 h-3 text-cyan-400" />
                                 ) : (
                                   <Check className="w-3 h-3 text-slate-500" />
@@ -475,6 +733,19 @@ export const MessagesPage: React.FC = () => {
                     );
                   })
                 )}
+
+                {/* Realtime Partner Typing Bubble Indicator */}
+                {isPartnerTyping && (
+                  <div className="flex items-center gap-2 text-slate-400 text-xs py-1">
+                    <div className="px-4 py-2 rounded-2xl bg-[#0E203C] border border-white/10 rounded-bl-none flex items-center gap-1.5 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="text-[11px] text-slate-400 ml-1.5 font-medium">{activePartner.name} is typing...</span>
+                    </div>
+                  </div>
+                )}
+
                 <div ref={messagesEndRef} />
               </div>
 
@@ -541,7 +812,7 @@ export const MessagesPage: React.FC = () => {
                     type="text"
                     placeholder="Aa"
                     value={text}
-                    onChange={(e) => setText(e.target.value)}
+                    onChange={(e) => handleTypingChange(e.target.value)}
                     className="flex-1 px-4 py-2.5 rounded-2xl bg-[#050C1A] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
                   />
 
