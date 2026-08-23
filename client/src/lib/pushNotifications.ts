@@ -3,6 +3,8 @@
  * Compatible with Android Chrome PWA, iPhone Safari (iOS 16.4+), Windows & Mac Desktop
  */
 
+import { api } from './api';
+
 export interface NotificationPreferences {
   messages: boolean;
   community: boolean;
@@ -37,36 +39,123 @@ export const saveNotificationPreferences = (prefs: NotificationPreferences): voi
   } catch {}
 };
 
+function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const buffer = new ArrayBuffer(rawData.length);
+  const outputArray = new Uint8Array(buffer);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return buffer;
+}
+
 /**
  * Check if the browser / PWA supports native Push Notifications
  */
 export const isPushSupported = (): boolean => {
-  return typeof window !== 'undefined' && 'Notification' in window;
+  return (
+    typeof window !== 'undefined' &&
+    'Notification' in window &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window
+  );
 };
 
 /**
  * Get current browser notification permission status ('default' | 'granted' | 'denied')
  */
 export const getNotificationPermission = (): NotificationPermission => {
-  if (!isPushSupported()) return 'denied';
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'denied';
   return Notification.permission;
 };
 
 /**
- * Request native notification permission from the user
+ * Subscribe device to Web Push notifications and sync with backend
  */
-export const requestNotificationPermission = async (): Promise<boolean> => {
-  if (!isPushSupported()) return false;
+export const subscribeToPushNotifications = async (): Promise<boolean> => {
+  if (!isPushSupported()) {
+    console.warn('[PushManager] Native Web Push is not supported in this browser environment');
+    return false;
+  }
+
   try {
+    console.log('[PushManager] Initializing native Push Subscription flow...');
+
+    // 1. Request/Verify Notification Permission
     const permission = await Notification.requestPermission();
-    return permission === 'granted';
-  } catch {
+    if (permission !== 'granted') {
+      console.warn('[PushManager] User did not grant notification permission:', permission);
+      return false;
+    }
+    console.log('[PushManager] Permission verified: granted ✓');
+
+    // 2. Fetch VAPID Public Key from backend
+    const vapidRes = await api.get<{ success: boolean; publicKey: string }>('/notifications/vapid-public-key');
+    if (!vapidRes.success || !vapidRes.publicKey) {
+      console.error('[PushManager] Failed to retrieve VAPID public key from backend');
+      return false;
+    }
+    console.log('[PushManager] Retrieved VAPID Public Key:', vapidRes.publicKey);
+
+    // 3. Wait for Service Worker Registration
+    const registration = await navigator.serviceWorker.ready;
+    console.log('[PushManager] Service Worker registration ready:', registration.scope);
+
+    // 4. Check existing subscription or create new
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      const convertedKey = urlBase64ToUint8Array(vapidRes.publicKey);
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey,
+      });
+      console.log('[PushManager] Generated new native PushSubscription on device:', subscription.endpoint);
+    } else {
+      console.log('[PushManager] Re-using existing PushSubscription:', subscription.endpoint);
+    }
+
+    // 5. Send subscription to Scalora backend
+    const subJSON = subscription.toJSON();
+    const registerRes = await api.post<{ success: boolean; message: string }>('/notifications/push-subscription', {
+      subscription: subJSON,
+      userAgent: navigator.userAgent,
+    });
+
+    if (registerRes.success) {
+      console.log('[PushManager] Push Subscription successfully registered on server ✓');
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('[PushManager] Error during push subscription lifecycle:', error);
     return false;
   }
 };
 
 /**
- * Show a native Desktop / Mobile PWA Notification
+ * Request native notification permission and subscribe
+ */
+export const requestNotificationPermission = async (): Promise<boolean> => {
+  return subscribeToPushNotifications();
+};
+
+/**
+ * Trigger a server test push notification directly to current device
+ */
+export const sendTestPush = async (): Promise<{ success: boolean; message: string }> => {
+  try {
+    const res = await api.post<{ success: boolean; message: string; result: any }>('/notifications/test-push', {});
+    return res;
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to send test push' };
+  }
+};
+
+/**
+ * Show a native Desktop / Mobile PWA Notification (Foreground fallback)
  */
 export const showNativeNotification = async (params: {
   title: string;
@@ -75,7 +164,7 @@ export const showNativeNotification = async (params: {
   icon?: string;
   actionUrl?: string;
 }) => {
-  if (!isPushSupported() || Notification.permission !== 'granted') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const prefs = getNotificationPreferences();
   const typeUpper = (params.type || '').toUpperCase();
@@ -99,7 +188,6 @@ export const showNativeNotification = async (params: {
   };
 
   try {
-    // If service worker is active, dispatch via registration (best on Android PWA)
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.ready;
       if (registration && 'showNotification' in registration) {
@@ -108,7 +196,6 @@ export const showNativeNotification = async (params: {
       }
     }
 
-    // Fallback to desktop window Notification
     const notif = new Notification(title, options);
     notif.onclick = (e) => {
       e.preventDefault();

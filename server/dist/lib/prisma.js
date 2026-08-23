@@ -36,6 +36,9 @@ exports.PROTECTED_TABLES = [
     'CommunityChannel',
     'CommunityPost',
     'CommunityComment',
+    'CourseTrainer',
+    'DirectMessage',
+    'CommunityChatMessage',
 ];
 exports.SOFT_DELETE_MODELS = [
     'User',
@@ -53,6 +56,8 @@ exports.SOFT_DELETE_MODELS = [
     'CommunityChannel',
     'CommunityPost',
     'CommunityComment',
+    'DirectMessage',
+    'CommunityChatMessage',
 ];
 // Prisma Middleware: Intercepts & Blocks Destructive Queries
 rawPrisma.$use(async (params, next) => {

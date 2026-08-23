@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { realtimeService } from './realtime.service.js';
+import { webPushService } from './webpush.service.js';
 
 export interface CreateNotificationParams {
   userId: string;
@@ -75,7 +76,7 @@ class NotificationService {
         },
       });
 
-      // Deliver via Realtime SSE Stream instantly
+      // 1. Deliver via Realtime SSE Stream instantly
       realtimeService.sendToUser(params.userId, 'notification', {
         notification: {
           id: notif.id,
@@ -91,6 +92,17 @@ class NotificationService {
           createdAt: notif.createdAt,
         },
       });
+
+      // 2. Deliver via Native OS Web Push (Android System Tray / Desktop Push)
+      webPushService
+        .sendPushToUser(params.userId, {
+          title: 'Scalora LMS',
+          body: params.message,
+          image: params.imageUrl || undefined,
+          url: params.actionUrl || '/notifications',
+          type: params.type,
+        })
+        .catch((err) => console.error('[NotificationService] Web Push delivery error:', err));
 
       return notif;
     } catch (error) {
@@ -221,11 +233,31 @@ class NotificationService {
         },
       };
 
+      // 1. In-app SSE Realtime Push
       if (params.targetType === 'ALL') {
         realtimeService.broadcastToAll('notification', payload);
       } else {
         recipientUserIds.forEach((uid) => {
           realtimeService.sendToUser(uid, 'notification', payload);
+        });
+      }
+
+      // 2. Native OS Web Push (Android System Tray + Desktop Push)
+      const pushPayload = {
+        title: params.title,
+        body: params.message,
+        image: params.imageUrl || undefined,
+        url: params.actionUrl || '/notifications',
+        type: notifType,
+      };
+
+      if (params.targetType === 'ALL') {
+        webPushService.sendPushToAll(pushPayload).catch((err) => {
+          console.error('[NotificationService] Global Web Push broadcast error:', err);
+        });
+      } else {
+        webPushService.sendPushToUsers(recipientUserIds, pushPayload).catch((err) => {
+          console.error('[NotificationService] Targeted Web Push error:', err);
         });
       }
 

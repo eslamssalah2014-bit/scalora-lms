@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { notificationService } from '../services/notification.service.js';
+import { webPushService, VAPID_PUBLIC_KEY } from '../services/webpush.service.js';
 
 
 
@@ -326,5 +327,72 @@ export const adminGetBroadcastAudience = async (req: AuthenticatedRequest, res: 
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error fetching audience options' });
+  }
+};
+
+/**
+ * Public/Auth: Get server VAPID Public Key for client PushSubscription
+ */
+export const getVapidPublicKey = async (_req: AuthenticatedRequest, res: Response): Promise<void> => {
+  res.json({
+    success: true,
+    publicKey: VAPID_PUBLIC_KEY,
+  });
+};
+
+/**
+ * Auth: Register client Web Push subscription
+ */
+export const registerPushSubscription = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const { subscription, userAgent } = req.body;
+    if (!subscription || !subscription.endpoint || !subscription.keys) {
+      res.status(400).json({ success: false, message: 'Valid push subscription object is required' });
+      return;
+    }
+
+    const record = webPushService.saveSubscription(userId, subscription, userAgent);
+
+    res.json({
+      success: true,
+      message: 'Native Push Subscription registered successfully',
+      subscriptionId: record.id,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error registering push subscription' });
+  }
+};
+
+/**
+ * Auth: Send a test Native Push Notification directly to the requesting user's device
+ */
+export const sendTestPushNotification = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const result = await webPushService.sendPushToUser(userId, {
+      title: 'Scalora • Test OS Push Notification',
+      body: 'Operating system push notifications are active and working on your device! 🔔',
+      url: '/notifications',
+      type: 'SYSTEM',
+    });
+
+    res.json({
+      success: true,
+      message: `Test Push sent to ${result.success} active device endpoints (Failed: ${result.failed})`,
+      result,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error sending test push notification' });
   }
 };

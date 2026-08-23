@@ -77,7 +77,28 @@ const getCommunityChannels = async (req, res) => {
                 orderBy: { createdAt: 'asc' },
                 include: {
                     course: {
-                        select: { id: true, title: true, slug: true, thumbnail: true, category: true, instructor: true },
+                        select: {
+                            id: true,
+                            title: true,
+                            slug: true,
+                            thumbnail: true,
+                            category: true,
+                            instructor: true,
+                            trainers: {
+                                include: {
+                                    trainer: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            avatar: true,
+                                            title: true,
+                                            bio: true,
+                                            role: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
                     },
                     _count: {
                         select: { members: true, posts: true },
@@ -108,7 +129,28 @@ const getCommunityChannels = async (req, res) => {
             orderBy: { createdAt: 'asc' },
             include: {
                 course: {
-                    select: { id: true, title: true, slug: true, thumbnail: true, category: true, instructor: true },
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        thumbnail: true,
+                        category: true,
+                        instructor: true,
+                        trainers: {
+                            include: {
+                                trainer: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        avatar: true,
+                                        title: true,
+                                        bio: true,
+                                        role: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 _count: {
                     select: { members: true, posts: true },
@@ -148,7 +190,28 @@ const getCommunityChannelById = async (req, res) => {
             where: { id: channelId },
             include: {
                 course: {
-                    select: { id: true, title: true, slug: true, thumbnail: true, category: true, instructor: true },
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        thumbnail: true,
+                        category: true,
+                        instructor: true,
+                        trainers: {
+                            include: {
+                                trainer: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        avatar: true,
+                                        title: true,
+                                        bio: true,
+                                        role: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
                 },
                 _count: {
                     select: { members: true, posts: true },

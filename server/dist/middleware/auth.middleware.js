@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAdmin = exports.optionalAuth = exports.authenticate = void 0;
+exports.requireTrainer = exports.requireTrainerOrAdmin = exports.requireAdmin = exports.optionalAuth = exports.authenticate = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_js_1 = require("../lib/prisma.js");
 const JWT_SECRET = process.env.JWT_SECRET || 'scalora_super_secret_jwt_key_2026_modern_lms';
@@ -61,3 +61,19 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 exports.requireAdmin = requireAdmin;
+const requireTrainerOrAdmin = (req, res, next) => {
+    if (!req.user || (req.user.role !== 'ADMIN' && req.user.role !== 'TRAINER')) {
+        res.status(403).json({ success: false, message: 'Access denied: Trainer or Admin privileges required' });
+        return;
+    }
+    next();
+};
+exports.requireTrainerOrAdmin = requireTrainerOrAdmin;
+const requireTrainer = (req, res, next) => {
+    if (!req.user || req.user.role !== 'TRAINER') {
+        res.status(403).json({ success: false, message: 'Access denied: Trainer privileges required' });
+        return;
+    }
+    next();
+};
+exports.requireTrainer = requireTrainer;

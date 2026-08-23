@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const chat_controller_js_1 = require("../controllers/chat.controller.js");
+const auth_middleware_js_1 = require("../middleware/auth.middleware.js");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_js_1.authenticate);
+router.get('/channels/:channelId', chat_controller_js_1.getChannelChatMessages);
+router.post('/channels/:channelId', chat_controller_js_1.sendChannelChatMessage);
+router.patch('/:id/pin', chat_controller_js_1.pinChatMessage);
+router.delete('/:id', chat_controller_js_1.deleteChatMessage);
+exports.default = router;

@@ -4,6 +4,7 @@ import {
   saveNotificationPreferences,
   requestNotificationPermission,
   getNotificationPermission,
+  sendTestPush,
   NotificationPreferences,
 } from '../lib/pushNotifications';
 import {
@@ -18,6 +19,8 @@ import {
   Megaphone,
   AtSign,
   ShieldCheck,
+  Send,
+  Loader2,
 } from 'lucide-react';
 
 interface NotificationPreferencesModalProps {
@@ -32,6 +35,8 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
   const [prefs, setPrefs] = useState<NotificationPreferences>(getNotificationPreferences());
   const [permission, setPermission] = useState<NotificationPermission>(getNotificationPermission());
   const [requesting, setRequesting] = useState(false);
+  const [testingPush, setTestingPush] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState(false);
 
   useEffect(() => {
@@ -56,6 +61,15 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
     const granted = await requestNotificationPermission();
     setPermission(granted ? 'granted' : 'denied');
     setRequesting(false);
+  };
+
+  const handleSendTestPush = async () => {
+    setTestingPush(true);
+    setTestResult(null);
+    const res = await sendTestPush();
+    setTestResult(res.message);
+    setTestingPush(false);
+    setTimeout(() => setTestResult(null), 5000);
   };
 
   return (
@@ -178,6 +192,38 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
             );
           })}
         </div>
+
+        {/* Test Native OS Push Button (When Granted) */}
+        {permission === 'granted' && (
+          <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-bold text-cyan-300">Test Operating System Push</div>
+              <button
+                type="button"
+                onClick={handleSendTestPush}
+                disabled={testingPush}
+                className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-white font-black text-xs shadow-glow-accent transition-all flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {testingPush ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Sending...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Test Push</span>
+                  </>
+                )}
+              </button>
+            </div>
+            {testResult && (
+              <div className="text-[10px] font-semibold text-emerald-300 animate-in fade-in">
+                {testResult}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="pt-2 flex items-center justify-between border-t border-white/10">

@@ -15,6 +15,7 @@ const courseSchema = zod_1.z.object({
     category: zod_1.z.string().min(2, 'Category is required'),
     level: zod_1.z.string().optional().default('All Levels'),
     isPublished: zod_1.z.boolean().optional().default(false),
+    trainerIds: zod_1.z.array(zod_1.z.string()).optional(),
 });
 const generateSlug = (title) => {
     return title
@@ -62,6 +63,13 @@ const getPublishedCourses = async (req, res) => {
                 quizzes: {
                     select: { id: true, title: true },
                 },
+                trainers: {
+                    include: {
+                        trainer: {
+                            select: { id: true, name: true, avatar: true, title: true, bio: true, linkedin: true, website: true },
+                        },
+                    },
+                },
                 _count: {
                     select: { enrollments: true },
                 },
@@ -86,6 +94,7 @@ const getPublishedCourses = async (req, res) => {
                 lessonsCount: allLessons.length,
                 quizzesCount: course.quizzes.length,
                 studentsCount: course._count.enrollments,
+                trainers: course.trainers.map((t) => t.trainer),
             };
         });
         res.json({ success: true, courses: formatted });
@@ -106,8 +115,17 @@ const getAllCoursesAdmin = async (_req, res) => {
                     },
                 },
                 quizzes: true,
+                trainers: {
+                    include: {
+                        trainer: {
+                            select: { id: true, name: true, avatar: true, title: true },
+                        },
+                    },
+                },
                 _count: {
-                    select: { enrollments: true },
+                    select: {
+                        enrollments: true,
+                    },
                 },
             },
         });
@@ -118,6 +136,7 @@ const getAllCoursesAdmin = async (_req, res) => {
                 lessonsCount: totalLessons,
                 quizzesCount: course.quizzes.length,
                 studentsCount: course._count.enrollments,
+                trainers: course.trainers.map((t) => t.trainer),
             };
         });
         res.json({ success: true, courses: formatted });
@@ -166,6 +185,13 @@ const getCourseBySlug = async (req, res) => {
                                 explanation: true,
                             },
                             orderBy: { order: 'asc' },
+                        },
+                    },
+                },
+                trainers: {
+                    include: {
+                        trainer: {
+                            select: { id: true, name: true, avatar: true, title: true, bio: true, linkedin: true, website: true },
                         },
                     },
                 },
@@ -222,6 +248,7 @@ const getCourseBySlug = async (req, res) => {
                 studentsCount: course._count.enrollments,
                 isEnrolled,
                 userProgress: progressSummary,
+                trainers: course.trainers.map((t) => t.trainer),
             },
         });
     }
@@ -233,24 +260,42 @@ exports.getCourseBySlug = getCourseBySlug;
 const createCourse = async (req, res) => {
     try {
         const validatedData = courseSchema.parse(req.body);
-        let slug = validatedData.slug || generateSlug(validatedData.title);
+        const { trainerIds, ...courseData } = validatedData;
+        let slug = courseData.slug || generateSlug(courseData.title);
         const existing = await prisma_js_1.prisma.course.findUnique({ where: { slug } });
         if (existing) {
             slug = `${slug}-${Date.now().toString().slice(-4)}`;
         }
         const course = await prisma_js_1.prisma.course.create({
             data: {
-                title: validatedData.title,
+                title: courseData.title,
                 slug,
-                description: validatedData.description,
-                thumbnail: validatedData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
-                price: validatedData.price,
-                instructor: validatedData.instructor,
-                category: validatedData.category,
-                level: validatedData.level || 'All Levels',
-                isPublished: validatedData.isPublished || false,
+                description: courseData.description,
+                thumbnail: courseData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
+                price: courseData.price,
+                instructor: courseData.instructor,
+                category: courseData.category,
+                level: courseData.level || 'All Levels',
+                isPublished: courseData.isPublished || false,
             },
         });
+        // Assign trainers if provided
+        if (trainerIds && trainerIds.length > 0) {
+            const uniqueTrainerIds = Array.from(new Set(trainerIds.filter(Boolean)));
+            const validUsers = await prisma_js_1.prisma.user.findMany({
+                where: { id: { in: uniqueTrainerIds }, deletedAt: null },
+                select: { id: true },
+            });
+            const validUserIds = validUsers.map((u) => u.id);
+            for (const tId of validUserIds) {
+                await prisma_js_1.prisma.courseTrainer.create({
+                    data: {
+                        courseId: course.id,
+                        trainerId: tId,
+                    },
+                });
+            }
+        }
         // Automatically create linked Community Channel for this course
         await community_service_js_1.communityService.ensureCourseChannel(course.id, course.title, course.description);
         // Audit Log
@@ -277,6 +322,7 @@ const updateCourse = async (req, res) => {
     try {
         const id = req.params.id;
         const validatedData = courseSchema.partial().parse(req.body);
+        const { trainerIds, ...courseData } = validatedData;
         const existing = await prisma_js_1.prisma.course.findUnique({ where: { id } });
         if (!existing) {
             res.status(404).json({ success: false, message: 'Course not found' });
@@ -284,8 +330,30 @@ const updateCourse = async (req, res) => {
         }
         const updated = await prisma_js_1.prisma.course.update({
             where: { id },
-            data: validatedData,
+            data: courseData,
         });
+        // Sync trainers if array provided
+        if (trainerIds !== undefined) {
+            await prisma_js_1.prisma.courseTrainer.deleteMany({
+                where: { courseId: id },
+            });
+            const uniqueTrainerIds = Array.from(new Set(trainerIds.filter(Boolean)));
+            if (uniqueTrainerIds.length > 0) {
+                const validUsers = await prisma_js_1.prisma.user.findMany({
+                    where: { id: { in: uniqueTrainerIds }, deletedAt: null },
+                    select: { id: true },
+                });
+                const validUserIds = validUsers.map((u) => u.id);
+                for (const tId of validUserIds) {
+                    await prisma_js_1.prisma.courseTrainer.create({
+                        data: {
+                            courseId: id,
+                            trainerId: tId,
+                        },
+                    });
+                }
+            }
+        }
         // Audit Log
         await audit_service_js_1.auditService.log({
             action: 'COURSE_UPDATED',

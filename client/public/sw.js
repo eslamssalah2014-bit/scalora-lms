@@ -151,31 +151,41 @@ self.addEventListener('fetch', (event) => {
   // RULE E: All other requests pass directly to the network
 });
 
-// 4. Push Notification Event Listener
+// 4. Push Notification Event Listener (Android System Tray + Desktop Native Push)
 self.addEventListener('push', (event) => {
+  console.log('[SW Push] Background Web Push event received by Service Worker');
+
   let data = {
     title: 'Scalora LMS',
     body: 'You have a new update in your courses or community.',
     icon: '/pwa-192x192.png',
     badge: '/pwa-192x192.png',
-    url: '/',
+    url: '/notifications',
+    tag: 'scalora-push',
   };
 
   if (event.data) {
     try {
       data = { ...data, ...event.data.json() };
+      console.log('[SW Push] Parsed JSON payload:', data);
     } catch {
       data.body = event.data.text();
+      console.log('[SW Push] Plain text payload:', data.body);
     }
   }
 
+  const title = data.title || 'Scalora LMS';
   const options = {
-    body: data.body,
+    body: data.body || data.message || 'New update available',
     icon: data.icon || '/pwa-192x192.png',
     badge: data.badge || '/pwa-192x192.png',
-    vibrate: [100, 50, 100],
+    image: data.image || undefined,
+    vibrate: [200, 100, 200],
+    tag: data.tag || `scalora-${Date.now()}`,
+    renotify: true,
+    requireInteraction: false,
     data: {
-      url: data.url || '/',
+      url: data.url || '/notifications',
     },
     actions: [
       { action: 'open', title: 'Open Scalora' },
@@ -183,16 +193,27 @@ self.addEventListener('push', (event) => {
     ],
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  console.log('[SW Push] Invoking self.registration.showNotification with:', title, options);
+  event.waitUntil(
+    self.registration
+      .showNotification(title, options)
+      .then(() => console.log('[SW Push] Native notification successfully displayed on OS tray'))
+      .catch((err) => console.error('[SW Push] Error calling showNotification:', err))
+  );
 });
 
 // 5. Notification Click Handler
 self.addEventListener('notificationclick', (event) => {
+  console.log('[SW NotificationClick] User clicked native notification action:', event.action);
   event.notification.close();
 
-  if (event.action === 'close') return;
+  if (event.action === 'close') {
+    console.log('[SW NotificationClick] Notification dismissed by user');
+    return;
+  }
 
-  const targetUrl = event.notification.data?.url || '/';
+  const targetUrl = event.notification.data?.url || '/notifications';
+  console.log('[SW NotificationClick] Navigating app to target URL:', targetUrl);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

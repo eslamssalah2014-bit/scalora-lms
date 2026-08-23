@@ -36,6 +36,11 @@ export const Navbar: React.FC = () => {
   useEffect(() => {
     if (!user?.id) return;
 
+    // Auto-sync Push Subscription with backend if permission is already granted
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      import('../lib/pushNotifications').then((m) => m.subscribeToPushNotifications());
+    }
+
     // Fetch initial count
     api
       .get<{ success: boolean; conversations: any[] }>('/messages/conversations')

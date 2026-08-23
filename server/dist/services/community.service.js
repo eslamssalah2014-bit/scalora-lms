@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.communityService = exports.CommunityService = void 0;
 const prisma_js_1 = require("../lib/prisma.js");
+const notification_service_js_1 = require("./notification.service.js");
+const realtime_service_js_1 = require("./realtime.service.js");
 class CommunityService {
     /**
      * Ensures that every course has a dedicated Community Channel.
@@ -70,26 +72,7 @@ class CommunityService {
      * Dispatches a notification to a specific user (avoids self-notifications).
      */
     async createNotification(params) {
-        try {
-            if (params.actorId && params.userId === params.actorId) {
-                return null; // Do not notify users of their own actions
-            }
-            return await prisma_js_1.prisma.communityNotification.create({
-                data: {
-                    userId: params.userId,
-                    actorId: params.actorId || null,
-                    channelId: params.channelId || null,
-                    postId: params.postId || null,
-                    type: params.type,
-                    message: params.message,
-                    isRead: false,
-                },
-            });
-        }
-        catch (error) {
-            console.error('[CommunityService] Error creating notification:', error);
-            return null;
-        }
+        return notification_service_js_1.notificationService.createNotification(params);
     }
     /**
      * Broadcasts an announcement notification to all members of a channel (or all channels).
@@ -109,18 +92,32 @@ class CommunityService {
             const recipientIds = channel.members
                 .map((m) => m.userId)
                 .filter((uid) => uid !== params.actorId);
+            const messageText = `📢 Important Announcement in ${channel.name}: "${params.announcementTitle}"`;
             const notificationsData = recipientIds.map((userId) => ({
                 userId,
                 actorId: params.actorId,
                 channelId: params.channelId,
                 postId: params.postId,
                 type: 'ANNOUNCEMENT',
-                message: `📢 Important Announcement in ${channel.name}: "${params.announcementTitle}"`,
+                message: messageText,
                 isRead: false,
             }));
             if (notificationsData.length > 0) {
                 await prisma_js_1.prisma.communityNotification.createMany({
                     data: notificationsData,
+                });
+                // Real-time SSE push to all recipients
+                recipientIds.forEach((uid) => {
+                    realtime_service_js_1.realtimeService.sendToUser(uid, 'notification', {
+                        notification: {
+                            type: 'ANNOUNCEMENT',
+                            message: messageText,
+                            channelId: params.channelId,
+                            postId: params.postId,
+                            isRead: false,
+                            createdAt: new Date().toISOString(),
+                        },
+                    });
                 });
             }
         }
