@@ -324,14 +324,85 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Mobile Hamburger Button */}
-          <div className="flex md:hidden items-center space-x-2">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl bg-scalora-navy/50 text-slate-300 hover:text-white border border-scalora-blue/20"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6 text-scalora-blue" />}
-            </button>
+          {/* Mobile Top Right Action Cluster - Facebook/LinkedIn Style */}
+          <div className="flex md:hidden items-center space-x-1.5">
+            {user ? (
+              <>
+                {/* 1. Notifications Bell */}
+                <NotificationDropdown />
+
+                {/* 2. Messages Icon */}
+                <Link
+                  to="/messages"
+                  className={`p-2 rounded-xl transition-all relative flex items-center justify-center min-w-[36px] min-h-[36px] ${
+                    isActive('/messages')
+                      ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                      : 'bg-[#0B1528] text-slate-300 border border-white/10'
+                  }`}
+                  title="Messages"
+                >
+                  <Mail className="w-4 h-4" />
+                  {unreadMsgCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1 rounded-full bg-rose-500 text-white font-black text-[9px] border border-[#04152D] animate-pulse">
+                      {unreadMsgCount > 9 ? '9+' : unreadMsgCount}
+                    </span>
+                  )}
+                </Link>
+
+                {/* 3. Quick Profile Avatar */}
+                <Link
+                  to={
+                    user.role === 'ADMIN'
+                      ? '/admin'
+                      : user.role === 'TRAINER'
+                      ? '/trainer'
+                      : '/dashboard'
+                  }
+                  className="p-0.5 rounded-xl border border-cyan-500/30 flex-shrink-0"
+                  title="My Profile"
+                >
+                  <img
+                    src={
+                      user.avatar ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                        user.name
+                      )}&background=0284C7&color=fff`
+                    }
+                    alt={user.name}
+                    className="w-7 h-7 rounded-[10px] object-cover"
+                  />
+                </Link>
+
+                {/* 4. Mobile Menu Toggle */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 rounded-xl bg-scalora-navy/50 text-slate-300 hover:text-white border border-scalora-blue/20"
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 text-scalora-blue" />}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="px-2.5 py-1.5 text-xs font-semibold text-slate-200 hover:text-white"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-semibold shadow-glow-blue"
+                >
+                  Get Started
+                </Link>
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  className="p-2 rounded-xl bg-scalora-navy/50 text-slate-300 hover:text-white border border-scalora-blue/20"
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5 text-scalora-blue" />}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

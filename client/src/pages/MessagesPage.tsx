@@ -30,6 +30,7 @@ import {
   BookOpen,
   GraduationCap,
   ChevronRight,
+  ChevronLeft,
   MoreVertical,
   Smile,
 } from 'lucide-react';
@@ -363,11 +364,15 @@ export const MessagesPage: React.FC = () => {
   return (
     <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4">
       {/* Messenger App Container */}
-      <div className="bg-[#0B1528] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex h-[84vh] min-h-[620px]">
+      <div className="bg-[#0B1528] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex h-[86vh] min-h-[580px]">
         {/* ========================================================================= */}
         {/* 1. LEFT SIDEBAR: Facebook Messenger Style Conversations List */}
         {/* ========================================================================= */}
-        <aside className="w-full md:w-80 lg:w-88 border-r border-white/10 flex flex-col flex-shrink-0 bg-[#071326]">
+        <aside
+          className={`w-full md:w-80 lg:w-88 border-r border-white/10 flex flex-col flex-shrink-0 bg-[#071326] ${
+            activePartnerId ? 'hidden md:flex' : 'flex'
+          }`}
+        >
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-white/10 space-y-3">
             <div className="flex items-center justify-between">
@@ -381,7 +386,7 @@ export const MessagesPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsNewModalOpen(true)}
-                className="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent hover:opacity-90 transition-all flex items-center justify-center"
+                className="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent hover:opacity-90 transition-all flex items-center justify-center min-h-[44px] min-w-[44px]"
                 title="New Direct Inquiry"
               >
                 <Plus className="w-4 h-4" />
@@ -396,7 +401,7 @@ export const MessagesPage: React.FC = () => {
                 placeholder="Search Messenger..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-[#0B1A30] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all"
+                className="w-full pl-9 pr-3 py-2 rounded-2xl bg-[#0B1A30] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 transition-all min-h-[40px]"
               />
             </div>
           </div>
@@ -415,7 +420,7 @@ export const MessagesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsNewModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 text-xs font-bold border border-cyan-500/30"
+                  className="px-4 py-2.5 rounded-xl bg-cyan-500/20 text-cyan-300 text-xs font-bold border border-cyan-500/30 min-h-[44px]"
                 >
                   Start Discussion
                 </button>
@@ -428,10 +433,10 @@ export const MessagesPage: React.FC = () => {
                     key={conv.partner.id}
                     type="button"
                     onClick={() => setActivePartnerId(conv.partner.id)}
-                    className={`w-full p-3.5 text-left flex items-center gap-3 transition-all ${
+                    className={`w-full p-3.5 text-left flex items-center gap-3 transition-all min-h-[64px] ${
                       isSelected
                         ? 'bg-[#0E2242] border-l-4 border-cyan-400 shadow-inner'
-                        : 'hover:bg-white/5'
+                        : 'hover:bg-white/5 active:bg-white/10'
                     }`}
                   >
                     {/* Avatar with Online Dot */}
@@ -448,30 +453,28 @@ export const MessagesPage: React.FC = () => {
                     </div>
 
                     {/* Details */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs font-bold text-white truncate">{conv.partner.name}</div>
-                        <span className="text-[10px] text-slate-500 flex-shrink-0">
-                          {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                      </div>
-
-                      <div className="text-[11px] text-cyan-300 font-semibold truncate">
-                        {conv.partner.title || (conv.partner.role === 'TRAINER' ? 'Course Instructor' : 'Enrolled Scholar')}
-                      </div>
-
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5 flex items-center justify-between">
-                        <span className="truncate">
-                          {conv.lastMessage.isSender ? 'You: ' : ''}
-                          {conv.lastMessage.content}
-                        </span>
-                        {conv.unreadCount > 0 && (
-                          <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-cyan-500 text-white font-extrabold text-[10px]">
-                            {conv.unreadCount}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="text-xs font-bold text-white truncate">{conv.partner.name}</span>
+                        {conv.lastMessage && (
+                          <span className="text-[10px] text-slate-500 flex-shrink-0">
+                            {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate flex items-center gap-1">
+                        {conv.lastMessage ? (
+                          <>
+                            <span className="truncate">{conv.lastMessage.content}</span>
+                            {conv.unreadCount > 0 && (
+                              <span className="w-2 h-2 rounded-full bg-cyan-400 flex-shrink-0" />
+                            )}
+                          </>
+                        ) : (
+                          <span className="italic text-slate-500">Tap to chat</span>
                         )}
                       </p>
                     </div>
@@ -485,12 +488,26 @@ export const MessagesPage: React.FC = () => {
         {/* ========================================================================= */}
         {/* 2. CENTER PANEL: Active Conversation & Speech Bubbles Stream */}
         {/* ========================================================================= */}
-        <main className="flex-1 flex flex-col min-w-0 bg-[#09152A]">
+        <main
+          className={`flex-1 flex-col min-w-0 bg-[#09152A] ${
+            activePartnerId ? 'flex' : 'hidden md:flex'
+          }`}
+        >
           {activePartner ? (
             <>
               {/* Messenger Header */}
-              <div className="p-3.5 sm:p-4 border-b border-white/10 flex items-center justify-between bg-[#08152B] z-10">
-                <div className="flex items-center gap-3">
+              <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between bg-[#08152B] z-10">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  {/* Mobile Back Button */}
+                  <button
+                    type="button"
+                    onClick={() => setActivePartnerId(null)}
+                    className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 min-h-[40px] min-w-[40px] flex items-center justify-center"
+                    title="Back to conversations"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-cyan-400" />
+                  </button>
+
                   <div className="relative flex-shrink-0">
                     <img
                       src={
@@ -535,7 +552,7 @@ export const MessagesPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowRightPanel(!showRightPanel)}
-                    className={`p-2 rounded-xl border transition-all ${
+                    className={`p-2 rounded-xl border transition-all min-h-[40px] min-w-[40px] flex items-center justify-center ${
                       showRightPanel
                         ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30'
                         : 'bg-white/5 text-slate-400 hover:text-white border-white/10'

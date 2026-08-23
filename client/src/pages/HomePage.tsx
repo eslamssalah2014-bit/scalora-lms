@@ -25,21 +25,26 @@ import {
   Calendar,
   MessageSquare,
   Clock,
-  Check,
   Building2,
   Globe,
   BookOpen,
 } from 'lucide-react';
 import { PwaHeroCard } from '../components/pwa/PwaHeroCard';
+import { MobileNativeHome } from '../components/home/MobileNativeHome';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className="space-y-28 pb-24">
-      {/* ========================================================================= */}
-      {/* 1. HERO SECTION */}
-      {/* ========================================================================= */}
+    <>
+      {/* 1. NATIVE MOBILE HOMEPAGE EXPERIENCE */}
+      <MobileNativeHome />
+
+      {/* 2. DESKTOP EXPERIENCE */}
+      <div className="hidden md:block space-y-28 pb-24">
+        {/* ========================================================================= */}
+        {/* 1. HERO SECTION */}
+        {/* ========================================================================= */}
       <section className="relative pt-12 pb-20 md:pt-20 md:pb-28 overflow-hidden">
         {/* Ambient Glows */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[380px] bg-scalora-blue/20 blur-[140px] rounded-full pointer-events-none" />
@@ -265,5 +270,6 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
     </div>
-  );
+  </>
+);
 };

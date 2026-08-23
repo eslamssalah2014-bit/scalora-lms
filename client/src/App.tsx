@@ -42,6 +42,7 @@ import { TrainerDashboardPage } from './pages/trainer/TrainerDashboardPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { OfflineBanner } from './components/OfflineBanner';
+import { MobileBottomNav } from './components/MobileBottomNav';
 
 // Layout with Header & Footer
 const MainLayout: React.FC = () => {
@@ -49,11 +50,12 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen flex flex-col justify-between bg-[#04152D]">
       <OfflineBanner />
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
       <Footer />
       <PwaInstallBanner />
+      <MobileBottomNav />
     </div>
   );
 };
