@@ -19,6 +19,7 @@ import {
   Mail,
   Download,
   CheckCircle2,
+  Bell,
 } from 'lucide-react';
 import { usePwa } from '../hooks/usePwa';
 import { showNativeNotification } from '../lib/pushNotifications';
@@ -30,9 +31,10 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const { isInstalled, installApp } = usePwa();
 
-  // Fetch unread count & subscribe to Realtime User Inbox
+  // Fetch unread count & subscribe to Realtime User Inbox & Notifications
   useEffect(() => {
     if (!user?.id) return;
 
@@ -41,13 +43,23 @@ export const Navbar: React.FC = () => {
       import('../lib/pushNotifications').then((m) => m.subscribeToPushNotifications());
     }
 
-    // Fetch initial count
+    // Fetch initial messages unread count
     api
       .get<{ success: boolean; conversations: any[] }>('/messages/conversations')
       .then((res) => {
         if (res.success && Array.isArray(res.conversations)) {
           const totalUnread = res.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
           setUnreadMsgCount(totalUnread);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch initial notifications unread count
+    api
+      .get<{ success: boolean; unreadCount: number }>('/notifications?tab=UNREAD&limit=1')
+      .then((res) => {
+        if (res.success && typeof res.unreadCount === 'number') {
+          setUnreadNotifCount(res.unreadCount);
         }
       })
       .catch(() => {});
@@ -68,6 +80,9 @@ export const Navbar: React.FC = () => {
     });
 
     const unsubNotif = realtime.on('notification', (data) => {
+      if (location.pathname !== '/notifications') {
+        setUnreadNotifCount((prev) => prev + 1);
+      }
       if (data?.notification) {
         showNativeNotification({
           title: data.notification.title || 'New Scalora Notification',
@@ -84,10 +99,13 @@ export const Navbar: React.FC = () => {
     };
   }, [user?.id, location.pathname]);
 
-  // Clear unread count when viewing messages page
+  // Clear unread counts when viewing active pages
   useEffect(() => {
     if (location.pathname === '/messages') {
       setUnreadMsgCount(0);
+    }
+    if (location.pathname === '/notifications') {
+      setUnreadNotifCount(0);
     }
   }, [location.pathname]);
 
@@ -354,8 +372,23 @@ export const Navbar: React.FC = () => {
           <div className="flex md:hidden items-center space-x-1.5">
             {user ? (
               <>
-                {/* 1. Notifications Bell */}
-                <NotificationDropdown />
+                {/* 1. Mobile Notifications Bell -> Dedicated Full-Screen Page Route */}
+                <Link
+                  to="/notifications"
+                  className={`p-2 rounded-xl transition-all relative flex items-center justify-center min-w-[36px] min-h-[36px] ${
+                    isActive('/notifications')
+                      ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
+                      : 'bg-[#0B1528] text-slate-300 border border-white/10'
+                  }`}
+                  title="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadNotifCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[9px] border border-[#04152D] animate-pulse">
+                      {unreadNotifCount > 99 ? '99+' : unreadNotifCount}
+                    </span>
+                  )}
+                </Link>
 
                 {/* 2. Messages Icon */}
                 <Link
