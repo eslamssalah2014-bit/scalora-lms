@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 
 export const CommunityPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [channels, setChannels] = useState<CommunityChannel[]>([]);
@@ -56,14 +56,14 @@ export const CommunityPage: React.FC = () => {
 
   const channelParam = searchParams.get('channel');
 
-  // Fetch Channels on Mount
+  // Fetch Channels on Mount or when user is resolved
   useEffect(() => {
     if (user) {
       fetchChannels();
-    } else {
+    } else if (!authLoading) {
       setLoadingChannels(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchChannels = async () => {
     setLoadingChannels(true);
@@ -82,7 +82,10 @@ export const CommunityPage: React.FC = () => {
           const matched = channelParam
             ? res.channels.find((c) => c.id === channelParam)
             : res.channels[0];
-          setSelectedChannelId(matched ? matched.id : res.channels[0].id);
+          const activeId = matched ? matched.id : res.channels[0].id;
+          setSelectedChannelId(activeId);
+          // Directly trigger post fetch immediately on channel resolution
+          fetchPosts(activeId, feedFilter, postSearch);
         }
       }
     } catch (err) {
@@ -93,26 +96,30 @@ export const CommunityPage: React.FC = () => {
     }
   };
 
-  // Fetch Posts when selected channel or feed filter changes
+  // Fetch Posts when selected channel, access, or filter changes
   useEffect(() => {
     if (selectedChannelId && hasAccess) {
-      fetchPosts();
+      fetchPosts(selectedChannelId, feedFilter, postSearch);
     }
-  }, [selectedChannelId, feedFilter, postSearch]);
+  }, [selectedChannelId, hasAccess, feedFilter, postSearch]);
 
-  const fetchPosts = async () => {
-    if (!selectedChannelId) return;
+  const fetchPosts = async (
+    targetChannelId = selectedChannelId,
+    targetFilter = feedFilter,
+    targetSearch = postSearch
+  ) => {
+    if (!targetChannelId) return;
     setLoadingPosts(true);
     try {
       const queryParams = new URLSearchParams();
-      if (feedFilter !== 'ALL') {
-        queryParams.set('type', feedFilter);
+      if (targetFilter !== 'ALL') {
+        queryParams.set('type', targetFilter);
       }
-      if (postSearch.trim()) {
-        queryParams.set('search', postSearch.trim());
+      if (targetSearch.trim()) {
+        queryParams.set('search', targetSearch.trim());
       }
 
-      const endpoint = `/community/channels/${selectedChannelId}/posts?${queryParams.toString()}`;
+      const endpoint = `/community/channels/${targetChannelId}/posts?${queryParams.toString()}`;
       const res = await api.get<{ success: boolean; posts: CommunityPost[] }>(endpoint);
       if (res.success && Array.isArray(res.posts)) {
         setPosts(res.posts);
@@ -129,6 +136,7 @@ export const CommunityPage: React.FC = () => {
     setFeedFilter('ALL');
     setSearchParams({ channel: channelId });
     setMobileTab('FEED');
+    fetchPosts(channelId, 'ALL', postSearch);
   };
 
   const handleSelectFilter = (filter: string) => {
@@ -148,8 +156,18 @@ export const CommunityPage: React.FC = () => {
   const assignedTrainers = rawTrainers.map((t: any) => t.trainer).filter(Boolean);
   const trainersCount = assignedTrainers.length > 0 ? assignedTrainers.length : 2;
 
+  // Global Session or Channels Initial Loading Screen
+  if (authLoading || (loadingChannels && !channels.length)) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 space-y-4">
+        <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
+        <p className="text-xs text-slate-400 font-medium">Connecting to Scalora Community...</p>
+      </div>
+    );
+  }
+
   // Unauthenticated or Access Denied Screen
-  if (!loadingChannels && (!user || hasAccess === false)) {
+  if (!authLoading && !loadingChannels && (!user || hasAccess === false)) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
         <div className="max-w-lg w-full bg-[#0B1528] rounded-3xl p-8 border border-white/10 shadow-2xl text-center space-y-5">

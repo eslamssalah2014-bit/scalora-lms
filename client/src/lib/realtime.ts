@@ -10,14 +10,14 @@ class RealtimeClient {
   private token: string | null = null;
 
   constructor() {
-    this.token = localStorage.getItem('token');
+    this.token = localStorage.getItem('scalora_token') || localStorage.getItem('token');
   }
 
   /**
    * Connect to the SSE stream using the authenticated JWT token
    */
   public connect(token?: string): void {
-    const activeToken = token || localStorage.getItem('token');
+    const activeToken = token || localStorage.getItem('scalora_token') || localStorage.getItem('token');
     if (!activeToken) return;
 
     this.token = activeToken;
@@ -117,7 +117,7 @@ class RealtimeClient {
     this.listeners.get(event)!.add(callback);
 
     // Auto-connect if not connected yet
-    if (!this.eventSource && !this.isConnecting && localStorage.getItem('token')) {
+    if (!this.eventSource && !this.isConnecting && (localStorage.getItem('scalora_token') || localStorage.getItem('token'))) {
       this.connect();
     }
 
