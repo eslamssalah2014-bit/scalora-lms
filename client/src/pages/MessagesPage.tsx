@@ -428,9 +428,19 @@ export const MessagesPage: React.FC = () => {
           {/* Conversations Scroll Stream */}
           <div className="flex-1 overflow-y-auto divide-y divide-white/5 scrollbar-thin">
             {loadingConversations ? (
-              <div className="p-8 text-center flex flex-col items-center justify-center space-y-2">
-                <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
-                <span className="text-xs text-slate-400">Loading inbox...</span>
+              <div className="divide-y divide-white/5 animate-pulse">
+                {[1, 2, 3, 4].map((n) => (
+                  <div key={n} className="p-3 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex-shrink-0" />
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="flex justify-between items-center">
+                        <div className="h-3.5 bg-slate-800 rounded w-1/3" />
+                        <div className="h-2.5 bg-slate-800/60 rounded w-10" />
+                      </div>
+                      <div className="h-2.5 bg-slate-800/60 rounded w-3/4" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="p-8 text-center space-y-3">
@@ -592,9 +602,16 @@ export const MessagesPage: React.FC = () => {
               {/* Messages History Stream */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 scrollbar-thin bg-gradient-to-b from-[#09152A] to-[#071122]">
                 {loadingMessages ? (
-                  <div className="py-20 text-center flex flex-col items-center justify-center space-y-2">
-                    <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
-                    <span className="text-xs text-slate-400">Connecting to secure stream...</span>
+                  <div className="space-y-3 animate-pulse p-2">
+                    <div className="flex justify-start">
+                      <div className="w-2/3 h-12 bg-slate-800 rounded-2xl rounded-bl-none" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="w-1/2 h-10 bg-cyan-950/60 rounded-2xl rounded-br-none" />
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="w-3/4 h-14 bg-slate-800 rounded-2xl rounded-bl-none" />
+                    </div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="py-20 text-center space-y-2 max-w-sm mx-auto">

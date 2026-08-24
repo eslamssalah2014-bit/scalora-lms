@@ -33,15 +33,17 @@ export const MobileNativeHome: React.FC = () => {
       return;
     }
 
-    // 1. Fetch active enrollment
-    api
-      .get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my')
-      .then((res) => {
-        if (res.success && Array.isArray(res.enrollments) && res.enrollments.length > 0) {
-          const inProgress = res.enrollments.find((e) => e.progressPercent < 100) || res.enrollments[0];
+    // Parallel non-blocking data fetching
+    Promise.allSettled([
+      api.get<{ success: boolean; enrollments: Enrollment[] }>('/enrollments/my'),
+      api.get<{ success: boolean; notifications: any[] }>('/notifications?limit=3'),
+    ]).then(([enrollmentsRes, notificationsRes]) => {
+      if (enrollmentsRes.status === 'fulfilled' && enrollmentsRes.value.success) {
+        const enrollments = enrollmentsRes.value.enrollments;
+        if (Array.isArray(enrollments) && enrollments.length > 0) {
+          const inProgress = enrollments.find((e) => e.progressPercent < 100) || enrollments[0];
           setActiveEnrollment(inProgress);
 
-          // 2. Fetch study plan for the active course
           if (inProgress?.course?.id) {
             api
               .get<{ success: boolean; plan: StudyPlanMetrics }>(
@@ -55,19 +57,17 @@ export const MobileNativeHome: React.FC = () => {
               .catch(() => {});
           }
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      }
 
-    // 3. Fetch latest 3 notifications
-    api
-      .get<{ success: boolean; notifications: any[] }>('/notifications?limit=3')
-      .then((res) => {
-        if (res.success && Array.isArray(res.notifications)) {
-          setNotifications(res.notifications.slice(0, 3));
+      if (notificationsRes.status === 'fulfilled' && notificationsRes.value.success) {
+        const notifs = notificationsRes.value.notifications;
+        if (Array.isArray(notifs)) {
+          setNotifications(notifs.slice(0, 3));
         }
-      })
-      .catch(() => {});
+      }
+
+      setLoading(false);
+    });
   }, [user]);
 
   // Guest Mobile Landing
@@ -138,7 +138,17 @@ export const MobileNativeHome: React.FC = () => {
       {/* SECTION 2: CONTINUE LEARNING (Compact)                                    */}
       {/* Show only: Current course, Progress bar, Resume button. Nothing else.    */}
       {/* ========================================================================= */}
-      {activeEnrollment && (
+      {loading ? (
+        <div className="p-3 rounded-xl bg-[#031124] border border-scalora-blue/20 space-y-2 animate-pulse">
+          <div className="flex justify-between">
+            <div className="h-3 bg-slate-800 rounded w-1/4" />
+            <div className="h-3 bg-slate-800 rounded w-10" />
+          </div>
+          <div className="h-4 bg-slate-800 rounded w-3/4" />
+          <div className="h-1.5 bg-slate-800 rounded-full w-full" />
+          <div className="h-9 bg-slate-800 rounded-lg w-full" />
+        </div>
+      ) : activeEnrollment ? (
         <div className="p-3 rounded-xl bg-[#031124] border border-scalora-blue/20 space-y-2 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
@@ -168,7 +178,7 @@ export const MobileNativeHome: React.FC = () => {
             <span>Resume</span>
           </Link>
         </div>
-      )}
+      ) : null}
 
       {/* ========================================================================= */}
       {/* SECTION 3: TODAY'S LEARNING GOAL (Compact)                               */}

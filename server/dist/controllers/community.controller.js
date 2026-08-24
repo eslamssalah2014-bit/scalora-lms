@@ -46,8 +46,6 @@ const getCommunityChannels = async (req, res) => {
             res.status(401).json({ success: false, message: 'Unauthorized' });
             return;
         }
-        // Auto-heal / sync missing channels if needed
-        await community_service_js_1.communityService.syncAllChannelsAndMembers();
         // Check student enrollments
         if (userRole !== 'ADMIN') {
             const activeEnrollments = await prisma_js_1.prisma.enrollment.findMany({

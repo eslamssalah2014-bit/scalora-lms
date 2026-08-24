@@ -156,17 +156,7 @@ export const CommunityPage: React.FC = () => {
   const assignedTrainers = rawTrainers.map((t: any) => t.trainer).filter(Boolean);
   const trainersCount = assignedTrainers.length > 0 ? assignedTrainers.length : 2;
 
-  // Global Session or Channels Initial Loading Screen
-  if (authLoading || (loadingChannels && !channels.length)) {
-    return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 space-y-4">
-        <Loader2 className="w-10 h-10 animate-spin text-cyan-400" />
-        <p className="text-xs text-slate-400 font-medium">Connecting to Scalora Community...</p>
-      </div>
-    );
-  }
-
-  // Unauthenticated or Access Denied Screen
+  // Unauthenticated or Access Denied Screen (Only after auth resolves and channels resolve with 0 access)
   if (!authLoading && !loadingChannels && (!user || hasAccess === false)) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
@@ -204,7 +194,7 @@ export const CommunityPage: React.FC = () => {
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
               <h1 className="text-xs sm:text-sm font-black text-white truncate">
-                {selectedChannel?.name || 'Community Hub'}
+                {selectedChannel?.name || (loadingChannels ? 'Connecting to Community...' : 'Community Hub')}
               </h1>
             </div>
 
@@ -283,102 +273,119 @@ export const CommunityPage: React.FC = () => {
         {/* Content Container */}
         <div className="w-full max-w-full">
           <main className="w-full max-w-full space-y-3">
-            {selectedChannel && (
-              <>
-                {activeMainTab === 'FEED' && (
-                  <div className="space-y-3">
-                    {/* LinkedIn-style Post Composer */}
-                    <PostComposer
-                      channelId={selectedChannel.id}
-                      channelName={selectedChannel.name}
-                      isLocked={selectedChannel.isLocked}
-                      onPostCreated={(newPost) => setPosts((prev) => [newPost, ...prev])}
-                    />
-
-                    {/* Feed Filter & Search Bar */}
-                    <div className="p-2.5 bg-[#0B1528] rounded-xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-semibold w-full max-w-full">
-                      <div className="grid grid-cols-3 sm:flex items-center gap-1 w-full sm:w-auto">
-                        <button
-                          type="button"
-                          onClick={() => setFeedFilter('ALL')}
-                          className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
-                            feedFilter === 'ALL'
-                              ? 'bg-cyan-500 text-white shadow-sm'
-                              : 'bg-white/5 text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          All
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFeedFilter('ANNOUNCEMENTS')}
-                          className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
-                            feedFilter === 'ANNOUNCEMENTS'
-                              ? 'bg-rose-500 text-white shadow-sm'
-                              : 'bg-white/5 text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          News
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFeedFilter('SAVED')}
-                          className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
-                            feedFilter === 'SAVED'
-                              ? 'bg-amber-500 text-white shadow-sm'
-                              : 'bg-white/5 text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          Saved
-                        </button>
-                      </div>
-
-                      <div className="relative w-full sm:w-56">
-                        <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          placeholder="Filter discussions..."
-                          value={postSearch}
-                          onChange={(e) => setPostSearch(e.target.value)}
-                          className="w-full pl-7 pr-2.5 py-1.5 rounded-lg bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 min-h-[34px]"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Feed Posts Stream */}
-                    <div className="space-y-3">
-                      {loadingPosts ? (
-                        <div className="py-16 text-center flex flex-col items-center justify-center space-y-2">
-                          <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
-                          <span className="text-xs text-slate-400">Loading feed...</span>
-                        </div>
-                      ) : posts.length === 0 ? (
-                        <div className="p-8 text-center bg-[#0B1528] rounded-2xl border border-white/10 space-y-1.5">
-                          <MessageSquare className="w-8 h-8 text-slate-600 mx-auto" />
-                          <h4 className="text-xs font-bold text-white">No discussions yet</h4>
-                          <p className="text-[11px] text-slate-400">Be the first to share an insight or question!</p>
-                        </div>
-                      ) : (
-                        posts.map((post) => (
-                          <PostCard
-                            key={post.id}
-                            post={post}
-                            onPostDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
-                            onPostUpdated={(updated) =>
-                              setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-                            }
-                            onUserClick={(authorId) => setInspectUserId(authorId)}
-                          />
-                        ))
-                      )}
-                    </div>
-                  </div>
+            {activeMainTab === 'FEED' && (
+              <div className="space-y-3">
+                {/* LinkedIn-style Post Composer */}
+                {selectedChannel && (
+                  <PostComposer
+                    channelId={selectedChannel.id}
+                    channelName={selectedChannel.name}
+                    isLocked={selectedChannel.isLocked}
+                    onPostCreated={(newPost) => setPosts((prev) => [newPost, ...prev])}
+                  />
                 )}
+
+                {/* Feed Filter & Search Bar */}
+                <div className="p-2.5 bg-[#0B1528] rounded-xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-semibold w-full max-w-full">
+                  <div className="grid grid-cols-3 sm:flex items-center gap-1 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => setFeedFilter('ALL')}
+                      className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
+                        feedFilter === 'ALL'
+                          ? 'bg-cyan-500 text-white shadow-sm'
+                          : 'bg-white/5 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedFilter('ANNOUNCEMENTS')}
+                      className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
+                        feedFilter === 'ANNOUNCEMENTS'
+                          ? 'bg-rose-500 text-white shadow-sm'
+                          : 'bg-white/5 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      News
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedFilter('SAVED')}
+                      className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
+                        feedFilter === 'SAVED'
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-white/5 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Saved
+                    </button>
+                  </div>
+
+                  <div className="relative w-full sm:w-56">
+                    <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Filter discussions..."
+                      value={postSearch}
+                      onChange={(e) => setPostSearch(e.target.value)}
+                      className="w-full pl-7 pr-2.5 py-1.5 rounded-lg bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 min-h-[34px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Feed Posts Stream with Instant Skeletons */}
+                <div className="space-y-3">
+                  {loadingPosts || loadingChannels ? (
+                    <div className="space-y-3 animate-pulse">
+                      {[1, 2, 3].map((n) => (
+                        <div key={n} className="p-3.5 rounded-xl bg-[#0B1528] border border-white/10 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-800" />
+                            <div className="space-y-1.5 flex-1">
+                              <div className="h-3.5 bg-slate-800 rounded w-1/3" />
+                              <div className="h-2.5 bg-slate-800/60 rounded w-1/4" />
+                            </div>
+                          </div>
+                          <div className="space-y-1.5 pt-1">
+                            <div className="h-3 bg-slate-800 rounded w-full" />
+                            <div className="h-3 bg-slate-800 rounded w-4/5" />
+                          </div>
+                          <div className="pt-2 border-t border-white/5 flex gap-4">
+                            <div className="h-5 bg-slate-800 rounded w-14" />
+                            <div className="h-5 bg-slate-800 rounded w-14" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : posts.length === 0 ? (
+                    <div className="p-8 text-center bg-[#0B1528] rounded-2xl border border-white/10 space-y-1.5">
+                      <MessageSquare className="w-8 h-8 text-slate-600 mx-auto" />
+                      <h4 className="text-xs font-bold text-white">No discussions yet</h4>
+                      <p className="text-[11px] text-slate-400">Be the first to share an insight or question!</p>
+                    </div>
+                  ) : (
+                    posts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onPostDeleted={(id) => setPosts((prev) => prev.filter((p) => p.id !== id))}
+                        onPostUpdated={(updated) =>
+                          setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+                        }
+                        onUserClick={(authorId) => setInspectUserId(authorId)}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
 
                 {/* ========================================================================= */}
                 {/* TAB CONTENT: 2. LIVE GROUP CHAT ROOM */}
                 {/* ========================================================================= */}
-                {activeMainTab === 'CHAT' && (
+                {activeMainTab === 'CHAT' && selectedChannel && (
                   <CommunityChatRoom channelId={selectedChannel.id} channelName={selectedChannel.name} />
                 )}
 
@@ -392,14 +399,12 @@ export const CommunityPage: React.FC = () => {
                 {/* ========================================================================= */}
                 {/* TAB CONTENT: 4. MEMBERS DIRECTORY */}
                 {/* ========================================================================= */}
-                {activeMainTab === 'MEMBERS' && (
+                {activeMainTab === 'MEMBERS' && selectedChannel && (
                   <CommunityMembersTab
                     channel={selectedChannel}
                     onUserClick={(userId) => setInspectUserId(userId)}
                   />
                 )}
-              </>
-            )}
           </main>
         </div>
       </div>

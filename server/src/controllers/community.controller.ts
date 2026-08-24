@@ -53,9 +53,6 @@ export const getCommunityChannels = async (req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    // Auto-heal / sync missing channels if needed
-    await communityService.syncAllChannelsAndMembers();
-
     // Check student enrollments
     if (userRole !== 'ADMIN') {
       const activeEnrollments = await prisma.enrollment.findMany({
