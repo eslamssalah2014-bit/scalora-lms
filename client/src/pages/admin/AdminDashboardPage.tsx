@@ -18,8 +18,14 @@ import {
   RefreshCw,
   AlertCircle,
   Layers,
+  Target,
+  Zap,
+  Flame,
+  Send,
+  AlertTriangle,
 } from 'lucide-react';
 import { formatCurrency } from '../../lib/currency';
+import { StudyPlanAnalytics } from '../../types/study-plan';
 
 interface DashboardData {
   stats: AdminStats;
@@ -30,12 +36,43 @@ interface DashboardData {
 
 export const AdminDashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [plannerAnalytics, setPlannerAnalytics] = useState<StudyPlanAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dispatchingReminders, setDispatchingReminders] = useState(false);
+  const [reminderSuccess, setReminderSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
+    fetchPlannerAnalytics();
   }, []);
+
+  const fetchPlannerAnalytics = async () => {
+    try {
+      const res = await api.get<{ success: boolean; analytics: StudyPlanAnalytics }>('/study-planner/analytics');
+      if (res.success && res.analytics) {
+        setPlannerAnalytics(res.analytics);
+      }
+    } catch (err) {
+      console.error('Failed to load study planner analytics:', err);
+    }
+  };
+
+  const handleTriggerReminders = async () => {
+    setDispatchingReminders(true);
+    setReminderSuccess(null);
+    try {
+      const res = await api.post<{ success: boolean; message: string; delivered: number }>('/study-planner/trigger-reminders', {});
+      if (res.success) {
+        setReminderSuccess(`Dispatched morning reminders to ${res.delivered} students.`);
+        setTimeout(() => setReminderSuccess(null), 4000);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to dispatch reminders');
+    } finally {
+      setDispatchingReminders(false);
+    }
+  };
 
   const fetchStats = async () => {
     setLoading(true);
@@ -275,6 +312,124 @@ export const AdminDashboardPage: React.FC = () => {
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* 5. Smart Study Planner & Learning Pace Analytics Section */}
+      <div className="glass-panel p-6 rounded-2xl border border-cyan-500/30 space-y-6 shadow-2xl bg-gradient-to-b from-[#031024] to-[#04152D]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-extrabold uppercase tracking-wider">
+              <Target className="w-3 h-3" />
+              <span>Smart Study Planner Intelligence</span>
+            </div>
+            <h3 className="text-lg font-black text-white">Student Pace & Completion Forecasting</h3>
+            <p className="text-xs text-slate-400">
+              Aggregated completion timelines, pace consistency metrics, and smart missed-day recovery forecasts.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleTriggerReminders}
+              disabled={dispatchingReminders}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent hover:opacity-95 transition-all flex items-center gap-2"
+            >
+              {dispatchingReminders ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              <span>Dispatch 9:00 AM Reminders</span>
+            </button>
+          </div>
+        </div>
+
+        {reminderSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>{reminderSuccess}</span>
+          </div>
+        )}
+
+        {/* Study Planner KPI Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="glass-card p-4 rounded-xl space-y-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase">Active Study Plans</span>
+            <div className="text-2xl font-black text-white">{plannerAnalytics?.totalActivePlans ?? 0}</div>
+            <span className="text-[10px] text-cyan-400">Learners pacing courses</span>
+          </div>
+
+          <div className="glass-card p-4 rounded-xl space-y-1 border border-emerald-500/20">
+            <span className="text-[11px] font-bold text-emerald-400 uppercase">On Track / Ahead</span>
+            <div className="text-2xl font-black text-emerald-400">
+              {(plannerAnalytics?.percentOnTrack ?? 100) + (plannerAnalytics?.percentAhead ?? 0)}%
+            </div>
+            <span className="text-[10px] text-slate-400">
+              {plannerAnalytics?.studentsOnTrack ?? 0} on track • {plannerAnalytics?.studentsAhead ?? 0} ahead
+            </span>
+          </div>
+
+          <div className="glass-card p-4 rounded-xl space-y-1 border border-amber-500/20">
+            <span className="text-[11px] font-bold text-amber-400 uppercase">Behind Schedule</span>
+            <div className="text-2xl font-black text-amber-400">{plannerAnalytics?.percentBehind ?? 0}%</div>
+            <span className="text-[10px] text-slate-400">
+              {plannerAnalytics?.studentsBehind ?? 0} students need catch-up
+            </span>
+          </div>
+
+          <div className="glass-card p-4 rounded-xl space-y-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase">Average Daily Pace</span>
+            <div className="text-2xl font-black text-cyan-400">
+              {plannerAnalytics?.averageActualPaceMinutes ?? 12} <span className="text-xs font-normal text-slate-400">min/day</span>
+            </div>
+            <span className="text-[10px] text-slate-400">
+              Target: {plannerAnalytics?.averageDailyTargetMinutes ?? 15} min/day
+            </span>
+          </div>
+        </div>
+
+        {/* Course Completion Forecast Table */}
+        <div className="space-y-3 pt-2">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+            Course Completion Pace Breakdown
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-cyan-500/15 text-slate-400 uppercase tracking-wider">
+                  <th className="pb-3 font-semibold">Course Program</th>
+                  <th className="pb-3 font-semibold">Active Plans</th>
+                  <th className="pb-3 font-semibold">Avg Planned Days</th>
+                  <th className="pb-3 font-semibold">Avg Actual Pace</th>
+                  <th className="pb-3 font-semibold text-right">Pace Health</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-cyan-500/10">
+                {(plannerAnalytics?.courseAnalytics || []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-slate-400">
+                      No course-specific study plan records found yet.
+                    </td>
+                  </tr>
+                ) : (
+                  plannerAnalytics?.courseAnalytics.map((c) => (
+                    <tr key={c.courseId} className="hover:bg-white/5 transition-colors">
+                      <td className="py-3 font-bold text-white max-w-xs truncate">{c.courseTitle}</td>
+                      <td className="py-3 text-cyan-300 font-semibold">{c.activePlansCount} learners</td>
+                      <td className="py-3 text-slate-300">{c.avgPlannedDays} days goal</td>
+                      <td className="py-3 text-emerald-400 font-bold">{c.avgActualPace} min/day</td>
+                      <td className="py-3 text-right">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          {c.percentOnTrack + c.percentAhead}% On Schedule
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

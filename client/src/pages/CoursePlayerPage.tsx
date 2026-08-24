@@ -26,6 +26,7 @@ import {
   ArrowLeft,
   RefreshCw,
   AlertCircle,
+  Target,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -256,6 +257,15 @@ export const CoursePlayerPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          <Link
+            to={`/my-study-plan?course=${course.id}`}
+            className="p-2 rounded-xl bg-scalora-navy/80 hover:bg-cyan-500/20 text-cyan-400 hover:text-white border border-cyan-500/30 transition-all flex items-center gap-1.5 text-xs font-bold"
+            title="View Personalized Study Plan & Milestones"
+          >
+            <Target className="w-4 h-4" />
+            <span className="hidden md:inline">Study Plan</span>
+          </Link>
 
           {/* Toggle Sidebar Button */}
           <button

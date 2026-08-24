@@ -23,6 +23,7 @@ const chat_routes_js_1 = __importDefault(require("./routes/chat.routes.js"));
 const realtime_routes_js_1 = __importDefault(require("./routes/realtime.routes.js"));
 const notification_routes_js_1 = __importDefault(require("./routes/notification.routes.js"));
 const pwa_analytics_routes_js_1 = __importDefault(require("./routes/pwa-analytics.routes.js"));
+const study_planner_routes_js_1 = __importDefault(require("./routes/study-planner.routes.js"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Path Normalizer for Vercel Serverless Function [...path]
@@ -113,7 +114,8 @@ app.use('/notifications', notification_routes_js_1.default);
 app.use('/api/pwa', pwa_analytics_routes_js_1.default);
 app.use('/pwa', pwa_analytics_routes_js_1.default);
 app.use('/api/admin/pwa-analytics', pwa_analytics_routes_js_1.default);
-app.use('/admin/pwa-analytics', pwa_analytics_routes_js_1.default);
+app.use('/api/study-planner', study_planner_routes_js_1.default);
+app.use('/study-planner', study_planner_routes_js_1.default);
 app.use('/api/admin', admin_routes_js_1.default);
 app.use('/admin', admin_routes_js_1.default);
 app.use('/students', admin_routes_js_1.default);

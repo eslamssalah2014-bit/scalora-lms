@@ -23,6 +23,7 @@ import { PasswordSetupPage } from './pages/PasswordSetupPage';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { CoursePlayerPage } from './pages/CoursePlayerPage';
 import { QuizPage } from './pages/QuizPage';
+import { StudyPlanPage } from './pages/StudyPlanPage';
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -107,6 +108,24 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <NotificationCenterPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Smart Study Plan & Learning Pace */}
+          <Route
+            path="/my-study-plan"
+            element={
+              <ProtectedRoute>
+                <StudyPlanPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/study-plan"
+            element={
+              <ProtectedRoute>
+                <StudyPlanPage />
               </ProtectedRoute>
             }
           />

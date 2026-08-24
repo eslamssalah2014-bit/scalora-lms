@@ -19,6 +19,7 @@ import {
   RefreshCw,
   AlertCircle,
   Users,
+  Target,
 } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
@@ -121,10 +122,18 @@ export const StudentDashboard: React.FC = () => {
 
           <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
             <Link
-              to="/community"
+              to="/my-study-plan"
               className="px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent hover:opacity-95 transition-all flex items-center gap-2"
             >
-              <Users className="w-4 h-4" />
+              <Target className="w-4 h-4" />
+              <span>Smart Study Plan</span>
+            </Link>
+
+            <Link
+              to="/community"
+              className="px-5 py-3 rounded-xl bg-scalora-navy/80 hover:bg-scalora-navy text-white text-xs font-bold border border-scalora-blue/30 shadow-lg transition-all flex items-center gap-2"
+            >
+              <Users className="w-4 h-4 text-cyan-400" />
               <span>Community Feed</span>
             </Link>
 

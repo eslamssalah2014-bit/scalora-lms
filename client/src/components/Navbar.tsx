@@ -20,6 +20,7 @@ import {
   Download,
   CheckCircle2,
   Bell,
+  Target,
 } from 'lucide-react';
 import { usePwa } from '../hooks/usePwa';
 import { showNativeNotification } from '../lib/pushNotifications';
@@ -314,6 +315,14 @@ export const Navbar: React.FC = () => {
                       >
                         <BookOpen className="w-4 h-4 text-emerald-400" />
                         <span>My Enrolled Courses</span>
+                      </Link>
+
+                      <Link
+                        to="/my-study-plan"
+                        className="flex items-center space-x-2.5 px-4 py-2.5 text-sm text-cyan-300 hover:text-white hover:bg-cyan-500/20 transition-colors font-semibold"
+                      >
+                        <Target className="w-4 h-4 text-cyan-400" />
+                        <span>My Study Plan</span>
                       </Link>
 
                       {/* PWA Install Option */}

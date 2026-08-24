@@ -555,6 +555,8 @@ export interface CommunityChatMessage {
   };
 }
 
+export * from './study-plan';
+
 
 
 
