@@ -20,3 +20,17 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// Gracefully dismiss HTML startup splash screen immediately upon React hydration
+try {
+  const splash = document.getElementById('scalora-splash');
+  if (splash) {
+    splash.style.transition = 'opacity 200ms ease, transform 200ms ease';
+    splash.style.opacity = '0';
+    splash.style.pointerEvents = 'none';
+    setTimeout(() => {
+      splash.remove();
+    }, 220);
+  }
+} catch (_) {}
+

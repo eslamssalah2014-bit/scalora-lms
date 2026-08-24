@@ -7,7 +7,7 @@
  * Profile, Courses, and Supabase Realtime) must NEVER be cached.
  */
 
-const CACHE_NAME = 'scalora-static-v6';
+const CACHE_NAME = 'scalora-static-v8';
 
 // ONLY immutable static shell assets are precached
 const STATIC_ASSETS = [
