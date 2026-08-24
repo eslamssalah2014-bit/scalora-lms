@@ -48,8 +48,21 @@ import { PwaInstallBanner } from './components/PwaInstallBanner';
 import { OfflineBanner } from './components/OfflineBanner';
 import { MobileBottomNav } from './components/MobileBottomNav';
 
+import { useLocation } from 'react-router-dom';
+
 // Layout with Header & Footer
 const MainLayout: React.FC = () => {
+  const location = useLocation();
+  const isAppRoute = [
+    '/dashboard',
+    '/profile',
+    '/my-study-plan',
+    '/study-plan',
+    '/messages',
+    '/notifications',
+    '/trainer',
+  ].some((p) => location.pathname.startsWith(p));
+
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#04152D]">
       <OfflineBanner />
@@ -57,7 +70,7 @@ const MainLayout: React.FC = () => {
       <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
-      <Footer />
+      {!isAppRoute && <Footer />}
       <PwaInstallBanner />
       <MobileBottomNav />
     </div>
@@ -82,9 +95,17 @@ export const App: React.FC = () => {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/set-password/:token" element={<PasswordSetupPage />} />
 
-          {/* Student Dashboard */}
+          {/* Student Dashboard & Profile */}
           <Route
             path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
             element={
               <ProtectedRoute>
                 <StudentDashboard />
