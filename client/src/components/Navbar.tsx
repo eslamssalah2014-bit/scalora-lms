@@ -21,6 +21,11 @@ import {
   CheckCircle2,
   Bell,
   Target,
+  Award,
+  PlayCircle,
+  Calendar,
+  Settings,
+  HelpCircle,
 } from 'lucide-react';
 import { usePwa } from '../hooks/usePwa';
 import { showNativeNotification } from '../lib/pushNotifications';
@@ -475,134 +480,201 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Primary Navigation Hub Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-scalora-blue/15 bg-[#04152D]/95 backdrop-blur-xl px-4 pt-3 pb-6 space-y-2">
-          <Link
-            to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
-          >
-            Home
-          </Link>
-          <Link
-            to="/services"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
-          >
-            Services
-          </Link>
-          <Link
-            to="/community"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
-          >
-            Community
-          </Link>
-          <Link
-            to="/courses"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
-          >
-            Courses
-          </Link>
-          <Link
-            to="/about"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
-          >
-            About
-          </Link>
-          <Link
-            to="/contact"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-200 hover:bg-scalora-blue/10"
-          >
-            Contact
-          </Link>
-
+        <div className="md:hidden fixed inset-0 top-[60px] z-50 bg-[#020B18]/98 backdrop-blur-2xl px-5 py-6 overflow-y-auto space-y-6 animate-in fade-in duration-150 pb-28">
+          {/* User Header Profile Tile */}
           {user ? (
-            <div className="pt-4 border-t border-scalora-blue/15 space-y-2">
-              <div className="px-3 py-2 bg-scalora-navy/40 rounded-xl flex items-center gap-3">
+            <div className="p-4 rounded-2xl bg-[#04152D] border border-cyan-500/30 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={
                     user.avatar ||
                     `https://ui-avatars.com/api/?name=${encodeURIComponent(
                       user.name
-                    )}&background=2D8CFF&color=fff`
+                    )}&background=0284C7&color=fff`
                   }
                   alt={user.name}
-                  className="w-10 h-10 rounded-lg object-cover"
+                  className="w-12 h-12 rounded-2xl object-cover border border-cyan-400/40 flex-shrink-0"
                 />
-                <div>
-                  <div className="font-semibold text-white">{user.name}</div>
-                  <div className="text-xs text-scalora-blue">{user.email}</div>
+                <div className="min-w-0">
+                  <div className="font-black text-white text-sm truncate">{user.name}</div>
+                  <div className="text-xs text-slate-400 truncate font-mono">{user.email}</div>
                 </div>
               </div>
-
-              {user.role === 'ADMIN' ? (
-                <Link
-                  to="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2.5 rounded-lg text-base font-semibold text-scalora-accent bg-scalora-accent/10"
-                >
-                  Admin Console
-                </Link>
-              ) : (
-                <Link
-                  to="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2.5 rounded-lg text-base font-semibold text-scalora-blue bg-scalora-blue/10"
-                >
-                  Student Dashboard
-                </Link>
-              )}
-
-              {/* PWA Mobile Button */}
-              {isInstalled ? (
-                <div className="flex items-center space-x-2 px-3 py-2 text-xs font-semibold text-emerald-400">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span>Scalora App Installed ✓</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    installApp();
-                  }}
-                  className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-base font-semibold text-cyan-300 bg-cyan-500/10 border border-cyan-400/20 text-left"
-                >
-                  <Download className="w-4 h-4 text-cyan-400" />
-                  <span>Install Scalora App</span>
-                </button>
-              )}
-
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-3 py-2 rounded-lg text-rose-400 font-medium hover:bg-rose-500/10"
-              >
-                Sign Out
-              </button>
+              <span className="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex-shrink-0">
+                {user.role}
+              </span>
             </div>
           ) : (
-            <div className="pt-4 border-t border-scalora-blue/15 grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2.5 text-center rounded-xl bg-scalora-navy border border-scalora-blue/20 text-white font-medium text-sm"
+                className="py-3 text-center rounded-xl bg-scalora-navy border border-scalora-blue/30 text-white font-bold text-xs"
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2.5 text-center rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-semibold text-sm shadow-glow-blue"
+                className="py-3 text-center rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-bold text-xs shadow-glow-blue"
               >
                 Get Started
               </Link>
             </div>
           )}
+
+          {/* Section 1: Learning */}
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-1">
+              Learning
+            </h3>
+            <div className="rounded-2xl bg-[#04152D] border border-white/10 divide-y divide-white/5 overflow-hidden shadow-md">
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-cyan-400" />
+                <span>My Courses</span>
+              </Link>
+              <Link
+                to="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <PlayCircle className="w-4 h-4 text-emerald-400" />
+                <span>Continue Learning</span>
+              </Link>
+              <Link
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>Certificates</span>
+              </Link>
+              <Link
+                to="/my-study-plan"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <Target className="w-4 h-4 text-cyan-300" />
+                <span>Progress Planner</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Section 2: Community */}
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-1">
+              Community
+            </h3>
+            <div className="rounded-2xl bg-[#04152D] border border-white/10 divide-y divide-white/5 overflow-hidden shadow-md">
+              <Link
+                to="/community"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <Users className="w-4 h-4 text-cyan-400" />
+                <span>Community Feed</span>
+              </Link>
+              <Link
+                to="/community?tab=members"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <Users className="w-4 h-4 text-slate-400" />
+                <span>Members</span>
+              </Link>
+              <Link
+                to="/community?tab=resources"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-amber-400" />
+                <span>Resources</span>
+              </Link>
+              <Link
+                to="/community?tab=events"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-cyan-400" />
+                <span>Events</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Section 3: Notifications */}
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-1">
+              Notifications
+            </h3>
+            <div className="rounded-2xl bg-[#04152D] border border-white/10 divide-y divide-white/5 overflow-hidden shadow-md">
+              <Link
+                to="/notifications"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <Bell className="w-4 h-4 text-cyan-400" />
+                  <span>Notification Center</span>
+                </div>
+                {unreadNotifCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white">
+                    {unreadNotifCount}
+                  </span>
+                )}
+              </Link>
+            </div>
+          </div>
+
+          {/* Section 4: Account */}
+          <div className="space-y-2">
+            <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-1">
+              Account
+            </h3>
+            <div className="rounded-2xl bg-[#04152D] border border-white/10 divide-y divide-white/5 overflow-hidden shadow-md">
+              <Link
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <User className="w-4 h-4 text-cyan-400" />
+                <span>Profile</span>
+              </Link>
+              <Link
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <Settings className="w-4 h-4 text-slate-400" />
+                <span>Settings</span>
+              </Link>
+              <Link
+                to="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-white hover:bg-white/5 transition-colors"
+              >
+                <HelpCircle className="w-4 h-4 text-slate-400" />
+                <span>Help</span>
+              </Link>
+              {user && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition-colors text-left"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </header>

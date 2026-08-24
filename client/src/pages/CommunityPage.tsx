@@ -195,178 +195,96 @@ export const CommunityPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#040D1B] w-full max-w-full overflow-x-hidden py-3 sm:py-6">
-      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 space-y-4 w-full max-w-full overflow-x-hidden">
-        {/* Mobile Sub-Navigation Bar */}
-        <div className="lg:hidden grid grid-cols-3 gap-1 p-1.5 rounded-2xl bg-[#0B1528] border border-white/10 w-full max-w-full">
-          <button
-            type="button"
-            onClick={() => setMobileTab('CHANNELS')}
-            className={`py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all min-h-[44px] flex items-center justify-center ${
-              mobileTab === 'CHANNELS' ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Tracks ({channels.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('FEED')}
-            className={`py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all min-h-[44px] flex items-center justify-center ${
-              mobileTab === 'FEED' ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Community Hub
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab('INFO')}
-            className={`py-2.5 px-2 rounded-xl text-xs font-bold text-center transition-all min-h-[44px] flex items-center justify-center ${
-              mobileTab === 'INFO' ? 'bg-cyan-500 text-white shadow-md' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Instructors
-          </button>
-        </div>
+    <div className="min-h-screen bg-[#040D1B] w-full max-w-full overflow-x-hidden py-3 sm:py-6 pb-24">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 space-y-4 w-full max-w-full overflow-x-hidden">
+        {/* Top Channel Selector & Clean Segmented Tabs (Feed | Chat | Resources | Members) */}
+        <div className="bg-[#0B1528] rounded-2xl p-3 sm:p-4 border border-white/10 shadow-md space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            {/* Channel Title & Switcher */}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+              <h1 className="text-sm sm:text-base font-black text-white truncate">
+                {selectedChannel?.name || 'Community Hub'}
+              </h1>
+            </div>
 
-        {/* 3-COLUMN MAIN LAYOUT */}
-        <div className="flex flex-col lg:flex-row gap-5 items-start w-full max-w-full">
-          {/* ========================================================================= */}
-          {/* 1. LEFT SIDEBAR: User Card, Navigation & Enrolled Communities */}
-          {/* ========================================================================= */}
-          <div className={`w-full lg:w-72 flex-shrink-0 ${mobileTab === 'CHANNELS' ? 'block' : 'hidden lg:block'}`}>
-            <ChannelSidebar
-              channels={channels}
-              selectedChannelId={selectedChannelId}
-              onSelectChannel={handleSelectChannel}
-              activeMainTab={activeMainTab}
-              onSelectMainTab={(tab) => {
-                setActiveMainTab(tab);
-                setMobileTab('FEED');
-              }}
-              activeFilter={feedFilter}
-              onSelectFilter={handleSelectFilter}
-              onOpenMyProfile={() => user && setInspectUserId(user.id)}
-            />
+            {/* If multiple channels exist, allow clean switching */}
+            {channels.length > 1 && (
+              <select
+                value={selectedChannelId || ''}
+                onChange={(e) => handleSelectChannel(e.target.value)}
+                className="px-3 py-1.5 rounded-xl bg-[#04152D] text-xs text-white border border-white/10 font-bold focus:outline-none"
+              >
+                {channels.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* ========================================================================= */}
-          {/* 2. CENTER COLUMN: Community Hero, Segmented Tabs & Main Content */}
-          {/* ========================================================================= */}
-          <main className={`flex-1 min-w-0 w-full max-w-full space-y-4 ${mobileTab === 'FEED' ? 'block' : 'hidden lg:block'}`}>
+          {/* Top 4 Core Tabs */}
+          <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-white/10 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('FEED')}
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[40px] ${
+                activeMainTab === 'FEED'
+                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
+                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Feed</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('CHAT')}
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[40px] ${
+                activeMainTab === 'CHAT'
+                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
+                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Chat</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('RESOURCES')}
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[40px] ${
+                activeMainTab === 'RESOURCES'
+                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
+                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+              }`}
+            >
+              <FolderDown className="w-3.5 h-3.5" />
+              <span>Resources</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMainTab('MEMBERS')}
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[40px] ${
+                activeMainTab === 'MEMBERS'
+                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
+                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Members</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Container */}
+        <div className="w-full max-w-full">
+          <main className="w-full max-w-full space-y-4">
             {selectedChannel && (
               <>
-                {/* ========================================================================= */}
-                {/* COMMUNITY HERO SECTION (Premium Header Card) */}
-                {/* ========================================================================= */}
-                <div className="bg-[#0B1528] rounded-3xl p-4 sm:p-6 border border-white/10 shadow-2xl relative overflow-hidden space-y-4 group w-full max-w-full">
-                  {/* Subtle Gradient Backdrop */}
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 relative z-10 w-full">
-                    <div className="space-y-1.5 min-w-0 flex-1">
-                      {/* Category Badge */}
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-                          {selectedChannel.course?.category || 'Executive Track'}
-                        </span>
-                        {selectedChannel.isLocked && (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                            <Lock className="w-3 h-3" />
-                            <span>Announcements Only</span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Community Title */}
-                      <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight leading-tight break-words">
-                        {selectedChannel.name}
-                      </h1>
-
-                      {/* Description */}
-                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-                        {selectedChannel.description ||
-                          'Interactive collaboration hub for peer networking, instructor discussions, and project reviews.'}
-                      </p>
-                    </div>
-
-                    {/* Quick Metadata Stats */}
-                    <div className="grid grid-cols-2 sm:flex items-center gap-2 sm:gap-3 flex-shrink-0 w-full sm:w-auto">
-                      <div className="px-3.5 py-2 rounded-2xl bg-[#071324] border border-white/10 text-center">
-                        <div className="text-xs font-black text-purple-300">{trainersCount}</div>
-                        <div className="text-[10px] text-slate-400 font-bold">Trainers</div>
-                      </div>
-                      <div className="px-3.5 py-2 rounded-2xl bg-[#071324] border border-white/10 text-center">
-                        <div className="text-xs font-black text-white">{selectedChannel.membersCount || 43}</div>
-                        <div className="text-[10px] text-slate-400 font-bold">Members</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ========================================================================= */}
-                  {/* LARGE MODERN SEGMENTED COMMUNITY TABS (Zero Overflow 4-Column Grid on Mobile) */}
-                  {/* ========================================================================= */}
-                  <div className="pt-2 border-t border-white/10 grid grid-cols-4 sm:flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold w-full max-w-full">
-                    {/* 1. Feed */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveMainTab('FEED')}
-                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
-                        activeMainTab === 'FEED'
-                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
-                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
-                      }`}
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span className="text-[10px] sm:text-xs">Feed</span>
-                    </button>
-
-                    {/* 2. Group Chat */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveMainTab('CHAT')}
-                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
-                        activeMainTab === 'CHAT'
-                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
-                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
-                      }`}
-                    >
-                      <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-                      <span className="text-[10px] sm:text-xs">Chat</span>
-                    </button>
-
-                    {/* 3. Resources */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveMainTab('RESOURCES')}
-                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
-                        activeMainTab === 'RESOURCES'
-                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
-                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
-                      }`}
-                    >
-                      <FolderDown className="w-4 h-4" />
-                      <span className="text-[10px] sm:text-xs">Vault</span>
-                    </button>
-
-                    {/* 4. Members */}
-                    <button
-                      type="button"
-                      onClick={() => setActiveMainTab('MEMBERS')}
-                      className={`py-2 px-1 sm:px-4 sm:py-2.5 rounded-2xl transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 min-h-[44px] ${
-                        activeMainTab === 'MEMBERS'
-                          ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-glow-accent'
-                          : 'bg-[#071324] text-slate-300 hover:text-white border border-white/5'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                      <span className="text-[10px] sm:text-xs">Members</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* ========================================================================= */}
-                {/* TAB CONTENT: 1. FEED */}
-                {/* ========================================================================= */}
                 {activeMainTab === 'FEED' && (
                   <div className="space-y-4">
                     {/* LinkedIn-style Post Composer */}
@@ -483,17 +401,6 @@ export const CommunityPage: React.FC = () => {
               </>
             )}
           </main>
-
-          {/* ========================================================================= */}
-          {/* 3. RIGHT SIDEBAR: Overview Stats, Instructors & Leaderboard */}
-          {/* ========================================================================= */}
-          <div className={`w-full lg:w-80 flex-shrink-0 ${mobileTab === 'INFO' ? 'block' : 'hidden lg:block'}`}>
-            <ChannelInfoPanel
-              channel={selectedChannel}
-              pinnedAnnouncements={posts.filter((p) => p.isPinned)}
-              onUserClick={(uid) => setInspectUserId(uid)}
-            />
-          </div>
         </div>
       </div>
 

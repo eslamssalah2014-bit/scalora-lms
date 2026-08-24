@@ -5,12 +5,9 @@ import { api } from '../lib/api';
 import { realtime } from '../lib/realtime';
 import {
   Home,
-  BookOpen,
   Users,
   MessageSquare,
   User,
-  Shield,
-  Sparkles,
 } from 'lucide-react';
 
 export const MobileBottomNav: React.FC = () => {
@@ -18,12 +15,10 @@ export const MobileBottomNav: React.FC = () => {
   const { user } = useAuth();
   const [unreadMsgCount, setUnreadMsgCount] = useState<number>(0);
 
-  // Determine active profile link based on user role
+  // Determine profile destination
   const getProfileLink = () => {
     if (!user) return '/login';
-    if (user.role === 'ADMIN') return '/admin';
-    if (user.role === 'TRAINER') return '/trainer';
-    return '/dashboard';
+    return '/profile';
   };
 
   const isActive = (path: string) => {
@@ -68,13 +63,7 @@ export const MobileBottomNav: React.FC = () => {
       label: 'Home',
       icon: Home,
       path: '/',
-      active: isActive('/'),
-    },
-    {
-      label: 'Courses',
-      icon: BookOpen,
-      path: '/courses',
-      active: isActive('/courses'),
+      active: isActive('/') && !location.pathname.startsWith('/profile') && !location.pathname.startsWith('/dashboard'),
     },
     {
       label: 'Community',
@@ -94,6 +83,7 @@ export const MobileBottomNav: React.FC = () => {
       icon: User,
       path: getProfileLink(),
       active:
+        isActive('/profile') ||
         isActive('/dashboard') ||
         isActive('/admin') ||
         isActive('/trainer') ||
@@ -104,9 +94,9 @@ export const MobileBottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Mobile Navigation Bar"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#04152D]/95 backdrop-blur-2xl border-t border-cyan-500/20 shadow-[0_-8px_30px_rgba(0,0,0,0.6)] px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#030F20]/95 backdrop-blur-2xl border-t border-cyan-500/20 shadow-2xl px-2 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
-      <div className="grid grid-cols-5 items-center justify-around max-w-lg mx-auto">
+      <div className="grid grid-cols-4 items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isItemActive = item.active;
@@ -115,15 +105,15 @@ export const MobileBottomNav: React.FC = () => {
             <Link
               key={item.label}
               to={item.path}
-              className={`relative flex flex-col items-center justify-center py-1.5 px-1 min-h-[48px] rounded-2xl transition-all duration-200 ${
+              className={`relative flex flex-col items-center justify-center py-1.5 px-2 min-h-[48px] rounded-2xl transition-all duration-200 ${
                 isItemActive
                   ? 'text-cyan-300 font-extrabold'
                   : 'text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              {/* Active Ambient Glow Pill */}
+              {/* Active Pill Indicator */}
               {isItemActive && (
-                <span className="absolute inset-0 bg-cyan-500/15 rounded-2xl border border-cyan-400/30 animate-fadeIn" />
+                <span className="absolute inset-0 bg-cyan-500/15 rounded-2xl border border-cyan-400/30" />
               )}
 
               {/* Icon Container with Badge */}
@@ -136,7 +126,7 @@ export const MobileBottomNav: React.FC = () => {
 
                 {/* Real-time Unread Badge Counter */}
                 {Boolean(item.badge && item.badge > 0) && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-[9px] flex items-center justify-center border-2 border-[#04152D] animate-pulse shadow-md">
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center border-2 border-[#04152D] animate-pulse shadow-md">
                     {item.badge! > 9 ? '9+' : item.badge}
                   </span>
                 )}

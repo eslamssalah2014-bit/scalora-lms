@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Course } from '../types';
-import { BookOpen, Users, HelpCircle, ArrowRight, PlayCircle, CheckCircle2, Tag } from 'lucide-react';
+import { PlayCircle, ArrowRight } from 'lucide-react';
 import { getCoursePricing } from '../lib/currency';
 
 interface CourseCardProps {
@@ -13,9 +13,10 @@ interface CourseCardProps {
 export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, isEnrolled }) => {
   const navigate = useNavigate();
   const pricing = getCoursePricing(course);
+  const enrolled = isEnrolled || course.isEnrolled;
 
   const handleAction = (e: React.MouseEvent) => {
-    if (isEnrolled || course.isEnrolled) {
+    if (enrolled) {
       e.preventDefault();
       navigate(`/learn/${course.slug}`);
       return;
@@ -28,154 +29,66 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
   };
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden flex flex-col group h-full border border-scalora-blue/20 hover:border-scalora-blue/50 transition-all duration-300">
-      {/* Thumbnail - Aspect Square for full poster visibility */}
-      <Link to={`/courses/${course.slug}`} className="relative aspect-square w-full overflow-hidden block bg-[#04152D]">
+    <div className="bg-[#071324] rounded-2xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-cyan-500/40 transition-all duration-200 shadow-sm">
+      {/* 1. Course Thumbnail */}
+      <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`} className="relative aspect-video w-full overflow-hidden block bg-[#030F20]">
         <img
           src={
             course.thumbnail ||
             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
           }
           alt={course.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-102"
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
         />
-
-        {/* Discount Badge on top left if active */}
-        {pricing.hasDiscount && (
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-extrabold bg-gradient-to-r from-amber-500 to-rose-500 text-white flex items-center gap-1 shadow-lg backdrop-blur-md z-10 animate-pulse">
-            <Tag className="w-3 h-3" />
-            <span>{pricing.discountPercent}% OFF</span>
-          </div>
-        )}
-
-        {/* Enrolled Badge if applicable */}
-        {(isEnrolled || course.isEnrolled) && (
-          <div className="absolute top-3 right-3 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-500/90 text-white flex items-center gap-1 shadow-lg backdrop-blur-md z-10">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Enrolled</span>
-          </div>
-        )}
       </Link>
 
-      {/* Content */}
-      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-        <div className="space-y-2.5">
-          {/* Category & Level Tags */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-scalora-blue/15 text-scalora-accent border border-scalora-blue/30">
-              {course.category}
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-scalora-navy/80 text-slate-300 border border-scalora-blue/20">
-              {course.level || 'All Levels'}
-            </span>
-          </div>
+      {/* 2. Content */}
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        {/* Course Name */}
+        <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`}>
+          <h3 className="text-sm font-black text-white hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+            {course.title}
+          </h3>
+        </Link>
 
-          <Link to={`/courses/${course.slug}`}>
-            <h3 className="text-lg font-bold text-white group-hover:text-scalora-blue transition-colors line-clamp-2 leading-snug">
-              {course.title}
-            </h3>
-          </Link>
-          <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">
-            {course.description}
-          </p>
-        </div>
-
-        {/* Instructor / Assigned Trainers & Meta */}
-        <div className="pt-2 border-t border-scalora-blue/15 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            {course.trainers && course.trainers.length > 0 ? (
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="flex -space-x-1.5 overflow-hidden">
-                  {course.trainers.slice(0, 3).map((tr) => (
-                    <img
-                      key={tr.id}
-                      src={
-                        tr.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(tr.name)}&background=0284C7&color=fff`
-                      }
-                      alt={tr.name}
-                      title={`${tr.name} - ${tr.title || 'Trainer'}`}
-                      className="inline-block h-5 w-5 rounded-full ring-2 ring-[#0B1528] object-cover"
-                    />
-                  ))}
-                </div>
-                <span className="font-semibold text-slate-200 truncate max-w-[120px]">
-                  {course.trainers.map((t) => t.name).join(', ')}
+        {/* 3. Progress % or Price */}
+        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+          {enrolled ? (
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-medium">Progress</span>
+                <span className="font-bold text-cyan-300">
+                  {course.userProgress?.completionPercentage ?? 0}%
                 </span>
               </div>
-            ) : (
-              <span className="font-medium text-slate-300">By {course.instructor}</span>
-            )}
-
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-3.5 h-3.5 text-scalora-blue" />
-                {course.lessonsCount ?? 0} lessons
+              <div className="w-full bg-[#030F20] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-cyan-400 h-full rounded-full"
+                  style={{ width: `${course.userProgress?.completionPercentage ?? 0}%` }}
+                />
+              </div>
+              <Link
+                to={`/learn/${course.slug}`}
+                className="w-full mt-2 py-2 rounded-xl bg-cyan-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform"
+              >
+                <PlayCircle className="w-4 h-4" />
+                <span>Resume</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="w-full flex items-center justify-between">
+              <span className="text-sm font-black text-white">
+                {pricing.formattedEffective}
               </span>
-              {(course.quizzesCount ?? 0) > 0 && (
-                <span className="flex items-center gap-1 text-scalora-accent">
-                  <HelpCircle className="w-3.5 h-3.5" />
-                  {course.quizzesCount} quiz
-                </span>
-              )}
+              <button
+                onClick={handleAction}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-scalora-blue to-cyan-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-transform"
+              >
+                <span>Enroll</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-          </div>
-
-          {/* Pricing & CTA */}
-          <div className="flex items-end justify-between pt-1">
-            <div className="space-y-0.5">
-              {pricing.hasDiscount ? (
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] line-through text-slate-400 font-medium">
-                      {pricing.formattedBase}
-                    </span>
-                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/30">
-                      {pricing.discountPercent}% OFF
-                    </span>
-                  </div>
-                  <span className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
-                    {pricing.formattedEffective}
-                  </span>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-[11px] text-slate-400 block font-medium">Tuition</span>
-                  <span className="text-xl font-extrabold text-white">
-                    {pricing.formattedEffective}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {isEnrolled || course.isEnrolled ? (
-                <Link
-                  to={`/learn/${course.slug}`}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
-                >
-                  <PlayCircle className="w-3.5 h-3.5" />
-                  <span>Resume</span>
-                </Link>
-              ) : (
-                <>
-                  <Link
-                    to={`/courses/${course.slug}`}
-                    className="px-3 py-2 rounded-xl bg-scalora-navy/80 hover:bg-scalora-navy text-slate-200 hover:text-white text-xs font-semibold border border-scalora-blue/20 transition-colors"
-                  >
-                    Details
-                  </Link>
-                  <button
-                    onClick={handleAction}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-hover text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-1"
-                  >
-                    <span>Enroll</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -5,6 +5,10 @@ import { Download, CheckCircle2, Smartphone, Share, PlusSquare, Sparkles } from 
 export const PwaHeroCard: React.FC = () => {
   const { isInstalled, isIos, showIosGuide, setShowIosGuide, installApp } = usePwa();
 
+  if (isInstalled) {
+    return null;
+  }
+
   return (
     <>
       <div className="w-full max-w-xl mx-auto pt-6 animate-fadeIn">
