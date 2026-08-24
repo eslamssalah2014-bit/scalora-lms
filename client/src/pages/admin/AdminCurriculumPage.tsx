@@ -20,7 +20,9 @@ import {
   CheckCircle2,
   RefreshCw,
   AlertCircle,
+  ShieldCheck,
 } from 'lucide-react';
+import { extractYouTubeVideoId } from '../../lib/videoSecurity';
 
 export const AdminCurriculumPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -485,18 +487,35 @@ export const AdminCurriculumPage: React.FC = () => {
 
           {/* Type-Specific Fields */}
           {lessonType === 'YOUTUBE' && (
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                YouTube Video URL
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                  YouTube Video Resource (URL or Video ID)
+                </label>
+                {(() => {
+                  const detectedId = extractYouTubeVideoId(videoUrl);
+                  if (detectedId) {
+                    return (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Ready (ID: {detectedId})</span>
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
               <input
-                type="url"
+                type="text"
                 required
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="Paste YouTube URL, youtu.be link, or 11-char Video ID"
                 className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
               />
+              <span className="text-[10px] text-slate-400 block">
+                Accepts full URLs (<code className="text-slate-300 font-mono">youtube.com/watch?v=...</code>), short links (<code className="text-slate-300 font-mono">youtu.be/...</code>), or raw video IDs.
+              </span>
             </div>
           )}
 

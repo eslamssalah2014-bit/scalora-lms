@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson, Quiz } from '../types';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { YouTubeLessonPlayer } from '../components/YouTubeLessonPlayer';
 import { CertificateModal } from '../components/CertificateModal';
 import {
   Video,
@@ -31,6 +33,7 @@ export const CoursePlayerPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
@@ -168,19 +171,6 @@ export const CoursePlayerPage: React.FC = () => {
     }
   };
 
-  // Helper to extract YouTube embed URL
-  const getYouTubeEmbedUrl = (url?: string | null): string => {
-    if (!url) return '';
-    if (url.includes('embed/')) return url;
-    let videoId = '';
-    if (url.includes('v=')) {
-      videoId = url.split('v=')[1]?.split('&')[0];
-    } else if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0` : url;
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#04152D] flex items-center justify-center">
@@ -286,17 +276,11 @@ export const CoursePlayerPage: React.FC = () => {
             <div className="max-w-4xl mx-auto space-y-6">
               {/* Dynamic Lesson Display Area */}
               {activeLesson.type === 'YOUTUBE' && (
-                <div className="rounded-2xl overflow-hidden glass-card border border-scalora-blue/30 shadow-2xl bg-black">
-                  <div className="relative w-full pb-[56.25%] h-0">
-                    <iframe
-                      src={getYouTubeEmbedUrl(activeLesson.videoUrl)}
-                      title={activeLesson.title}
-                      className="absolute top-0 left-0 w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
+                <YouTubeLessonPlayer
+                  videoUrl={activeLesson.videoUrl}
+                  title={activeLesson.title}
+                  user={user}
+                />
               )}
 
               {activeLesson.type === 'PDF' && (
