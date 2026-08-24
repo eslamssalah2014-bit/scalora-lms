@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { getCoursePricing, formatCurrency } from '../lib/currency';
+import { validateAndProcessPaymentProof } from '../lib/imageCompressor';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -92,29 +93,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setTimeout(() => setCopiedId(false), 2500);
   };
 
-  // File Upload to Base64
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File Upload to Base64 with smart compression and 10MB verification
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size exceeds 10 MB limit. Please upload a smaller image or PDF.');
-      return;
-    }
-
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      setError('Invalid file format. Please upload a PNG, JPG, or PDF file.');
-      return;
-    }
-
     setError(null);
-    setFileName(file.name);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setScreenshotUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setFileName(file.name);
+      const result = await validateAndProcessPaymentProof(file);
+      setScreenshotUrl(result.dataUrl);
+    } catch (err: any) {
+      setError(err.message || 'File exceeds the 10 MB upload limit.');
+      setFileName('');
+      setScreenshotUrl('');
+      if (e.target) e.target.value = '';
+    }
   };
 
   // Instant Checkout (Demo / Free)

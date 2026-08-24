@@ -59,8 +59,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ limit: '25mb', extended: true }));
 
 // Health Check
 app.get('/api/health', (_req, res) => {
@@ -146,6 +146,13 @@ app.use('/', adminRoutes);
 
 // Global Error Handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err?.type === 'entity.too.large' || err?.status === 413 || err?.statusCode === 413) {
+    res.status(413).json({
+      success: false,
+      message: 'File exceeds the 10 MB upload limit.',
+    });
+    return;
+  }
   console.error('Unhandled Error:', err);
   res.status(500).json({
     success: false,

@@ -42,6 +42,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
     const textPreview = await response.text().catch(() => '');
+    if (response.status === 413 || textPreview.toLowerCase().includes('too large') || textPreview.toLowerCase().includes('entity')) {
+      throw new ApiError('File exceeds the 10 MB upload limit.', 413);
+    }
     throw new ApiError(
       `Received non-JSON response from server (${response.status}): ${textPreview.slice(0, 80) || 'Empty body'}`,
       response.status || 404
@@ -51,6 +54,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 413 || String(data.message).toLowerCase().includes('too large')) {
+      throw new ApiError('File exceeds the 10 MB upload limit.', 413, data);
+    }
     throw new ApiError(data.message || 'An unexpected error occurred', response.status, data);
   }
 

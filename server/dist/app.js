@@ -55,8 +55,8 @@ app.use((0, cors_1.default)({
     },
     credentials: true,
 }));
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+app.use(express_1.default.json({ limit: '25mb' }));
+app.use(express_1.default.urlencoded({ limit: '25mb', extended: true }));
 // Health Check
 app.get('/api/health', (_req, res) => {
     res.json({
@@ -122,6 +122,13 @@ app.use('/students', admin_routes_js_1.default);
 app.use('/', admin_routes_js_1.default);
 // Global Error Handler
 app.use((err, _req, res, _next) => {
+    if (err?.type === 'entity.too.large' || err?.status === 413 || err?.statusCode === 413) {
+        res.status(413).json({
+            success: false,
+            message: 'File exceeds the 10 MB upload limit.',
+        });
+        return;
+    }
     console.error('Unhandled Error:', err);
     res.status(500).json({
         success: false,
