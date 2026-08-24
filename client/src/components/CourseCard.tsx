@@ -29,7 +29,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
   };
 
   return (
-    <div className="bg-[#071324] rounded-2xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-cyan-500/40 transition-all duration-200 shadow-sm">
+    <div className="bg-[#071324] rounded-xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-cyan-500/40 transition-all duration-200 shadow-sm">
       {/* 1. Course Thumbnail */}
       <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`} className="relative aspect-video w-full overflow-hidden block bg-[#030F20]">
         <img
@@ -43,19 +43,19 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
       </Link>
 
       {/* 2. Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+      <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
         {/* Course Name */}
         <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`}>
-          <h3 className="text-sm font-black text-white hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+          <h3 className="text-xs sm:text-sm font-black text-white hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
             {course.title}
           </h3>
         </Link>
 
         {/* 3. Progress % or Price */}
-        <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+        <div className="pt-1.5 border-t border-white/5 flex items-center justify-between">
           {enrolled ? (
-            <div className="w-full space-y-2">
-              <div className="flex items-center justify-between text-xs">
+            <div className="w-full space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
                 <span className="text-slate-400 font-medium">Progress</span>
                 <span className="font-bold text-cyan-300">
                   {course.userProgress?.completionPercentage ?? 0}%
@@ -69,20 +69,20 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
               </div>
               <Link
                 to={`/learn/${course.slug}`}
-                className="w-full mt-2 py-2 rounded-xl bg-cyan-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform"
+                className="w-full mt-1.5 py-1.5 rounded-lg bg-cyan-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform min-h-[36px]"
               >
-                <PlayCircle className="w-4 h-4" />
+                <PlayCircle className="w-3.5 h-3.5" />
                 <span>Resume</span>
               </Link>
             </div>
           ) : (
             <div className="w-full flex items-center justify-between">
-              <span className="text-sm font-black text-white">
+              <span className="text-xs sm:text-sm font-black text-white">
                 {pricing.formattedEffective}
               </span>
               <button
                 onClick={handleAction}
-                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-scalora-blue to-cyan-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-transform"
+                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-scalora-blue to-cyan-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-transform min-h-[36px]"
               >
                 <span>Enroll</span>
                 <ArrowRight className="w-3.5 h-3.5" />

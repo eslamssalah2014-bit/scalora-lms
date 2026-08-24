@@ -182,33 +182,33 @@ export const StudyPlanPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-16">
+    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto px-3 sm:px-6 pb-16">
       {/* 1. Top Header & Course Selector */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-scalora-blue/15 pb-6">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[11px] font-extrabold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-scalora-blue/15 pb-3 sm:pb-4">
+        <div className="space-y-0.5">
+          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-black uppercase tracking-wider">
+            <Sparkles className="w-3 h-3" />
             <span>Smart Learning Pace Engine</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
             Personalized Study Plan
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 line-clamp-1">
             Intelligent daily milestones, completion forecasting, and adaptive catch-up schedules.
           </p>
         </div>
 
         {/* Course Dropdown & Goal Customizer */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           {enrolledCourses.length > 1 && (
-            <div className="relative min-w-[200px]">
+            <div className="relative min-w-[160px] flex-1 sm:flex-none">
               <select
                 value={selectedCourseId}
                 onChange={(e) => {
                   setSelectedCourseId(e.target.value);
                   setSearchParams({ course: e.target.value });
                 }}
-                className="w-full px-4 py-2.5 rounded-xl glass-input text-xs bg-[#04152D] font-bold text-white pr-8 border border-scalora-blue/30"
+                className="w-full px-3 py-2 rounded-xl text-xs bg-[#04152D] font-bold text-white border border-scalora-blue/30"
               >
                 {enrolledCourses.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -221,9 +221,9 @@ export const StudyPlanPage: React.FC = () => {
 
           <button
             onClick={() => setModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-glow-blue hover:opacity-95 transition-all flex items-center gap-2"
+            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white text-xs font-bold shadow-sm hover:opacity-95 transition-all flex items-center gap-1.5 min-h-[40px]"
           >
-            <Target className="w-4 h-4" />
+            <Target className="w-3.5 h-3.5" />
             <span>Set Target Pace</span>
           </button>
         </div>
@@ -233,7 +233,7 @@ export const StudyPlanPage: React.FC = () => {
         <>
           {/* 2. Schedule Status & Dynamic Motivation Banner */}
           <div
-            className={`p-5 sm:p-6 rounded-3xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-xl ${
+            className={`p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md ${
               metrics.scheduleStatus === 'AHEAD'
                 ? 'bg-gradient-to-r from-emerald-950/40 via-[#04152D] to-teal-950/30 border-emerald-500/40'
                 : metrics.scheduleStatus === 'BEHIND'
@@ -241,9 +241,9 @@ export const StudyPlanPage: React.FC = () => {
                 : 'bg-gradient-to-r from-cyan-950/40 via-[#04152D] to-blue-950/30 border-cyan-500/40'
             }`}
           >
-            <div className="flex items-start gap-4">
+            <div className="flex items-center gap-3">
               <div
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md ${
+                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
                   metrics.scheduleStatus === 'AHEAD'
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : metrics.scheduleStatus === 'BEHIND'
@@ -251,224 +251,218 @@ export const StudyPlanPage: React.FC = () => {
                     : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                 }`}
               >
-                {metrics.scheduleStatus === 'AHEAD' && <Zap className="w-6 h-6" />}
-                {metrics.scheduleStatus === 'BEHIND' && <AlertTriangle className="w-6 h-6 animate-pulse" />}
-                {metrics.scheduleStatus === 'ON_TRACK' && <CheckCircle2 className="w-6 h-6" />}
+                {metrics.scheduleStatus === 'AHEAD' && <Zap className="w-4 h-4" />}
+                {metrics.scheduleStatus === 'BEHIND' && <AlertTriangle className="w-4 h-4 animate-pulse" />}
+                {metrics.scheduleStatus === 'ON_TRACK' && <CheckCircle2 className="w-4 h-4" />}
               </div>
 
-              <div className="space-y-1">
-                <div className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                  <span>{metrics.statusMessage}</span>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm font-black text-white truncate">
+                  {metrics.statusMessage}
                 </div>
-                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                <p className="text-[11px] text-slate-300 line-clamp-1 leading-snug">
                   {metrics.motivationalMessage}
                 </p>
               </div>
             </div>
 
             {/* Quick Action Button */}
-            <div className="flex-shrink-0 flex items-center gap-3">
+            <div className="flex-shrink-0">
               <Link
                 to={`/learn/${metrics.courseSlug}`}
-                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white text-slate-950 text-xs font-black hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-lg"
+                className="w-full sm:w-auto px-3.5 py-2 rounded-xl bg-white text-slate-950 text-xs font-black hover:bg-slate-100 transition-all flex items-center justify-center gap-1.5 shadow-sm min-h-[40px]"
               >
-                <PlayCircle className="w-4 h-4 text-cyan-600" />
-                <span>Continue Learning</span>
+                <PlayCircle className="w-3.5 h-3.5 text-cyan-600" />
+                <span>Resume Lesson</span>
               </Link>
             </div>
           </div>
 
-          {/* 3. Hero Visual KPI & Pace Metrics Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 3. Hero Visual KPI & Pace Metrics Grid (Compact 25% Smaller Circular Ring with stats beside it) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Circular Progress & Completion Ring (1/3) */}
-            <div className="glass-panel p-6 rounded-3xl border border-scalora-blue/20 flex flex-col items-center justify-center text-center space-y-4 shadow-xl relative overflow-hidden">
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl" />
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-scalora-blue/10 rounded-full blur-3xl" />
-
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+            <div className="bg-[#031124] p-3.5 sm:p-4 rounded-2xl border border-scalora-blue/20 flex flex-col justify-between shadow-md space-y-3">
+              <h3 className="text-[11px] font-black uppercase tracking-wider text-slate-400">
                 Course Progress
               </h3>
 
-              {/* SVG Circular Ring */}
-              <div className="relative w-36 h-36 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    className="text-slate-800"
-                    strokeWidth="10"
-                    stroke="currentColor"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="50"
-                    className="text-cyan-400 transition-all duration-1000 ease-out"
-                    strokeWidth="10"
-                    strokeDasharray={2 * Math.PI * 50}
-                    strokeDashoffset={calculateCircleOffset(metrics.completionPercent, 50)}
-                    strokeLinecap="round"
-                    stroke="url(#progressGradient)"
-                    fill="transparent"
-                  />
-                  <defs>
-                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#00E5FF" />
-                      <stop offset="100%" stopColor="#10B981" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+              {/* SVG Circular Ring & Side Stats */}
+              <div className="flex items-center justify-around gap-3">
+                <div className="relative w-24 h-24 flex-shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      className="text-slate-800"
+                      strokeWidth="8"
+                      stroke="currentColor"
+                      fill="transparent"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      className="text-cyan-400 transition-all duration-1000 ease-out"
+                      strokeWidth="8"
+                      strokeDasharray={2 * Math.PI * 40}
+                      strokeDashoffset={calculateCircleOffset(metrics.completionPercent, 40)}
+                      strokeLinecap="round"
+                      stroke="url(#progressGradient)"
+                      fill="transparent"
+                    />
+                    <defs>
+                      <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#00E5FF" />
+                        <stop offset="100%" stopColor="#10B981" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black text-white">{metrics.completionPercent}%</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Completed
-                  </span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xl font-black text-white">{metrics.completionPercent}%</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="w-full grid grid-cols-2 gap-2 pt-2 border-t border-scalora-blue/15 text-xs">
-                <div className="text-center">
-                  <span className="text-slate-400 text-[11px] block">Completed</span>
-                  <strong className="text-emerald-400 font-black">{metrics.completedMinutes} mins</strong>
-                </div>
-                <div className="text-center border-l border-scalora-blue/15">
-                  <span className="text-slate-400 text-[11px] block">Remaining</span>
-                  <strong className="text-white font-black">{metrics.remainingMinutes} mins</strong>
+                <div className="flex-1 grid grid-cols-1 gap-1.5 text-xs">
+                  <div className="p-2 rounded-xl bg-[#04152D] border border-white/5">
+                    <span className="text-slate-400 text-[10px] block">Completed</span>
+                    <strong className="text-emerald-400 font-black text-xs">{metrics.completedMinutes} mins</strong>
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#04152D] border border-white/5">
+                    <span className="text-slate-400 text-[10px] block">Remaining</span>
+                    <strong className="text-white font-black text-xs">{metrics.remainingMinutes} mins</strong>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Target vs Actual Pace & Forecast (2/3) */}
-            <div className="lg:col-span-2 glass-panel p-6 rounded-3xl border border-scalora-blue/20 space-y-6 shadow-xl">
-              <div className="flex items-center justify-between border-b border-scalora-blue/15 pb-3">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-cyan-400" />
+            <div className="lg:col-span-2 bg-[#031124] p-3.5 sm:p-4 rounded-2xl border border-scalora-blue/20 space-y-3 shadow-md">
+              <div className="flex items-center justify-between border-b border-scalora-blue/15 pb-2">
+                <div className="flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-white">
                     Pace Intelligence & Deadlines
                   </h3>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
                   {metrics.daysRemaining} Days Left
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {/* Total Duration */}
-                <div className="p-4 rounded-2xl bg-[#04152D]/80 border border-scalora-blue/20 space-y-1">
+                <div className="p-2.5 rounded-xl bg-[#04152D] border border-scalora-blue/20 space-y-0.5">
                   <span className="text-[10px] font-bold uppercase text-slate-400">Total Duration</span>
-                  <div className="text-lg sm:text-xl font-black text-white">
-                    {metrics.totalCourseMinutes} <span className="text-xs font-normal text-slate-400">min</span>
+                  <div className="text-sm sm:text-base font-black text-white">
+                    {metrics.totalCourseMinutes} <span className="text-[10px] font-normal text-slate-400">min</span>
                   </div>
                 </div>
 
                 {/* Daily Target */}
-                <div className="p-4 rounded-2xl bg-[#04152D]/80 border border-scalora-blue/20 space-y-1">
+                <div className="p-2.5 rounded-xl bg-[#04152D] border border-scalora-blue/20 space-y-0.5">
                   <span className="text-[10px] font-bold uppercase text-slate-400">Daily Target</span>
-                  <div className="text-lg sm:text-xl font-black text-cyan-400">
-                    {metrics.dailyTargetMinutes} <span className="text-xs font-normal text-slate-400">min/day</span>
+                  <div className="text-sm sm:text-base font-black text-cyan-400">
+                    {metrics.dailyTargetMinutes} <span className="text-[10px] font-normal text-slate-400">min/d</span>
                   </div>
                 </div>
 
                 {/* Current Actual Pace */}
-                <div className="p-4 rounded-2xl bg-[#04152D]/80 border border-scalora-blue/20 space-y-1">
+                <div className="p-2.5 rounded-xl bg-[#04152D] border border-scalora-blue/20 space-y-0.5">
                   <span className="text-[10px] font-bold uppercase text-slate-400">Current Pace</span>
-                  <div className="text-lg sm:text-xl font-black text-emerald-400">
-                    {metrics.currentPaceMinutesPerDay} <span className="text-xs font-normal text-slate-400">min/day</span>
+                  <div className="text-sm sm:text-base font-black text-emerald-400">
+                    {metrics.currentPaceMinutesPerDay} <span className="text-[10px] font-normal text-slate-400">min/d</span>
                   </div>
                 </div>
 
                 {/* Adaptive Recovery Target */}
-                <div className="p-4 rounded-2xl bg-[#04152D]/80 border border-amber-500/30 space-y-1">
+                <div className="p-2.5 rounded-xl bg-[#04152D] border border-amber-500/30 space-y-0.5">
                   <span className="text-[10px] font-bold uppercase text-amber-300">Adaptive Today</span>
-                  <div className="text-lg sm:text-xl font-black text-amber-400">
-                    {metrics.adaptiveDailyTargetMinutes} <span className="text-xs font-normal text-slate-400">min</span>
+                  <div className="text-sm sm:text-base font-black text-amber-400">
+                    {metrics.adaptiveDailyTargetMinutes} <span className="text-[10px] font-normal text-slate-400">min</span>
                   </div>
                 </div>
               </div>
 
               {/* Goal Date vs Expected Forecast */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/20 flex items-center justify-between">
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="p-2.5 rounded-xl bg-cyan-950/20 border border-cyan-500/20 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 block">
-                      🎯 Goal Finish Date
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-cyan-300 block">
+                      🎯 Goal Date
                     </span>
-                    <strong className="text-sm font-black text-white">{formatDate(metrics.targetDate)}</strong>
+                    <strong className="text-xs font-black text-white">{formatDate(metrics.targetDate)}</strong>
                   </div>
-                  <span className="text-[11px] text-slate-400 font-mono">Planned</span>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/20 flex items-center justify-between">
+                <div className="p-2.5 rounded-xl bg-emerald-950/20 border border-emerald-500/20 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 block">
-                      ⚡ Expected Forecast
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-300 block">
+                      ⚡ Forecast
                     </span>
-                    <strong className="text-sm font-black text-white">
+                    <strong className="text-xs font-black text-white">
                       {formatDate(metrics.expectedFinishDate)}
                     </strong>
                   </div>
-                  <span className="text-[11px] text-slate-400 font-mono">At Current Pace</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* 4. Day-by-Day Timeline Progress Component */}
-          <div className="glass-panel p-6 rounded-3xl border border-scalora-blue/20 space-y-4 shadow-xl">
+          <div className="bg-[#031124] p-3.5 sm:p-4 rounded-2xl border border-scalora-blue/20 space-y-3 shadow-md">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-cyan-400" />
+              <div className="flex items-center gap-1.5">
+                <CalendarDays className="w-3.5 h-3.5 text-cyan-400" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-white">
                   Course Timeline Progress
                 </h3>
               </div>
-              <div className="flex items-center gap-3 text-[11px]">
+              <div className="flex items-center gap-2 text-[10px]">
                 <span className="flex items-center gap-1 text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> Completed
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Done
                 </span>
                 <span className="flex items-center gap-1 text-amber-400">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" /> Missed
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Missed
                 </span>
                 <span className="flex items-center gap-1 text-cyan-400">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" /> Today
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /> Today
                 </span>
               </div>
             </div>
 
             {/* Timeline Pills */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 pt-1">
               {metrics.timeline.slice(0, 14).map((day) => {
                 let badgeStyle = 'bg-[#04152D] border-scalora-blue/20 text-slate-400';
-                let icon = <Clock className="w-3.5 h-3.5 text-slate-500" />;
+                let icon = <Clock className="w-3 h-3 text-slate-500" />;
 
                 if (day.status === 'COMPLETED') {
                   badgeStyle = 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300';
-                  icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+                  icon = <CheckCircle2 className="w-3 h-3 text-emerald-400" />;
                 } else if (day.status === 'MISSED') {
                   badgeStyle = 'bg-amber-500/15 border-amber-500/40 text-amber-300';
-                  icon = <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />;
+                  icon = <AlertTriangle className="w-3 h-3 text-amber-400" />;
                 } else if (day.isToday) {
-                  badgeStyle = 'bg-cyan-500/20 border-cyan-400 text-cyan-200 ring-2 ring-cyan-500/30';
-                  icon = <Zap className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />;
+                  badgeStyle = 'bg-cyan-500/20 border-cyan-400 text-cyan-200 ring-1 ring-cyan-500/30';
+                  icon = <Zap className="w-3 h-3 text-cyan-400 animate-pulse" />;
                 }
 
                 return (
                   <div
                     key={day.dayNumber}
-                    className={`p-3 rounded-2xl border flex flex-col justify-between space-y-2 transition-all ${badgeStyle}`}
+                    className={`p-2 rounded-xl border flex flex-col justify-between space-y-1 transition-all ${badgeStyle}`}
                   >
-                    <div className="flex items-center justify-between text-xs font-bold">
+                    <div className="flex items-center justify-between text-[11px] font-bold">
                       <span>Day {day.dayNumber}</span>
                       {icon}
                     </div>
                     <div className="space-y-0.5">
-                      <span className="text-[10px] text-slate-400 font-mono block">
+                      <span className="text-[9px] text-slate-400 font-mono block">
                         {new Date(day.dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
-                      <span className="text-[11px] font-black text-white">
+                      <span className="text-[10px] font-black text-white">
                         {day.status === 'COMPLETED' ? '✓ Finished' : `${day.targetMinutes} min`}
                       </span>
                     </div>
@@ -479,52 +473,52 @@ export const StudyPlanPage: React.FC = () => {
           </div>
 
           {/* 5. Today's Recommended Daily Study Tasks */}
-          <div className="glass-panel p-6 rounded-3xl border border-scalora-blue/20 space-y-4 shadow-xl">
+          <div className="bg-[#031124] p-3.5 sm:p-4 rounded-2xl border border-scalora-blue/20 space-y-3 shadow-md">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Flame className="w-4 h-4 text-amber-400" />
+              <div className="flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-white">
                   Today's Recommended Study Tasks
                 </h3>
               </div>
-              <span className="text-xs font-bold text-slate-400">
+              <span className="text-[11px] font-bold text-slate-400">
                 Target: {metrics.adaptiveDailyTargetMinutes} min
               </span>
             </div>
 
             {metrics.todayTasks.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                <h4 className="text-sm font-bold text-white">All Course Modules Completed!</h4>
-                <p className="text-xs text-slate-300">
-                  You have successfully finished all curriculum lessons for this course. Claim your graduation certificate!
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-1.5">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400 mx-auto" />
+                <h4 className="text-xs font-bold text-white">All Course Modules Completed!</h4>
+                <p className="text-[11px] text-slate-300">
+                  You have successfully finished all curriculum lessons for this course.
                 </p>
                 <Link
                   to={`/learn/${metrics.courseSlug}`}
-                  className="inline-block px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold mt-2"
+                  className="inline-block px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 text-[11px] font-bold mt-1"
                 >
                   View Certificate
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {metrics.todayTasks.map((task, idx) => (
                   <div
                     key={task.lessonId}
-                    className="p-4 rounded-2xl bg-[#04152D] border border-scalora-blue/20 hover:border-cyan-500/40 transition-all flex items-center justify-between gap-4 group"
+                    className="p-2.5 sm:p-3 rounded-xl bg-[#04152D] border border-scalora-blue/20 hover:border-cyan-500/40 transition-all flex items-center justify-between gap-3 group"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-scalora-navy text-scalora-accent flex items-center justify-center flex-shrink-0 font-black text-xs border border-scalora-blue/30">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-scalora-navy text-scalora-accent flex items-center justify-center flex-shrink-0 font-black text-[11px] border border-scalora-blue/30">
                         {idx + 1}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider">
                             {task.moduleTitle || 'Curriculum'}
                           </span>
-                          <span className="text-[10px] text-slate-500">• {task.durationMinutes} min</span>
+                          <span className="text-[9px] text-slate-500">• {task.durationMinutes} min</span>
                         </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
+                        <h4 className="text-xs font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
                           {task.title}
                         </h4>
                       </div>
@@ -532,10 +526,10 @@ export const StudyPlanPage: React.FC = () => {
 
                     <Link
                       to={`/learn/${metrics.courseSlug}?lesson=${task.lessonId}`}
-                      className="px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-slate-950 text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 border border-cyan-500/30"
+                      className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-black transition-all flex items-center gap-1 flex-shrink-0 shadow-sm active:scale-95 min-h-[36px]"
                     >
+                      <PlayCircle className="w-3.5 h-3.5" />
                       <span>Start</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 ))}
