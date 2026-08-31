@@ -21,8 +21,10 @@ import {
   RefreshCw,
   AlertCircle,
   ShieldCheck,
+  Zap,
 } from 'lucide-react';
 import { extractYouTubeVideoId } from '../../lib/videoSecurity';
+import { extractBunnyVideoId, isValidBunnyVideoId } from '../../lib/bunnySecurity';
 
 export const AdminCurriculumPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -43,6 +45,8 @@ export const AdminCurriculumPage: React.FC = () => {
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [lessonTitle, setLessonTitle] = useState('');
   const [lessonType, setLessonType] = useState<LessonType>('YOUTUBE');
+  const [videoProvider, setVideoProvider] = useState<'youtube' | 'bunny'>('youtube');
+  const [bunnyVideoId, setBunnyVideoId] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [fileName, setFileName] = useState('');
@@ -134,6 +138,8 @@ export const AdminCurriculumPage: React.FC = () => {
     setEditingLesson(null);
     setLessonTitle('');
     setLessonType('YOUTUBE');
+    setVideoProvider('youtube');
+    setBunnyVideoId('');
     setVideoUrl('');
     setFileUrl('');
     setFileName('');
@@ -149,6 +155,10 @@ export const AdminCurriculumPage: React.FC = () => {
     setEditingLesson(lesson);
     setLessonTitle(lesson.title);
     setLessonType(lesson.type);
+
+    const prov = (lesson.videoProvider || 'youtube').toLowerCase() === 'bunny' ? 'bunny' : 'youtube';
+    setVideoProvider(prov);
+    setBunnyVideoId(lesson.videoId || (prov === 'bunny' ? lesson.videoUrl || '' : ''));
     setVideoUrl(lesson.videoUrl || '');
     setFileUrl(lesson.fileUrl || '');
     setFileName(lesson.fileName || '');
@@ -164,10 +174,38 @@ export const AdminCurriculumPage: React.FC = () => {
     setLessonLoading(true);
     setFormError(null);
 
+    let finalVideoProvider: 'youtube' | 'bunny' | undefined = undefined;
+    let finalVideoId: string | undefined = undefined;
+    let finalVideoUrl: string | undefined = undefined;
+
+    if (lessonType === 'YOUTUBE') {
+      finalVideoProvider = videoProvider;
+      if (videoProvider === 'bunny') {
+        const cleanId = extractBunnyVideoId(bunnyVideoId) || bunnyVideoId.trim();
+        if (!cleanId) {
+          setFormError('Please enter a valid Bunny Stream Video ID (UUID) or Bunny Play URL.');
+          setLessonLoading(false);
+          return;
+        }
+        finalVideoId = cleanId;
+        finalVideoUrl = undefined;
+      } else {
+        if (!videoUrl.trim()) {
+          setFormError('Please enter a YouTube video URL or ID.');
+          setLessonLoading(false);
+          return;
+        }
+        finalVideoUrl = videoUrl.trim();
+        finalVideoId = undefined;
+      }
+    }
+
     const payload = {
       title: lessonTitle,
       type: lessonType,
-      videoUrl: videoUrl || undefined,
+      videoProvider: finalVideoProvider,
+      videoId: finalVideoId,
+      videoUrl: finalVideoUrl,
       fileUrl: fileUrl || undefined,
       fileName: fileName || undefined,
       fileSize: fileSize || undefined,
@@ -349,7 +387,21 @@ export const AdminCurriculumPage: React.FC = () => {
                                 {lesson.title}
                               </span>
                               <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                                <span className="font-bold text-scalora-accent">{lesson.type}</span>
+                                {lesson.type === 'YOUTUBE' && (
+                                  (lesson.videoProvider || 'youtube').toLowerCase() === 'bunny' ? (
+                                    <span className="font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                                      <Zap className="w-2.5 h-2.5 text-amber-400" />
+                                      <span>BUNNY</span>
+                                    </span>
+                                  ) : (
+                                    <span className="font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                      YOUTUBE
+                                    </span>
+                                  )
+                                )}
+                                {lesson.type !== 'YOUTUBE' && (
+                                  <span className="font-bold text-scalora-accent">{lesson.type}</span>
+                                )}
                                 {lesson.duration && <span>• {lesson.duration}</span>}
                               </div>
                             </div>
@@ -357,7 +409,7 @@ export const AdminCurriculumPage: React.FC = () => {
 
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
-                              onClick={() => openEditLesson(module.id, lesson)}
+                              onClick={() => openEditLesson(mod.id, lesson)}
                               className="p-1.5 rounded-lg bg-slate-700/40 hover:bg-slate-700 text-slate-300 hover:text-white"
                               title="Edit Lesson"
                             >
@@ -487,35 +539,116 @@ export const AdminCurriculumPage: React.FC = () => {
 
           {/* Type-Specific Fields */}
           {lessonType === 'YOUTUBE' && (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+            <div className="space-y-4 p-4 rounded-xl bg-scalora-navy/50 border border-scalora-blue/20">
+              {/* Provider Selection */}
+              <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                  YouTube Video Resource (URL or Video ID)
+                  Video Provider
                 </label>
-                {(() => {
-                  const detectedId = extractYouTubeVideoId(videoUrl);
-                  if (detectedId) {
-                    return (
-                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3" />
-                        <span>Ready (ID: {detectedId})</span>
-                      </span>
-                    );
-                  }
-                  return null;
-                })()}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setVideoProvider('youtube')}
+                    className={`py-2.5 px-3.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                      videoProvider === 'youtube'
+                        ? 'bg-rose-500/20 border-rose-500/60 text-white shadow-sm ring-1 ring-rose-500/30'
+                        : 'bg-[#04152D] border-scalora-blue/20 text-slate-400 hover:text-slate-200 hover:border-scalora-blue/40'
+                    }`}
+                  >
+                    <Video className="w-4 h-4 text-rose-400" />
+                    <span>YouTube</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVideoProvider('bunny')}
+                    className={`py-2.5 px-3.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                      videoProvider === 'bunny'
+                        ? 'bg-amber-500/20 border-amber-500/60 text-white shadow-sm ring-1 ring-amber-500/30'
+                        : 'bg-[#04152D] border-scalora-blue/20 text-slate-400 hover:text-slate-200 hover:border-scalora-blue/40'
+                    }`}
+                  >
+                    <Zap className="w-4 h-4 text-amber-400" />
+                    <span>Bunny Stream</span>
+                  </button>
+                </div>
               </div>
-              <input
-                type="text"
-                required
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="Paste YouTube URL, youtu.be link, or 11-char Video ID"
-                className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
-              />
-              <span className="text-[10px] text-slate-400 block">
-                Accepts full URLs (<code className="text-slate-300 font-mono">youtube.com/watch?v=...</code>), short links (<code className="text-slate-300 font-mono">youtu.be/...</code>), or raw video IDs.
-              </span>
+
+              {/* YouTube Provider Input */}
+              {videoProvider === 'youtube' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      YouTube URL or Video ID
+                    </label>
+                    {(() => {
+                      const detectedId = extractYouTubeVideoId(videoUrl);
+                      if (detectedId) {
+                        return (
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Ready (ID: {detectedId})</span>
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="Paste YouTube URL, youtu.be link, or 11-char Video ID"
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Accepts full URLs (<code className="text-slate-300 font-mono">youtube.com/watch?v=...</code>), short links (<code className="text-slate-300 font-mono">youtu.be/...</code>), or raw video IDs.
+                  </span>
+                </div>
+              )}
+
+              {/* Bunny Stream Provider Input */}
+              {videoProvider === 'bunny' && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Bunny Video ID (or Play/Embed URL)
+                    </label>
+                    {(() => {
+                      const detectedId = extractBunnyVideoId(bunnyVideoId);
+                      if (detectedId) {
+                        return (
+                          <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Valid Bunny ID: {detectedId}</span>
+                          </span>
+                        );
+                      }
+                      if (bunnyVideoId.trim()) {
+                        return (
+                          <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            <span>Checking UUID format...</span>
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={bunnyVideoId}
+                    onChange={(e) => setBunnyVideoId(e.target.value)}
+                    placeholder="e.g. e6f4d9c1-8451-419b-a01c-3be08761ba10 or paste Bunny Play URL"
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs font-mono"
+                  />
+                  <span className="text-[10px] text-slate-400 block">
+                    Accepts raw Bunny Video UUID (<code className="text-slate-300 font-mono">e6f4d9c1-...</code>) or Bunny Play/Embed URLs (<code className="text-slate-300 font-mono">https://iframe.mediadelivery.net/play/...</code>). Video ID is automatically extracted and saved securely.
+                  </span>
+                </div>
+              )}
             </div>
           )}
 

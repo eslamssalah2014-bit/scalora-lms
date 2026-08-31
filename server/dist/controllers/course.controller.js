@@ -149,6 +149,14 @@ const getAllCoursesAdmin = async (_req, res) => {
             const effectivePrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
             return {
                 ...course,
+                modules: course.modules.map((m) => ({
+                    ...m,
+                    lessons: m.lessons.map((l) => ({
+                        ...l,
+                        videoProvider: l.videoProvider || 'youtube',
+                        videoId: l.videoId || null,
+                    })),
+                })),
                 price: effectivePrice,
                 basePrice,
                 discountPrice,
@@ -183,6 +191,8 @@ const getCourseBySlug = async (req, res) => {
                                 id: true,
                                 title: true,
                                 type: true,
+                                videoProvider: true,
+                                videoId: true,
                                 duration: true,
                                 order: true,
                                 fileName: true,
@@ -269,6 +279,14 @@ const getCourseBySlug = async (req, res) => {
             success: true,
             course: {
                 ...course,
+                modules: course.modules.map((m) => ({
+                    ...m,
+                    lessons: m.lessons.map((l) => ({
+                        ...l,
+                        videoProvider: l.videoProvider || 'youtube',
+                        videoId: l.videoId || null,
+                    })),
+                })),
                 price: effectivePrice,
                 basePrice,
                 discountPrice,

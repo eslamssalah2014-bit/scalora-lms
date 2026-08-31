@@ -4,6 +4,7 @@ import { Course, Module, Lesson, Quiz } from '../types';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { YouTubeLessonPlayer } from '../components/YouTubeLessonPlayer';
+import { BunnyLessonPlayer } from '../components/BunnyLessonPlayer';
 import { CertificateModal } from '../components/CertificateModal';
 import {
   Video,
@@ -286,11 +287,25 @@ export const CoursePlayerPage: React.FC = () => {
             <div className="max-w-4xl mx-auto space-y-6">
               {/* Dynamic Lesson Display Area */}
               {activeLesson.type === 'YOUTUBE' && (
-                <YouTubeLessonPlayer
-                  videoUrl={activeLesson.videoUrl}
-                  title={activeLesson.title}
-                  user={user}
-                />
+                (() => {
+                  const provider = (activeLesson.videoProvider || 'youtube').toLowerCase();
+                  if (provider === 'bunny') {
+                    return (
+                      <BunnyLessonPlayer
+                        videoId={activeLesson.videoId || activeLesson.videoUrl}
+                        title={activeLesson.title}
+                        user={user}
+                      />
+                    );
+                  }
+                  return (
+                    <YouTubeLessonPlayer
+                      videoUrl={activeLesson.videoUrl}
+                      title={activeLesson.title}
+                      user={user}
+                    />
+                  );
+                })()
               )}
 
               {activeLesson.type === 'PDF' && (

@@ -2,11 +2,14 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { bunnyService } from '../services/bunny.service.js';
 
 const lessonSchema = z.object({
   title: z.string().min(2, 'Lesson title must be at least 2 characters'),
   type: z.enum(['YOUTUBE', 'PDF', 'DOWNLOAD', 'TEXT']),
   content: z.string().optional().nullable(),
+  videoProvider: z.string().optional().nullable(),
+  videoId: z.string().optional().nullable(),
   videoUrl: z.string().optional().nullable(),
   fileUrl: z.string().optional().nullable(),
   fileName: z.string().optional().nullable(),
@@ -73,10 +76,23 @@ export const getLessonById = async (req: AuthenticatedRequest, res: Response): P
       isCompleted = progress?.isCompleted ?? false;
     }
 
+    // Dynamic embed URL calculation for Bunny videos (runtime only - never modifies DB)
+    const effectiveProvider = (lesson.videoProvider || 'youtube').toLowerCase();
+    let dynamicEmbedUrl: string | null = null;
+    if (effectiveProvider === 'bunny' && (lesson.videoId || lesson.videoUrl)) {
+      const rawId = lesson.videoId || lesson.videoUrl;
+      if (rawId) {
+        dynamicEmbedUrl = bunnyService.buildEmbedUrl({ videoId: rawId });
+      }
+    }
+
     res.json({
       success: true,
       lesson: {
         ...lesson,
+        videoProvider: effectiveProvider,
+        videoId: lesson.videoId || null,
+        dynamicEmbedUrl,
         isCompleted,
       },
     });
@@ -104,12 +120,29 @@ export const createLesson = async (req: AuthenticatedRequest, res: Response): Pr
       order = (highestLesson?.order ?? -1) + 1;
     }
 
+    // Determine normalized videoProvider and extract clean videoId if Bunny
+    const rawProvider = (validatedData.videoProvider || 'youtube').toLowerCase();
+    const isBunny = rawProvider === 'bunny';
+    const videoProvider = isBunny ? 'bunny' : 'youtube';
+
+    let videoId: string | null = null;
+    let videoUrl: string | null = validatedData.videoUrl || null;
+
+    if (isBunny) {
+      // Extract clean videoId from raw UUID or pasted Play/Embed URL
+      const candidateInput = validatedData.videoId || validatedData.videoUrl;
+      videoId = bunnyService.extractVideoId(candidateInput) || candidateInput || null;
+      // Do not store full URL in videoUrl if Bunny is selected, or preserve if provided
+    }
+
     const lesson = await prisma.lesson.create({
       data: {
         title: validatedData.title,
         type: validatedData.type,
         content: validatedData.content || null,
-        videoUrl: validatedData.videoUrl || null,
+        videoProvider,
+        videoId,
+        videoUrl,
         fileUrl: validatedData.fileUrl || null,
         fileName: validatedData.fileName || null,
         fileSize: validatedData.fileSize || null,
@@ -119,7 +152,14 @@ export const createLesson = async (req: AuthenticatedRequest, res: Response): Pr
       },
     });
 
-    res.status(201).json({ success: true, message: 'Lesson created successfully', lesson });
+    res.status(201).json({
+      success: true,
+      message: 'Lesson created successfully',
+      lesson: {
+        ...lesson,
+        videoProvider: lesson.videoProvider || 'youtube',
+      },
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ success: false, message: error.errors[0].message });
@@ -140,12 +180,37 @@ export const updateLesson = async (req: AuthenticatedRequest, res: Response): Pr
       return;
     }
 
+    const updateData: any = { ...validatedData };
+
+    if (validatedData.videoProvider !== undefined) {
+      const rawProvider = (validatedData.videoProvider || 'youtube').toLowerCase();
+      const isBunny = rawProvider === 'bunny';
+      updateData.videoProvider = isBunny ? 'bunny' : 'youtube';
+
+      if (isBunny) {
+        const candidateInput = validatedData.videoId !== undefined ? validatedData.videoId : validatedData.videoUrl;
+        if (candidateInput) {
+          updateData.videoId = bunnyService.extractVideoId(candidateInput) || candidateInput;
+        }
+      }
+    } else if (validatedData.videoId !== undefined) {
+      // If videoId is provided directly
+      updateData.videoId = bunnyService.extractVideoId(validatedData.videoId) || validatedData.videoId;
+    }
+
     const updated = await prisma.lesson.update({
       where: { id },
-      data: validatedData,
+      data: updateData,
     });
 
-    res.json({ success: true, message: 'Lesson updated successfully', lesson: updated });
+    res.json({
+      success: true,
+      message: 'Lesson updated successfully',
+      lesson: {
+        ...updated,
+        videoProvider: updated.videoProvider || 'youtube',
+      },
+    });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       res.status(400).json({ success: false, message: error.errors[0].message });
@@ -172,3 +237,4 @@ export const deleteLesson = async (req: AuthenticatedRequest, res: Response): Pr
     res.status(500).json({ success: false, message: error.message || 'Error deleting lesson' });
   }
 };
+

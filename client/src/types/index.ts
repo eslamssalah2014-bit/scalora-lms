@@ -62,12 +62,15 @@ export interface StudentActivity {
 
 
 export type LessonType = 'YOUTUBE' | 'PDF' | 'DOWNLOAD' | 'TEXT';
+export type VideoProvider = 'youtube' | 'bunny';
 
 export interface Lesson {
   id: string;
   title: string;
   type: LessonType;
   content?: string | null;
+  videoProvider?: VideoProvider | string | null;
+  videoId?: string | null;
   videoUrl?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;

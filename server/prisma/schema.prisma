@@ -113,6 +113,8 @@ model Lesson {
   title       String
   type        String           // "YOUTUBE" | "PDF" | "DOWNLOAD" | "TEXT"
   content     String?          // Rich Markdown or text content
+  videoProvider String?        @default("youtube") // "youtube" | "bunny"
+  videoId     String?          // Bunny Stream Video ID (UUID) or custom ID
   videoUrl    String?          // YouTube video embed / watch URL
   fileUrl     String?          // PDF or Downloadable resource link
   fileName    String?          // Name of the attachment file

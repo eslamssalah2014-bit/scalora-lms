@@ -158,6 +158,14 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
 
       return {
         ...course,
+        modules: course.modules.map((m) => ({
+          ...m,
+          lessons: m.lessons.map((l) => ({
+            ...l,
+            videoProvider: l.videoProvider || 'youtube',
+            videoId: l.videoId || null,
+          })),
+        })),
         price: effectivePrice,
         basePrice,
         discountPrice,
@@ -193,6 +201,8 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
                 id: true,
                 title: true,
                 type: true,
+                videoProvider: true,
+                videoId: true,
                 duration: true,
                 order: true,
                 fileName: true,
@@ -288,6 +298,14 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
       success: true,
       course: {
         ...course,
+        modules: course.modules.map((m) => ({
+          ...m,
+          lessons: m.lessons.map((l) => ({
+            ...l,
+            videoProvider: l.videoProvider || 'youtube',
+            videoId: l.videoId || null,
+          })),
+        })),
         price: effectivePrice,
         basePrice,
         discountPrice,
