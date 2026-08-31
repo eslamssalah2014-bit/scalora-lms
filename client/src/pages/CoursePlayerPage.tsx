@@ -119,6 +119,21 @@ export const CoursePlayerPage: React.FC = () => {
     setSearchParams({ lesson: lesson.id });
   };
 
+  useEffect(() => {
+    if (activeLesson) {
+      const isBunny = (activeLesson.videoProvider || 'youtube').toLowerCase() === 'bunny';
+      console.log('📖 [CoursePlayerPage] Active Lesson Changed:', {
+        id: activeLesson.id,
+        title: activeLesson.title,
+        type: activeLesson.type,
+        videoProvider: activeLesson.videoProvider || 'youtube',
+        videoId: activeLesson.videoId || null,
+        videoUrl: activeLesson.videoUrl || null,
+        isBunny,
+      });
+    }
+  }, [activeLesson]);
+
   const toggleLessonComplete = async (lessonId: string) => {
     const isNowCompleted = !completedLessonIds.has(lessonId);
 

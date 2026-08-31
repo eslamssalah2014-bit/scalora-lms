@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Lock, PlayCircle, Loader2, Zap } from 'lucide-react';
-import { buildBunnyEmbedUrl, extractBunnyVideoId } from '../lib/bunnySecurity';
+import { buildBunnyEmbedUrl, extractBunnyVideoId, extractBunnyLibraryId, getDefaultBunnyLibraryId } from '../lib/bunnySecurity';
 
 export interface BunnyLessonPlayerProps {
   /** Bunny Stream Video ID (UUID) or pasted Bunny play URL */
@@ -46,6 +46,17 @@ export const BunnyLessonPlayer: React.FC<BunnyLessonPlayerProps> = ({
   }, [videoId, libraryId, autoPlay]);
 
   const cleanVideoId = useMemo(() => extractBunnyVideoId(videoId), [videoId]);
+
+  // Console logging for verification of libraryId, videoId, and exact generatedEmbedUrl
+  useEffect(() => {
+    const effectiveLibraryId = libraryId || extractBunnyLibraryId(videoId) || getDefaultBunnyLibraryId();
+    console.log('🎥 [BunnyLessonPlayer] Stream Config:', {
+      libraryId: effectiveLibraryId,
+      videoId: cleanVideoId,
+      rawInput: videoId,
+      generatedEmbedUrl: embedUrl,
+    });
+  }, [libraryId, cleanVideoId, videoId, embedUrl]);
 
   // Rotate watermark quadrant subtly to deter screen capture crops
   useEffect(() => {

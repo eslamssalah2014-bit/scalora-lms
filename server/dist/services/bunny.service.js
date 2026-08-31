@@ -10,15 +10,15 @@ class BunnyService {
     tokenSecurityKey;
     allowedDomains;
     constructor() {
-        this.defaultLibraryId = process.env.BUNNY_STREAM_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID || '384144';
+        this.defaultLibraryId = process.env.BUNNY_STREAM_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID || '740117';
         this.tokenSecurityKey = process.env.BUNNY_STREAM_TOKEN_KEY || process.env.BUNNY_TOKEN_AUTH_KEY;
         this.allowedDomains = ['scaloraa.online', 'www.scaloraa.online', 'localhost'];
     }
     /**
      * Extracts a clean Bunny Video ID (UUID format) from:
      * - Raw UUID: "e6f4d9c1-8451-419b-a01c-3be08761ba10"
-     * - Embed URL: "https://iframe.mediadelivery.net/embed/384144/e6f4d9c1-8451-419b-a01c-3be08761ba10"
-     * - Play URL: "https://iframe.mediadelivery.net/play/384144/e6f4d9c1-8451-419b-a01c-3be08761ba10"
+     * - Embed URL: "https://iframe.mediadelivery.net/embed/740117/e6f4d9c1-8451-419b-a01c-3be08761ba10"
+     * - Play URL: "https://player.mediadelivery.net/play/740117/e6f4d9c1-8451-419b-a01c-3be08761ba10"
      * - Direct URL or query format
      */
     extractVideoId(input) {
@@ -33,8 +33,8 @@ class BunnyService {
             return trimmed.toLowerCase();
         }
         // 2. Mediadeliver / Bunny iframe embed/play URL pattern:
-        // https://iframe.mediadelivery.net/(embed|play)/{libraryId}/{videoId}
-        const urlPattern = /(?:iframe\.mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/(?:\d+)\/([0-9a-fA-F-]{36})/i;
+        // https://(iframe|player).mediadelivery.net/(embed|play)/{libraryId}/{videoId}
+        const urlPattern = /(?:iframe\.mediadelivery\.net|player\.mediadelivery\.net|video\.bunnycdn\.com|mediadelivery\.net)\/(?:embed|play)\/(?:\d+)\/([0-9a-fA-F-]{36})/i;
         const urlMatch = trimmed.match(urlPattern);
         if (urlMatch && urlMatch[1]) {
             return urlMatch[1].toLowerCase();
@@ -56,7 +56,7 @@ class BunnyService {
     extractLibraryId(input) {
         if (!input || typeof input !== 'string')
             return null;
-        const match = input.match(/(?:iframe\.mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/(\d+)\//i);
+        const match = input.match(/(?:iframe\.mediadelivery\.net|player\.mediadelivery\.net|video\.bunnycdn\.com|mediadelivery\.net)\/(?:embed|play)\/(\d+)/i);
         return match && match[1] ? match[1] : null;
     }
     /**

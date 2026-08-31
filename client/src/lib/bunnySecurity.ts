@@ -45,8 +45,8 @@ export function extractBunnyVideoId(input?: string | null): string | null {
     return trimmed.toLowerCase();
   }
 
-  // 2. Mediadeliver iframe / play / embed URL format
-  const urlPattern = /(?:iframe\.mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/(?:\d+)\/([0-9a-fA-F-]{36})/i;
+  // 2. Mediadeliver iframe / player / embed URL format
+  const urlPattern = /(?:iframe\.mediadelivery\.net|player\.mediadelivery\.net|video\.bunnycdn\.com|mediadelivery\.net)\/(?:embed|play)\/(?:\d+)\/([0-9a-fA-F-]{36})/i;
   const urlMatch = trimmed.match(urlPattern);
   if (urlMatch && urlMatch[1]) {
     return urlMatch[1].toLowerCase();
@@ -71,7 +71,7 @@ export function extractBunnyVideoId(input?: string | null): string | null {
  */
 export function extractBunnyLibraryId(input?: string | null): string | null {
   if (!input || typeof input !== 'string') return null;
-  const match = input.match(/(?:iframe\.mediadelivery\.net|video\.bunnycdn\.com)\/(?:embed|play)\/(\d+)\//i);
+  const match = input.match(/(?:iframe\.mediadelivery\.net|player\.mediadelivery\.net|video\.bunnycdn\.com|mediadelivery\.net)\/(?:embed|play)\/(\d+)/i);
   return match && match[1] ? match[1] : null;
 }
 
@@ -86,7 +86,7 @@ export function getDefaultBunnyLibraryId(): string {
   if (envLibraryId && typeof envLibraryId === 'string' && envLibraryId.trim().length > 0) {
     return envLibraryId.trim();
   }
-  return '384144'; // Scalora Default Bunny Library ID
+  return '740117'; // Scalora Default Bunny Library ID (Expected: 740117)
 }
 
 /**
