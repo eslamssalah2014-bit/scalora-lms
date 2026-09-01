@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteLesson = exports.updateLesson = exports.createLesson = exports.getLessonById = void 0;
+exports.reorderLessons = exports.deleteLesson = exports.updateLesson = exports.createLesson = exports.getLessonById = void 0;
 const zod_1 = require("zod");
 const prisma_js_1 = require("../lib/prisma.js");
 const bunny_service_js_1 = require("../services/bunny.service.js");
@@ -219,3 +219,44 @@ const deleteLesson = async (req, res) => {
     }
 };
 exports.deleteLesson = deleteLesson;
+const reorderSchema = zod_1.z.object({
+    moduleId: zod_1.z.string().optional(),
+    orderedLessonIds: zod_1.z.array(zod_1.z.string()).optional(),
+    lessons: zod_1.z.array(zod_1.z.object({
+        id: zod_1.z.string(),
+        order: zod_1.z.number(),
+    })).optional(),
+});
+const reorderLessons = async (req, res) => {
+    try {
+        const validated = reorderSchema.parse(req.body);
+        let updates = [];
+        if (Array.isArray(validated.lessons) && validated.lessons.length > 0) {
+            updates = validated.lessons;
+        }
+        else if (Array.isArray(validated.orderedLessonIds) && validated.orderedLessonIds.length > 0) {
+            updates = validated.orderedLessonIds.map((id, index) => ({
+                id,
+                order: index,
+            }));
+        }
+        else {
+            res.status(400).json({ success: false, message: 'No lesson order updates provided' });
+            return;
+        }
+        // Execute atomic updates for lesson order values only
+        await prisma_js_1.prisma.$transaction(updates.map((item) => prisma_js_1.prisma.lesson.update({
+            where: { id: item.id },
+            data: { order: item.order },
+        })));
+        res.json({ success: true, message: 'Lessons reordered successfully' });
+    }
+    catch (error) {
+        if (error instanceof zod_1.z.ZodError) {
+            res.status(400).json({ success: false, message: error.errors[0].message });
+            return;
+        }
+        res.status(500).json({ success: false, message: error.message || 'Error reordering lessons' });
+    }
+};
+exports.reorderLessons = reorderLessons;

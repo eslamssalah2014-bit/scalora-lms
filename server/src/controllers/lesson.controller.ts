@@ -238,3 +238,51 @@ export const deleteLesson = async (req: AuthenticatedRequest, res: Response): Pr
   }
 };
 
+const reorderSchema = z.object({
+  moduleId: z.string().optional(),
+  orderedLessonIds: z.array(z.string()).optional(),
+  lessons: z.array(z.object({
+    id: z.string(),
+    order: z.number(),
+  })).optional(),
+});
+
+export const reorderLessons = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const validated = reorderSchema.parse(req.body);
+
+    let updates: { id: string; order: number }[] = [];
+
+    if (Array.isArray(validated.lessons) && validated.lessons.length > 0) {
+      updates = validated.lessons;
+    } else if (Array.isArray(validated.orderedLessonIds) && validated.orderedLessonIds.length > 0) {
+      updates = validated.orderedLessonIds.map((id, index) => ({
+        id,
+        order: index,
+      }));
+    } else {
+      res.status(400).json({ success: false, message: 'No lesson order updates provided' });
+      return;
+    }
+
+    // Execute atomic updates for lesson order values only
+    await prisma.$transaction(
+      updates.map((item) =>
+        prisma.lesson.update({
+          where: { id: item.id },
+          data: { order: item.order },
+        })
+      )
+    );
+
+    res.json({ success: true, message: 'Lessons reordered successfully' });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: error.errors[0].message });
+      return;
+    }
+    res.status(500).json({ success: false, message: error.message || 'Error reordering lessons' });
+  }
+};
+
+

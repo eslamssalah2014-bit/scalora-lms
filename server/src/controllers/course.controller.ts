@@ -129,8 +129,11 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
       orderBy: { createdAt: 'desc' },
       include: {
         modules: {
+          orderBy: { order: 'asc' },
           include: {
-            lessons: true,
+            lessons: {
+              orderBy: { order: 'asc' },
+            },
           },
         },
         quizzes: true,

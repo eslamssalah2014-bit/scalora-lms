@@ -122,8 +122,11 @@ const getAllCoursesAdmin = async (_req, res) => {
             orderBy: { createdAt: 'desc' },
             include: {
                 modules: {
+                    orderBy: { order: 'asc' },
                     include: {
-                        lessons: true,
+                        lessons: {
+                            orderBy: { order: 'asc' },
+                        },
                     },
                 },
                 quizzes: true,

@@ -22,6 +22,9 @@ import {
   AlertCircle,
   ShieldCheck,
   Zap,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { extractYouTubeVideoId } from '../../lib/videoSecurity';
 import { extractBunnyVideoId, isValidBunnyVideoId } from '../../lib/bunnySecurity';
@@ -32,6 +35,12 @@ export const AdminCurriculumPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+
+  // Reordering State & Notifications
+  const [reorderSaving, setReorderSaving] = useState(false);
+  const [reorderToast, setReorderToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [draggedItem, setDraggedItem] = useState<{ moduleId: string; index: number } | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<{ moduleId: string; index: number } | null>(null);
 
   // Module Modal
   const [moduleModalOpen, setModuleModalOpen] = useState(false);
@@ -87,6 +96,124 @@ export const AdminCurriculumPage: React.FC = () => {
 
   const toggleModule = (id: string) => {
     setExpandedModules((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Reorder Notifications & Persistence
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setReorderToast({ message, type });
+    setTimeout(() => setReorderToast(null), 3500);
+  };
+
+  const persistLessonOrder = async (moduleId: string, orderedLessons: Lesson[]) => {
+    try {
+      setReorderSaving(true);
+      const orderedLessonIds = orderedLessons.map((l) => l.id);
+      await api.put('/lessons/reorder', {
+        moduleId,
+        orderedLessonIds,
+      });
+      showToast('Lesson order updated successfully');
+    } catch (err: any) {
+      console.error('Error reordering lessons:', err);
+      showToast(err.response?.data?.message || 'Failed to save lesson order', 'error');
+      fetchCourseData(); // Revert to database state on failure
+    } finally {
+      setReorderSaving(false);
+    }
+  };
+
+  // Move Up / Move Down Handler
+  const handleMoveLesson = (moduleId: string, currentIndex: number, direction: 'UP' | 'DOWN') => {
+    if (!course || !course.modules) return;
+
+    const moduleIndex = course.modules.findIndex((m) => m.id === moduleId);
+    if (moduleIndex === -1) return;
+
+    const currentModule = course.modules[moduleIndex];
+    const newLessons = [...currentModule.lessons];
+
+    const targetIndex = direction === 'UP' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= newLessons.length) return;
+
+    // Swap lessons
+    const [movedLesson] = newLessons.splice(currentIndex, 1);
+    newLessons.splice(targetIndex, 0, movedLesson);
+
+    // Optimistically update UI
+    const updatedModules = [...course.modules];
+    updatedModules[moduleIndex] = {
+      ...currentModule,
+      lessons: newLessons,
+    };
+
+    setCourse({
+      ...course,
+      modules: updatedModules,
+    });
+
+    // Save asynchronously
+    persistLessonOrder(moduleId, newLessons);
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent, moduleId: string, index: number) => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ moduleId, index }));
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItem({ moduleId, index });
+  };
+
+  const handleDragOver = (e: React.DragEvent, moduleId: string, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (!draggedItem || draggedItem.moduleId !== moduleId) return;
+    if (dragOverTarget?.index !== index || dragOverTarget?.moduleId !== moduleId) {
+      setDragOverTarget({ moduleId, index });
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, moduleId: string, targetIndex: number) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+
+    if (!draggedItem || draggedItem.moduleId !== moduleId || !course || !course.modules) {
+      setDraggedItem(null);
+      return;
+    }
+
+    const sourceIndex = draggedItem.index;
+    setDraggedItem(null);
+
+    if (sourceIndex === targetIndex) return;
+
+    const moduleIndex = course.modules.findIndex((m) => m.id === moduleId);
+    if (moduleIndex === -1) return;
+
+    const currentModule = course.modules[moduleIndex];
+    const newLessons = [...currentModule.lessons];
+
+    // Move lesson
+    const [movedLesson] = newLessons.splice(sourceIndex, 1);
+    newLessons.splice(targetIndex, 0, movedLesson);
+
+    // Optimistically update UI
+    const updatedModules = [...course.modules];
+    updatedModules[moduleIndex] = {
+      ...currentModule,
+      lessons: newLessons,
+    };
+
+    setCourse({
+      ...course,
+      modules: updatedModules,
+    });
+
+    // Save asynchronously
+    persistLessonOrder(moduleId, newLessons);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverTarget(null);
   };
 
   // Module Actions
@@ -373,59 +500,118 @@ export const AdminCurriculumPage: React.FC = () => {
                         No lessons in this module. Click "Add Lesson" to add content.
                       </div>
                     ) : (
-                      mod.lessons.map((lesson, lIdx) => (
-                        <div
-                          key={lesson.id}
-                          className="px-5 py-3.5 flex items-center justify-between hover:bg-white/5 transition-colors"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="p-1.5 rounded-md bg-scalora-navy">
-                              {getLessonIcon(lesson.type)}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="text-xs font-semibold text-slate-200 block truncate">
-                                {lesson.title}
+                      mod.lessons.map((lesson, lIdx) => {
+                        const isDragging = draggedItem?.moduleId === mod.id && draggedItem?.index === lIdx;
+                        const isDragOver = dragOverTarget?.moduleId === mod.id && dragOverTarget?.index === lIdx;
+
+                        return (
+                          <div
+                            key={lesson.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, mod.id, lIdx)}
+                            onDragOver={(e) => handleDragOver(e, mod.id, lIdx)}
+                            onDrop={(e) => handleDrop(e, mod.id, lIdx)}
+                            onDragEnd={handleDragEnd}
+                            className={`px-3 sm:px-5 py-3 flex items-center justify-between transition-all duration-200 select-none ${
+                              isDragging
+                                ? 'opacity-30 bg-scalora-blue/20 scale-[0.98] border-y border-scalora-accent/50'
+                                : isDragOver
+                                ? 'bg-scalora-blue/30 border-t-2 border-scalora-accent shadow-glow-blue'
+                                : 'hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                              {/* Drag Handle */}
+                              <div
+                                className="p-1 rounded cursor-grab active:cursor-grabbing text-slate-500 hover:text-slate-200 hover:bg-white/5 transition-colors flex-shrink-0"
+                                title="Drag to reorder lesson inside module"
+                              >
+                                <GripVertical className="w-4 h-4" />
+                              </div>
+
+                              {/* Sequence Badge */}
+                              <span className="text-[10px] sm:text-[11px] font-mono font-bold text-slate-400 bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/50 flex-shrink-0">
+                                #{lIdx + 1}
                               </span>
-                              <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                                {lesson.type === 'YOUTUBE' && (
-                                  (lesson.videoProvider || 'youtube').toLowerCase() === 'bunny' ? (
-                                    <span className="font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
-                                      <Zap className="w-2.5 h-2.5 text-amber-400" />
-                                      <span>BUNNY</span>
-                                    </span>
-                                  ) : (
-                                    <span className="font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
-                                      YOUTUBE
-                                    </span>
-                                  )
-                                )}
-                                {lesson.type !== 'YOUTUBE' && (
-                                  <span className="font-bold text-scalora-accent">{lesson.type}</span>
-                                )}
-                                {lesson.duration && <span>• {lesson.duration}</span>}
+
+                              {/* Lesson Type Icon */}
+                              <div className="p-1.5 rounded-md bg-scalora-navy flex-shrink-0">
+                                {getLessonIcon(lesson.type)}
+                              </div>
+
+                              {/* Lesson Title & Metadata */}
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-semibold text-slate-200 block truncate">
+                                  {lesson.title}
+                                </span>
+                                <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                                  {lesson.type === 'YOUTUBE' && (
+                                    (lesson.videoProvider || 'youtube').toLowerCase() === 'bunny' ? (
+                                      <span className="font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 flex items-center gap-1">
+                                        <Zap className="w-2.5 h-2.5 text-amber-400" />
+                                        <span>BUNNY</span>
+                                      </span>
+                                    ) : (
+                                      <span className="font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                        YOUTUBE
+                                      </span>
+                                    )
+                                  )}
+                                  {lesson.type !== 'YOUTUBE' && (
+                                    <span className="font-bold text-scalora-accent">{lesson.type}</span>
+                                  )}
+                                  {lesson.duration && <span>• {lesson.duration}</span>}
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <button
-                              onClick={() => openEditLesson(mod.id, lesson)}
-                              className="p-1.5 rounded-lg bg-slate-700/40 hover:bg-slate-700 text-slate-300 hover:text-white"
-                              title="Edit Lesson"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Actions: Move Up, Move Down, Edit, Delete */}
+                            <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 ml-2">
+                              {/* Move Up */}
+                              <button
+                                onClick={() => handleMoveLesson(mod.id, lIdx, 'UP')}
+                                disabled={lIdx === 0}
+                                className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 disabled:opacity-20 disabled:hover:bg-slate-800/80 disabled:cursor-not-allowed hover:text-white transition-all"
+                                title="Move Up ↑"
+                                aria-label="Move lesson up"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
 
-                            <button
-                              onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
-                              className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400"
-                              title="Delete Lesson"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              {/* Move Down */}
+                              <button
+                                onClick={() => handleMoveLesson(mod.id, lIdx, 'DOWN')}
+                                disabled={lIdx === mod.lessons.length - 1}
+                                className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 disabled:opacity-20 disabled:hover:bg-slate-800/80 disabled:cursor-not-allowed hover:text-white transition-all"
+                                title="Move Down ↓"
+                                aria-label="Move lesson down"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+
+                              <div className="h-4 w-px bg-slate-700/60 mx-0.5" />
+
+                              {/* Edit */}
+                              <button
+                                onClick={() => openEditLesson(mod.id, lesson)}
+                                className="p-1.5 rounded-lg bg-slate-700/40 hover:bg-slate-700 text-slate-300 hover:text-white"
+                                title="Edit Lesson"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete */}
+                              <button
+                                onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
+                                className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-400"
+                                title="Delete Lesson"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -730,6 +916,33 @@ export const AdminCurriculumPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Floating Reordering Status Toast */}
+      {reorderToast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-bold backdrop-blur-xl border transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 ${
+            reorderToast.type === 'success'
+              ? 'bg-emerald-950/95 text-emerald-300 border-emerald-500/40 shadow-emerald-950/50'
+              : 'bg-rose-950/95 text-rose-300 border-rose-500/40 shadow-rose-950/50'
+          }`}
+        >
+          {reorderToast.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+          )}
+          <span>{reorderToast.message}</span>
+        </div>
+      )}
+
+      {/* Background Reorder Saving Indicator */}
+      {reorderSaving && !reorderToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-3.5 py-2 rounded-xl bg-slate-900/90 text-scalora-accent border border-scalora-blue/30 backdrop-blur-xl shadow-xl flex items-center gap-2 text-xs font-semibold">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-scalora-accent" />
+          <span>Saving order...</span>
+        </div>
+      )}
     </div>
   );
 };
+
