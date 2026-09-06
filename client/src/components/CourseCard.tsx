@@ -155,9 +155,11 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
             </Link>
 
             {/* Short Description */}
-            <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
-              {course.comingSoonDescription || course.description}
-            </p>
+            {(course.comingSoonDescription || course.description) && (
+              <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                {course.comingSoonDescription || course.description}
+              </p>
+            )}
           </div>
 
           {/* 3. Launch Date & Interactive Notify Me */}
@@ -209,9 +211,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
   // STANDARD PUBLISHED COURSE CARD STYLE
   // =========================================================================
   return (
-    <div className="bg-[#071324] rounded-xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-cyan-500/40 transition-all duration-200 shadow-sm">
+    <div className="bg-[#071324] rounded-2xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-cyan-500/40 transition-all duration-300 shadow-xl group relative">
       {/* 1. Course Thumbnail with fixed 4:5 aspect ratio (1080x1350) & no cropping */}
-      <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`} className="relative aspect-[4/5] w-full overflow-hidden block bg-[#020A17] flex items-center justify-center">
+      <Link
+        to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`}
+        className="relative aspect-[4/5] w-full overflow-hidden block bg-[#020A17] flex items-center justify-center"
+      >
         {/* Subtle ambient blur backdrop for non-4:5 legacy images */}
         <img
           src={
@@ -230,24 +235,42 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
           }
           alt={course.title}
-          className="relative z-[1] w-full h-full object-contain hover:scale-[1.02] transition-transform duration-300"
+          className="relative z-[1] w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
         />
+
+        {/* Category Tag (Top Right) */}
+        {course.category && (
+          <div className="absolute top-2.5 right-2.5 z-10">
+            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-[#04152D]/90 text-cyan-300 border border-cyan-500/30 backdrop-blur-sm">
+              {course.category}
+            </span>
+          </div>
+        )}
       </Link>
 
       {/* 2. Content */}
-      <div className="p-3 sm:p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
-        {/* Course Name */}
-        <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`}>
-          <h3 className="text-xs sm:text-sm font-black text-white hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
-            {course.title}
-          </h3>
-        </Link>
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        <div className="space-y-2">
+          {/* 2. Course Title */}
+          <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`}>
+            <h3 className="text-sm sm:text-base font-black text-white hover:text-cyan-300 transition-colors line-clamp-2 leading-snug">
+              {course.title}
+            </h3>
+          </Link>
 
-        {/* 3. Progress % or Price */}
-        <div className="pt-1.5 border-t border-white/5 flex items-center justify-between">
+          {/* 3. Course Description */}
+          {course.description && (
+            <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+              {course.description}
+            </p>
+          )}
+        </div>
+
+        {/* 4 & 5. Pricing / Progress & CTA Button */}
+        <div className="pt-3 border-t border-white/10">
           {enrolled ? (
-            <div className="w-full space-y-1.5">
-              <div className="flex items-center justify-between text-[11px]">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 font-medium">Progress</span>
                 <span className="font-bold text-cyan-300">
                   {course.userProgress?.completionPercentage ?? 0}%
@@ -255,26 +278,40 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
               </div>
               <div className="w-full bg-[#030F20] h-1.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-cyan-400 h-full rounded-full"
+                  className="bg-gradient-to-r from-cyan-400 to-scalora-blue h-full rounded-full transition-all duration-500"
                   style={{ width: `${course.userProgress?.completionPercentage ?? 0}%` }}
                 />
               </div>
               <Link
                 to={`/learn/${course.slug}`}
-                className="w-full mt-1.5 py-1.5 rounded-lg bg-cyan-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform min-h-[36px]"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-cyan-500 hover:from-scalora-blue/90 hover:to-cyan-400 text-white text-xs font-black flex items-center justify-center gap-2 shadow-sm active:scale-98 transition-all min-h-[40px]"
               >
-                <PlayCircle className="w-3.5 h-3.5" />
-                <span>Resume</span>
+                <PlayCircle className="w-4 h-4" />
+                <span>Resume Course</span>
               </Link>
             </div>
           ) : (
-            <div className="w-full flex items-center justify-between">
-              <span className="text-xs sm:text-sm font-black text-white">
-                {pricing.formattedEffective}
-              </span>
+            <div className="flex items-center justify-between gap-3">
+              {/* 4. Pricing */}
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Tuition</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-sm sm:text-base font-black text-white">
+                    {pricing.formattedEffective}
+                  </span>
+                  {pricing.hasDiscount && (
+                    <span className="text-xs text-slate-400 line-through font-normal">
+                      {pricing.formattedBase}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 5. CTA Button */}
               <button
+                type="button"
                 onClick={handleAction}
-                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-scalora-blue to-cyan-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-transform min-h-[36px]"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-scalora-blue to-cyan-500 hover:from-scalora-blue/90 hover:to-cyan-400 text-white text-xs font-black flex items-center gap-1.5 shadow-sm active:scale-98 transition-all min-h-[40px]"
               >
                 <span>Enroll</span>
                 <ArrowRight className="w-3.5 h-3.5" />
