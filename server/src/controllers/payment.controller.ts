@@ -57,11 +57,16 @@ export const submitInstaPayPayment = async (req: AuthenticatedRequest, res: Resp
 
     const course = await prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true, title: true, price: true, slug: true },
+      select: { id: true, title: true, price: true, slug: true, isComingSoon: true },
     });
 
     if (!course) {
       res.status(404).json({ success: false, message: 'Course not found' });
+      return;
+    }
+
+    if (course.isComingSoon) {
+      res.status(400).json({ success: false, message: 'This course is currently Coming Soon and not yet open for enrollment or payment.' });
       return;
     }
 

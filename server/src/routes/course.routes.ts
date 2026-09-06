@@ -11,6 +11,9 @@ import {
   getCategories,
   createCategory,
   deleteCategory,
+  registerCourseInterest,
+  removeCourseInterest,
+  getUpcomingCourses,
 } from '../controllers/course.controller.js';
 import { authenticate, optionalAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
@@ -21,9 +24,14 @@ router.get('/categories', getCategories);
 router.post('/categories', authenticate, requireAdmin, createCategory);
 router.delete('/categories/:id', authenticate, requireAdmin, deleteCategory);
 
-// Public routes (with optional auth to detect enrollment)
+// Public routes (with optional auth to detect enrollment / interest)
 router.get('/', getPublishedCourses);
+router.get('/upcoming', getUpcomingCourses);
 router.get('/details/:slug', optionalAuth, getCourseBySlug);
+
+// Course Interest Registration (Student)
+router.post('/:id/interest', authenticate, registerCourseInterest);
+router.delete('/:id/interest', authenticate, removeCourseInterest);
 
 // Admin-only routes
 router.get('/admin/all', authenticate, requireAdmin, getAllCoursesAdmin);

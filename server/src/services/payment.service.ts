@@ -155,6 +155,10 @@ export class PaymentService {
       throw new Error('Course not found');
     }
 
+    if (course.isComingSoon) {
+      throw new Error('This course is currently Coming Soon and is not yet open for enrollment or purchase.');
+    }
+
     // Check if already enrolled
     const existingEnrollment = await prisma.enrollment.findUnique({
       where: {

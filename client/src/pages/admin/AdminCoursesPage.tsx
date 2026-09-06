@@ -26,6 +26,8 @@ import {
   Percent,
 } from 'lucide-react';
 import { formatCurrency, getCoursePricing, calculateDiscountPercent } from '../../lib/currency';
+import { formatLaunchDate } from '../../components/CourseCard';
+import { Calendar, Bell, Rocket } from 'lucide-react';
 
 export const AdminCoursesPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -67,6 +69,9 @@ export const AdminCoursesPage: React.FC = () => {
   const [category, setCategory] = useState('Cloud Architecture');
   const [level, setLevel] = useState('All Levels');
   const [isPublished, setIsPublished] = useState(false);
+  const [isComingSoon, setIsComingSoon] = useState(false);
+  const [launchDate, setLaunchDate] = useState('');
+  const [comingSoonDescription, setComingSoonDescription] = useState('');
 
   useEffect(() => {
     fetchCourses();
@@ -179,6 +184,9 @@ export const AdminCoursesPage: React.FC = () => {
     setCategory(categories.length > 0 ? categories[0].name : 'Cloud Architecture');
     setLevel('All Levels');
     setIsPublished(true);
+    setIsComingSoon(false);
+    setLaunchDate('');
+    setComingSoonDescription('');
     setSelectedTrainerIds([]);
     setTrainerSearch('');
     setFormError(null);
@@ -208,6 +216,9 @@ export const AdminCoursesPage: React.FC = () => {
     setCategory(course.category);
     setLevel(course.level || 'All Levels');
     setIsPublished(course.isPublished);
+    setIsComingSoon(Boolean(course.isComingSoon));
+    setLaunchDate(course.launchDate ? course.launchDate.split('T')[0] : '');
+    setComingSoonDescription(course.comingSoonDescription || '');
     setSelectedTrainerIds(
       course.trainers
         ? course.trainers.map((t: any) => t.trainer?.id || t.trainerId || t.id).filter(Boolean)
@@ -259,6 +270,9 @@ export const AdminCoursesPage: React.FC = () => {
       category,
       level,
       isPublished,
+      isComingSoon,
+      launchDate: isComingSoon && launchDate ? launchDate : null,
+      comingSoonDescription: isComingSoon && comingSoonDescription ? comingSoonDescription : null,
       trainerIds: selectedTrainerIds,
     };
 
@@ -448,28 +462,47 @@ export const AdminCoursesPage: React.FC = () => {
                     {/* Students Count */}
                     <td className="py-4 px-4 font-bold text-white">{c.studentsCount ?? 0}</td>
 
-                    {/* Published Toggle */}
+                    {/* Published / Status */}
                     <td className="py-4 px-4 text-center">
-                      <button
-                        onClick={() => togglePublish(c.id)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors inline-flex items-center gap-1 ${
-                          c.isPublished
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                            : 'bg-slate-700/30 text-slate-400 border-slate-600 hover:bg-slate-700/50'
-                        }`}
-                      >
-                        {c.isPublished ? (
-                          <>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            <span>Published</span>
-                          </>
+                      <div className="flex flex-col items-center gap-1">
+                        {c.isComingSoon ? (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-400/50 inline-flex items-center gap-1 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                            <span>🚀 Coming Soon</span>
+                          </span>
                         ) : (
-                          <>
-                            <XCircle className="w-3 h-3 text-slate-500" />
-                            <span>Draft</span>
-                          </>
+                          <button
+                            onClick={() => togglePublish(c.id)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors inline-flex items-center gap-1 ${
+                              c.isPublished
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                                : 'bg-slate-700/30 text-slate-400 border-slate-600 hover:bg-slate-700/50'
+                            }`}
+                          >
+                            {c.isPublished ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                <span>Published</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 text-slate-500" />
+                                <span>Draft</span>
+                              </>
+                            )}
+                          </button>
                         )}
-                      </button>
+                        {c.isComingSoon && c.launchDate && (
+                          <span className="text-[9px] text-slate-400 font-medium">
+                            {formatLaunchDate(c.launchDate)}
+                          </span>
+                        )}
+                        {c.isComingSoon && (c.interestsCount ?? 0) > 0 && (
+                          <span className="text-[9px] text-cyan-300 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                            🔔 {c.interestsCount} interested
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
@@ -853,18 +886,123 @@ export const AdminCoursesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Publish Checkbox */}
-          <div className="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
-              id="isPublished"
-              checked={isPublished}
-              onChange={(e) => setIsPublished(e.target.checked)}
-              className="w-4 h-4 rounded text-scalora-blue focus:ring-0 bg-[#04152D] border-scalora-blue/40"
-            />
-            <label htmlFor="isPublished" className="text-xs font-semibold text-white">
-              Publish immediately (visible in public catalog)
-            </label>
+          {/* Course Status & Coming Soon Controls */}
+          <div className="p-4 rounded-2xl bg-[#031024] border border-cyan-500/30 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                <Rocket className="w-4 h-4 text-cyan-400" />
+                <span>Course Status & Availability</span>
+              </label>
+              {isComingSoon && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  Marketing Preview Mode
+                </span>
+              )}
+            </div>
+
+            {/* Status Type Selector */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setIsComingSoon(false)}
+                className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                  !isComingSoon
+                    ? 'bg-scalora-blue/20 border-scalora-accent text-white shadow-sm'
+                    : 'bg-[#061224] border-white/5 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+                    !isComingSoon ? 'border-scalora-accent bg-scalora-accent/20' : 'border-slate-600'
+                  }`}
+                >
+                  {!isComingSoon && <div className="w-2 h-2 rounded-full bg-scalora-accent" />}
+                </div>
+                <div>
+                  <div className="text-xs font-bold">Standard / Released</div>
+                  <div className="text-[10px] text-slate-400">Live checkout & curriculum</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsComingSoon(true)}
+                className={`flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                  isComingSoon
+                    ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-sm'
+                    : 'bg-[#061224] border-white/5 text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full flex items-center justify-center border ${
+                    isComingSoon ? 'border-cyan-400 bg-cyan-400/20' : 'border-slate-600'
+                  }`}
+                >
+                  {isComingSoon && <div className="w-2 h-2 rounded-full bg-cyan-400" />}
+                </div>
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1">
+                    <span>🚀 Coming Soon</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">Marketing & Pre-registration</div>
+                </div>
+              </button>
+            </div>
+
+            {/* Coming Soon Specific Fields */}
+            {isComingSoon && (
+              <div className="space-y-3 pt-2 border-t border-cyan-500/20 animate-fadeIn">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Expected Launch Date (Optional)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={launchDate}
+                    onChange={(e) => setLaunchDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs text-white"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Displayed on marketing cards and course details page to build anticipation.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    Coming Soon Short Teaser / Description (Optional)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={comingSoonDescription}
+                    onChange={(e) => setComingSoonDescription(e.target.value)}
+                    placeholder="Brief teaser for upcoming course cards & modal (e.g. Master system design with real-world case studies launching soon!)..."
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
+                  />
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-cyan-950/60 border border-cyan-500/30 text-[11px] text-cyan-200 flex items-start gap-2">
+                  <Bell className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-cyan-300">Automated Notification System:</strong> Students will be able to register interest via the <strong>[ Notify Me ]</strong> button. When you switch this course back to Released, all registered students will automatically receive In-App & Web Push notifications!
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Catalog Visibility Checkbox */}
+            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+              <input
+                type="checkbox"
+                id="isPublished"
+                checked={isPublished}
+                onChange={(e) => setIsPublished(e.target.checked)}
+                className="w-4 h-4 rounded text-scalora-blue focus:ring-0 bg-[#04152D] border-scalora-blue/40"
+              />
+              <label htmlFor="isPublished" className="text-xs font-semibold text-white">
+                Visible in public catalog & homepage {isComingSoon ? '(Shows in Upcoming Courses carousel & Catalog)' : ''}
+              </label>
+            </div>
           </div>
 
           {/* Modal Actions */}

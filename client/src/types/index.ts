@@ -139,6 +139,11 @@ export interface Course {
   category: string;
   level: string;
   isPublished: boolean;
+  isComingSoon?: boolean;
+  launchDate?: string | null;
+  comingSoonDescription?: string | null;
+  isInterested?: boolean;
+  interestsCount?: number;
   modulesCount?: number;
   lessonsCount?: number;
   quizzesCount?: number;

@@ -41,6 +41,7 @@ export const PROTECTED_TABLES = [
   'CourseTrainer',
   'DirectMessage',
   'CommunityChatMessage',
+  'CourseInterest',
 ];
 
 export const SOFT_DELETE_MODELS = [

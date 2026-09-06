@@ -5,6 +5,8 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { communityService } from '../services/community.service.js';
 import { auditService } from '../services/audit.service.js';
 import { coursePricingService } from '../services/course-pricing.service.js';
+import { realtimeService } from '../services/realtime.service.js';
+import { webPushService } from '../services/webpush.service.js';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -19,6 +21,9 @@ const courseSchema = z.object({
   category: z.string().min(2, 'Category is required'),
   level: z.string().optional().default('All Levels'),
   isPublished: z.boolean().optional().default(false),
+  isComingSoon: z.boolean().optional().default(false),
+  launchDate: z.string().nullable().optional(),
+  comingSoonDescription: z.string().nullable().optional().or(z.literal('')),
   trainerIds: z.array(z.string()).optional(),
 });
 
@@ -80,7 +85,7 @@ export const getPublishedCourses = async (req: Request, res: Response): Promise<
           },
         },
         _count: {
-          select: { enrollments: true },
+          select: { enrollments: true, interests: true },
         },
       },
     });
@@ -97,6 +102,7 @@ export const getPublishedCourses = async (req: Request, res: Response): Promise<
         title: course.title,
         slug: course.slug,
         description: course.description,
+        comingSoonDescription: course.comingSoonDescription,
         thumbnail: course.thumbnail,
         price: effectivePrice,
         basePrice,
@@ -107,12 +113,15 @@ export const getPublishedCourses = async (req: Request, res: Response): Promise<
         category: course.category,
         level: course.level,
         isPublished: course.isPublished,
+        isComingSoon: course.isComingSoon || false,
+        launchDate: course.launchDate,
         createdAt: course.createdAt,
         updatedAt: course.updatedAt,
         modulesCount: course.modules.length,
         lessonsCount: allLessons.length,
         quizzesCount: course.quizzes.length,
         studentsCount: course._count.enrollments,
+        interestsCount: course._count.interests || 0,
         trainers: course.trainers.map((t) => t.trainer),
       };
     });
@@ -147,6 +156,7 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
         _count: {
           select: {
             enrollments: true,
+            interests: true,
           },
         },
       },
@@ -161,6 +171,9 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
 
       return {
         ...course,
+        isComingSoon: course.isComingSoon || false,
+        launchDate: course.launchDate,
+        comingSoonDescription: course.comingSoonDescription,
         modules: course.modules.map((m) => ({
           ...m,
           lessons: m.lessons.map((l) => ({
@@ -177,6 +190,7 @@ export const getAllCoursesAdmin = async (_req: AuthenticatedRequest, res: Respon
         lessonsCount: totalLessons,
         quizzesCount: course.quizzes.length,
         studentsCount: course._count.enrollments,
+        interestsCount: course._count.interests || 0,
         trainers: course.trainers.map((t) => t.trainer),
       };
     });
@@ -240,7 +254,7 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
           },
         },
         _count: {
-          select: { enrollments: true },
+          select: { enrollments: true, interests: true },
         },
       },
     });
@@ -251,23 +265,37 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
     }
 
     let isEnrolled = false;
+    let isInterested = false;
     let progressSummary = {
       completedLessonIds: [] as string[],
       completionPercentage: 0,
     };
 
     if (userId) {
-      const enrollment = await prisma.enrollment.findUnique({
-        where: {
-          userId_courseId: {
-            userId,
-            courseId: course.id,
+      const [enrollment, interest] = await Promise.all([
+        prisma.enrollment.findUnique({
+          where: {
+            userId_courseId: {
+              userId,
+              courseId: course.id,
+            },
           },
-        },
-      });
+        }),
+        prisma.courseInterest.findUnique({
+          where: {
+            userId_courseId: {
+              userId,
+              courseId: course.id,
+            },
+          },
+        }),
+      ]);
 
       if (enrollment || req.user?.role === 'ADMIN') {
         isEnrolled = true;
+      }
+      if (interest) {
+        isInterested = true;
       }
 
       const allLessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
@@ -301,6 +329,9 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
       success: true,
       course: {
         ...course,
+        isComingSoon: course.isComingSoon || false,
+        launchDate: course.launchDate,
+        comingSoonDescription: course.comingSoonDescription,
         modules: course.modules.map((m) => ({
           ...m,
           lessons: m.lessons.map((l) => ({
@@ -316,7 +347,9 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
         currency: 'EGP',
         lessonsCount: totalLessons,
         studentsCount: course._count.enrollments,
+        interestsCount: course._count.interests || 0,
         isEnrolled,
+        isInterested,
         userProgress: progressSummary,
         trainers: course.trainers.map((t) => t.trainer),
       },
@@ -329,7 +362,7 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
 export const createCourse = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const validatedData = courseSchema.parse(req.body);
-    const { trainerIds, basePrice, discountPrice, discountedPrice, ...courseData } = validatedData;
+    const { trainerIds, basePrice, discountPrice, discountedPrice, launchDate, ...courseData } = validatedData;
 
     let slug = courseData.slug || generateSlug(courseData.title);
 
@@ -349,12 +382,15 @@ export const createCourse = async (req: AuthenticatedRequest, res: Response): Pr
         title: courseData.title,
         slug,
         description: courseData.description,
+        comingSoonDescription: courseData.comingSoonDescription || null,
         thumbnail: courseData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
         price: effectivePrice,
         instructor: courseData.instructor,
         category: courseData.category,
         level: courseData.level || 'All Levels',
         isPublished: courseData.isPublished || false,
+        isComingSoon: courseData.isComingSoon || false,
+        launchDate: launchDate ? new Date(launchDate) : null,
       },
     });
 
@@ -418,7 +454,7 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
   try {
     const id = req.params.id as string;
     const validatedData = courseSchema.partial().parse(req.body);
-    const { trainerIds, basePrice, discountPrice, discountedPrice, ...courseData } = validatedData;
+    const { trainerIds, basePrice, discountPrice, discountedPrice, launchDate, ...courseData } = validatedData;
 
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
@@ -444,10 +480,71 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
       courseData.price = effectivePrice;
     }
 
+    const updatePayload: any = { ...courseData };
+    if (launchDate !== undefined) {
+      updatePayload.launchDate = launchDate ? new Date(launchDate) : null;
+    }
+
     const updated = await prisma.course.update({
       where: { id },
-      data: courseData,
+      data: updatePayload,
     });
+
+    // Check if course was previously Coming Soon and is now released (isComingSoon changed from true to false)
+    const wasComingSoon = existing.isComingSoon === true;
+    const isNowReleased = wasComingSoon && courseData.isComingSoon === false;
+
+    if (isNowReleased) {
+      try {
+        const interestedUsers = await prisma.courseInterest.findMany({
+          where: { courseId: id },
+          select: { userId: true },
+        });
+
+        const recipientIds = interestedUsers.map((item) => item.userId);
+
+        if (recipientIds.length > 0) {
+          const notifMessage = `[🚀 The course you were waiting for is now available!]: "${updated.title}" is now open for enrollment.`;
+
+          // 1. In-app notifications
+          await prisma.communityNotification.createMany({
+            data: recipientIds.map((userId) => ({
+              userId,
+              actorId: req.user?.id || null,
+              type: 'COURSE_ANNOUNCEMENT',
+              message: notifMessage,
+              isRead: false,
+            })),
+          });
+
+          // 2. Realtime SSE push
+          recipientIds.forEach((uid) => {
+            realtimeService.sendToUser(uid, 'notification', {
+              notification: {
+                type: 'COURSE_ANNOUNCEMENT',
+                title: '🚀 The course you were waiting for is now available!',
+                message: `"${updated.title}" is now open for enrollment.`,
+                actionUrl: `/courses/${updated.slug}`,
+                isRead: false,
+                createdAt: new Date().toISOString(),
+              },
+            });
+          });
+
+          // 3. Web Push OS Notification
+          webPushService
+            .sendPushToUsers(recipientIds, {
+              title: '🚀 The course you were waiting for is now available!',
+              body: `"${updated.title}" is now open for enrollment.`,
+              url: `/courses/${updated.slug}`,
+              type: 'COURSE_ANNOUNCEMENT',
+            })
+            .catch((err) => console.error('[Push Notification Error]', err));
+        }
+      } catch (notifyErr) {
+        console.error('Error sending coming soon release notifications:', notifyErr);
+      }
+    }
 
     // Sync trainers if array provided
     if (trainerIds !== undefined) {
@@ -755,3 +852,143 @@ export const deleteCategory = async (req: AuthenticatedRequest, res: Response): 
     res.status(500).json({ success: false, message: error.message || 'Error deleting category' });
   }
 };
+
+// ============================================================================
+// COMING SOON INTEREST & UPCOMING COURSES HANDLERS
+// ============================================================================
+
+export const registerCourseInterest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Authentication required to register interest' });
+      return;
+    }
+
+    const id = req.params.id as string;
+    const course = await prisma.course.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
+    });
+
+    if (!course) {
+      res.status(404).json({ success: false, message: 'Course not found' });
+      return;
+    }
+
+    // Upsert interest registration (prevents duplicate registrations)
+    await prisma.courseInterest.upsert({
+      where: {
+        userId_courseId: {
+          userId,
+          courseId: course.id,
+        },
+      },
+      create: {
+        userId,
+        courseId: course.id,
+      },
+      update: {},
+    });
+
+    const interestCount = await prisma.courseInterest.count({
+      where: { courseId: course.id },
+    });
+
+    res.json({
+      success: true,
+      isInterested: true,
+      interestCount,
+      message: `You're on the priority list! We'll notify you the moment "${course.title}" launches.`,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error registering interest' });
+  }
+};
+
+export const removeCourseInterest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    const id = req.params.id as string;
+    const course = await prisma.course.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }],
+      },
+    });
+
+    if (!course) {
+      res.status(404).json({ success: false, message: 'Course not found' });
+      return;
+    }
+
+    await prisma.courseInterest.deleteMany({
+      where: {
+        userId,
+        courseId: course.id,
+      },
+    });
+
+    const interestCount = await prisma.courseInterest.count({
+      where: { courseId: course.id },
+    });
+
+    res.json({
+      success: true,
+      isInterested: false,
+      interestCount,
+      message: 'Notification alert removed.',
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error removing interest' });
+  }
+};
+
+export const getUpcomingCourses = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const courses = await prisma.course.findMany({
+      where: {
+        isPublished: true,
+        isComingSoon: true,
+      },
+      orderBy: { launchDate: 'asc' },
+      include: {
+        _count: { select: { interests: true } },
+        trainers: {
+          include: {
+            trainer: {
+              select: { id: true, name: true, avatar: true, title: true },
+            },
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      courses: courses.map((c) => ({
+        id: c.id,
+        title: c.title,
+        slug: c.slug,
+        description: c.description,
+        comingSoonDescription: c.comingSoonDescription,
+        thumbnail: c.thumbnail,
+        category: c.category,
+        instructor: c.instructor,
+        level: c.level,
+        isComingSoon: true,
+        launchDate: c.launchDate,
+        interestsCount: c._count.interests,
+        trainers: c.trainers.map((t) => t.trainer),
+      })),
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Error fetching upcoming courses' });
+  }
+};
+

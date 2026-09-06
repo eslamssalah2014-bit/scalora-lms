@@ -36,6 +36,7 @@ model User {
   certificates   Certificate[]
   paymentRequests PaymentRequest[]
   passwordSetupTokens PasswordSetupToken[]
+  courseInterests CourseInterest[]
 
   // Trainer & Messaging Relations
   assignedCourses        CourseTrainer[]
@@ -76,19 +77,23 @@ model Course {
   instructor  String
   category    String
   level       String        @default("All Levels")
-  isPublished Boolean       @default(false)
-  deletedAt   DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  isPublished            Boolean          @default(false)
+  isComingSoon           Boolean          @default(false)
+  launchDate             DateTime?
+  comingSoonDescription  String?
+  deletedAt              DateTime?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
 
-  modules     Module[]
-  quizzes     Quiz[]
-  enrollments Enrollment[]
-  payments    Payment[]
-  certificates Certificate[]
-  paymentRequests PaymentRequest[]
+  modules          Module[]
+  quizzes          Quiz[]
+  enrollments      Enrollment[]
+  payments         Payment[]
+  certificates     Certificate[]
+  paymentRequests  PaymentRequest[]
   communityChannel CommunityChannel?
-  trainers    CourseTrainer[]
+  trainers         CourseTrainer[]
+  interests        CourseInterest[]
 
   @@map("courses")
 }
@@ -504,6 +509,23 @@ model CommunityChatMessage {
 
   @@map("community_chat_messages")
 }
+
+// ============================================================================
+// COMING SOON COURSE INTEREST REGISTRATIONS
+// ============================================================================
+
+model CourseInterest {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String   @map("course_id")
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, courseId])
+  @@map("course_interest")
+}
+
 
 
 

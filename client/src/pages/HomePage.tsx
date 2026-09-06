@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { PwaHeroCard } from '../components/pwa/PwaHeroCard';
 import { MobileNativeHome } from '../components/home/MobileNativeHome';
+import { UpcomingCoursesSection } from '../components/home/UpcomingCoursesSection';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
@@ -110,7 +111,12 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 2. CHOOSE YOUR JOURNEY (TWO LARGE EQUAL CARDS) */}
+      {/* 2. UPCOMING COURSES (HORIZONTAL CAROUSEL)                                  */}
+      {/* ========================================================================= */}
+      <UpcomingCoursesSection />
+
+      {/* ========================================================================= */}
+      {/* 3. CHOOSE YOUR JOURNEY (TWO LARGE EQUAL CARDS) */}
       {/* ========================================================================= */}
       <section id="choose-journey" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-3">

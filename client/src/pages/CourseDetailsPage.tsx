@@ -4,6 +4,8 @@ import { Course, Module, Lesson } from '../types';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { CheckoutModal } from '../components/CheckoutModal';
+import { formatLaunchDate } from '../components/CourseCard';
+import confetti from 'canvas-confetti';
 import {
   BookOpen,
   Video,
@@ -24,6 +26,9 @@ import {
   RefreshCw,
   AlertCircle,
   Tag,
+  Calendar,
+  Bell,
+  Loader2,
 } from 'lucide-react';
 import { getCoursePricing } from '../lib/currency';
 
@@ -38,6 +43,10 @@ export const CourseDetailsPage: React.FC = () => {
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
+  const [isInterested, setIsInterested] = useState(false);
+  const [interestCount, setInterestCount] = useState(0);
+  const [loadingInterest, setLoadingInterest] = useState(false);
+
   const fetchCourseDetails = async () => {
     setLoading(true);
     setError(null);
@@ -45,6 +54,9 @@ export const CourseDetailsPage: React.FC = () => {
       const res = await api.get<{ success: boolean; course: Course }>(`/courses/details/${slug}`);
       if (res.success && res.course) {
         setCourse(res.course);
+        setIsInterested(Boolean(res.course.isInterested));
+        setInterestCount(res.course.interestsCount || 0);
+
         const initialExpanded: Record<string, boolean> = {};
         res.course.modules?.forEach((m) => {
           initialExpanded[m.id] = true;
@@ -57,6 +69,46 @@ export const CourseDetailsPage: React.FC = () => {
       setError(err.message || 'Failed to load course details from server.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNotifyMe = async () => {
+    if (!user) {
+      navigate(`/login?redirect=/courses/${slug}`);
+      return;
+    }
+
+    if (!course) return;
+
+    setLoadingInterest(true);
+    try {
+      if (isInterested) {
+        const res = await api.delete<{ success: boolean; isInterested: boolean; interestCount: number }>(
+          `/courses/${course.id}/interest`
+        );
+        if (res.success) {
+          setIsInterested(false);
+          setInterestCount(res.interestCount ?? Math.max(0, interestCount - 1));
+        }
+      } else {
+        const res = await api.post<{ success: boolean; isInterested: boolean; interestCount: number }>(
+          `/courses/${course.id}/interest`
+        );
+        if (res.success) {
+          setIsInterested(true);
+          setInterestCount(res.interestCount ?? interestCount + 1);
+          confetti({
+            particleCount: 50,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#00D2FF', '#2D8CFF', '#F59E0B'],
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle course interest:', err);
+    } finally {
+      setLoadingInterest(false);
     }
   };
 
@@ -125,6 +177,12 @@ export const CourseDetailsPage: React.FC = () => {
           {/* Header Banner */}
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
+              {course.isComingSoon && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-black/70 backdrop-blur-md text-amber-300 border border-amber-400/50 shadow-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                  <span>🚀 COMING SOON</span>
+                </span>
+              )}
               <span className="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-scalora-blue/20 text-scalora-accent border border-scalora-blue/30">
                 {course.category}
               </span>
@@ -137,7 +195,11 @@ export const CourseDetailsPage: React.FC = () => {
               {course.title}
             </h1>
 
-            <p className="text-slate-300 text-base leading-relaxed">{course.description}</p>
+            <p className="text-slate-300 text-base leading-relaxed">
+              {course.isComingSoon && course.comingSoonDescription
+                ? course.comingSoonDescription
+                : course.description}
+            </p>
 
             {/* Instructor & Meta row */}
             <div className="flex flex-wrap items-center gap-6 pt-2 text-xs text-slate-400 border-t border-scalora-blue/15">
@@ -163,10 +225,17 @@ export const CourseDetailsPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-400" />
-                <span>{course.studentsCount ?? 0} Enrolled Students</span>
-              </div>
+              {course.isComingSoon ? (
+                <div className="flex items-center gap-2 text-amber-300 font-bold">
+                  <Calendar className="w-4 h-4 text-amber-400" />
+                  <span>Launches: {formatLaunchDate(course.launchDate)}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span>{course.studentsCount ?? 0} Enrolled Students</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -231,7 +300,12 @@ export const CourseDetailsPage: React.FC = () => {
                                   {lesson.duration}
                                 </span>
                               )}
-                              {isEnrolled ? (
+                              {course.isComingSoon ? (
+                                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                  <Lock className="w-3 h-3" />
+                                  <span>Coming Soon</span>
+                                </span>
+                              ) : isEnrolled ? (
                                 <Link
                                   to={`/learn/${course.slug}?lesson=${lesson.id}`}
                                   className="text-scalora-blue hover:text-scalora-accent font-semibold flex items-center gap-1"
@@ -358,74 +432,127 @@ export const CourseDetailsPage: React.FC = () => {
                 alt={course.title}
                 className="w-full h-full object-cover"
               />
+              {course.isComingSoon && (
+                <div className="absolute top-3 left-3 z-10">
+                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-black/80 backdrop-blur-md text-amber-300 border border-amber-400/50 shadow-lg">
+                    🚀 COMING SOON
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Pricing Tag */}
-            {(() => {
-              const pricing = getCoursePricing(course);
-              return (
-                <div className="space-y-2">
-                  <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tuition Fee</span>
-                  {pricing.hasDiscount ? (
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm line-through text-slate-400 font-semibold">
-                          {pricing.formattedBase}
-                        </span>
-                        <span className="text-xs font-black text-white bg-gradient-to-r from-amber-500 to-rose-500 px-2 py-0.5 rounded-md shadow-md animate-pulse">
-                          {pricing.discountPercent}% OFF
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
-                          {pricing.formattedEffective}
-                        </span>
-                        <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                          Save {pricing.formattedSavings}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-black text-white">
-                        {pricing.formattedEffective}
-                      </span>
-                      {!pricing.isFree && (
-                        <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
-                          Lifetime Access
-                        </span>
-                      )}
-                    </div>
-                  )}
+            {/* If Coming Soon, show Expected Release & Notify Me */}
+            {course.isComingSoon ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-[#030E1D] border border-amber-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>Expected Launch Date</span>
+                  </div>
+                  <div className="text-2xl font-black text-white">
+                    {formatLaunchDate(course.launchDate)}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    This course is currently in production. Be the first to get access when enrollment opens.
+                  </p>
                 </div>
-              );
-            })()}
 
-            {/* Action CTA */}
-            {isEnrolled ? (
-              <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  <span>You are enrolled in this track!</span>
-                </div>
-                <Link
-                  to={`/learn/${course.slug}`}
-                  className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  <span>Enter Classroom</span>
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
                 <button
-                  onClick={() => setCheckoutOpen(true)}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-black text-sm shadow-glow-blue hover:opacity-95 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                  type="button"
+                  onClick={handleNotifyMe}
+                  disabled={loadingInterest}
+                  className={`w-full py-4 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98 ${
+                    isInterested
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/50 hover:bg-emerald-500/30'
+                      : 'bg-gradient-to-r from-amber-500 via-scalora-blue to-cyan-400 hover:from-amber-400 hover:to-cyan-300 text-white shadow-glow-blue'
+                  }`}
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>Enroll in Course</span>
+                  {loadingInterest ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isInterested ? (
+                    <>
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      <span>✓ You'll Be Notified on Launch</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bell className="w-5 h-5" />
+                      <span>Notify Me When Released</span>
+                      <Sparkles className="w-4 h-4 opacity-80" />
+                    </>
+                  )}
                 </button>
               </div>
+            ) : (
+              <>
+                {/* Pricing Tag */}
+                {(() => {
+                  const pricing = getCoursePricing(course);
+                  return (
+                    <div className="space-y-2">
+                      <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Tuition Fee</span>
+                      {pricing.hasDiscount ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm line-through text-slate-400 font-semibold">
+                              {pricing.formattedBase}
+                            </span>
+                            <span className="text-xs font-black text-white bg-gradient-to-r from-amber-500 to-rose-500 px-2 py-0.5 rounded-md shadow-md animate-pulse">
+                              {pricing.discountPercent}% OFF
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-cyan-300">
+                              {pricing.formattedEffective}
+                            </span>
+                            <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                              Save {pricing.formattedSavings}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-black text-white">
+                            {pricing.formattedEffective}
+                          </span>
+                          {!pricing.isFree && (
+                            <span className="text-xs text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
+                              Lifetime Access
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Action CTA */}
+                {isEnrolled ? (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                      <span>You are enrolled in this track!</span>
+                    </div>
+                    <Link
+                      to={`/learn/${course.slug}`}
+                      className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+                    >
+                      <PlayCircle className="w-4 h-4" />
+                      <span>Enter Classroom</span>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setCheckoutOpen(true)}
+                      className="w-full py-4 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-black text-sm shadow-glow-blue hover:opacity-95 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Enroll in Course</span>
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Features Checklist */}
