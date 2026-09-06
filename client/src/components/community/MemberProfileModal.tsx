@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../lib/api';
+import { api, resolveMediaUrl } from '../../lib/api';
 import { CommunityMemberProfile } from '../../types';
 import {
   X,
@@ -167,7 +167,7 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                       >
                         {c.thumbnail && (
                           <img
-                            src={c.thumbnail}
+                            src={resolveMediaUrl(c.thumbnail)}
                             alt={c.title}
                             className="w-10 h-10 rounded-xl object-cover border border-scalora-blue/30 flex-shrink-0"
                           />

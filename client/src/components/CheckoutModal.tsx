@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Course } from '../types';
-import { api } from '../lib/api';
+import { api, resolveMediaUrl } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { Modal } from './Modal';
 import {
@@ -276,7 +276,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="p-4 rounded-2xl bg-scalora-navy/60 border border-scalora-blue/25 flex items-center gap-4">
             <img
               src={
-                course.thumbnail ||
+                resolveMediaUrl(course.thumbnail) ||
                 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
               }
               alt={course.title}

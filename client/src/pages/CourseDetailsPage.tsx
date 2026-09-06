@@ -422,15 +422,24 @@ export const CourseDetailsPage: React.FC = () => {
         {/* Right Column (1/3 Sticky Sidebar) */}
         <div className="space-y-6">
           <div className="sticky top-28 rounded-3xl glass-panel p-6 border border-scalora-blue/30 space-y-6 shadow-2xl">
-            {/* Thumbnail Preview */}
-            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#04152D] border border-scalora-blue/30 shadow-lg">
+            {/* Thumbnail Preview (4:5 Aspect Ratio, 1080x1350) */}
+            <div className="relative aspect-[4/5] w-full rounded-2xl overflow-hidden bg-[#020A17] border border-scalora-blue/30 shadow-lg flex items-center justify-center">
+              <img
+                src={
+                  resolveMediaUrl(course.thumbnail) ||
+                  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
+                }
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover blur-md opacity-20 scale-110 pointer-events-none"
+              />
               <img
                 src={
                   resolveMediaUrl(course.thumbnail) ||
                   'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
                 }
                 alt={course.title}
-                className="w-full h-full object-cover"
+                className="relative z-[1] w-full h-full object-contain"
               />
               {course.isComingSoon && (
                 <div className="absolute top-3 left-3 z-10">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../lib/api';
+import { api, resolveMediaUrl } from '../../lib/api';
 import { User, StudentStats, StudentActivity } from '../../types';
 import { Modal } from '../../components/Modal';
 import {
@@ -1023,7 +1023,7 @@ export const AdminStudentsPage: React.FC = () => {
                                 <div className="flex items-center gap-3">
                                   {enr.course.thumbnail ? (
                                     <img
-                                      src={enr.course.thumbnail}
+                                      src={resolveMediaUrl(enr.course.thumbnail)}
                                       alt={enr.course.title}
                                       className="w-12 h-12 rounded-xl object-cover border border-scalora-blue/30 flex-shrink-0"
                                     />

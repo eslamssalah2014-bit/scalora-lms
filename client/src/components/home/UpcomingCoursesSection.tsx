@@ -99,7 +99,7 @@ export const UpcomingCoursesSection: React.FC = () => {
         {upcomingCourses.map((course) => (
           <div
             key={course.id}
-            className="w-[280px] sm:w-[340px] md:w-[380px] flex-shrink-0 snap-start"
+            className="w-[260px] sm:w-[300px] md:w-[340px] flex-shrink-0 snap-start"
           >
             <CourseCard course={course} />
           </div>

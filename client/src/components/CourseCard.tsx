@@ -105,15 +105,27 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
         {/* Glow ambient background accent */}
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 blur-2xl rounded-full pointer-events-none group-hover:bg-cyan-500/20 transition-all" />
 
-        {/* 1. Thumbnail with COMING SOON badge */}
-        <Link to={`/courses/${course.slug}`} className="relative aspect-video w-full overflow-hidden block bg-[#030E1D]">
+        {/* 1. Thumbnail with fixed 4:5 aspect ratio (1080x1350) & no cropping */}
+        <Link to={`/courses/${course.slug}`} className="relative aspect-[4/5] w-full overflow-hidden block bg-[#020A17] flex items-center justify-center">
+          {/* Subtle ambient blur backdrop for non-4:5 legacy images */}
+          <img
+            src={
+              resolveMediaUrl(course.thumbnail) ||
+              'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
+            }
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover blur-md opacity-20 scale-110 pointer-events-none"
+          />
+
+          {/* Main 4:5 image (complete full image visible without cropping) */}
           <img
             src={
               resolveMediaUrl(course.thumbnail) ||
               'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
             }
             alt={course.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+            className="relative z-[1] w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
           />
 
           {/* Glowing Top COMING SOON Badge */}
@@ -198,15 +210,27 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
   // =========================================================================
   return (
     <div className="bg-[#071324] rounded-xl overflow-hidden flex flex-col h-full border border-white/10 hover:border-cyan-500/40 transition-all duration-200 shadow-sm">
-      {/* 1. Course Thumbnail */}
-      <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`} className="relative aspect-video w-full overflow-hidden block bg-[#030F20]">
+      {/* 1. Course Thumbnail with fixed 4:5 aspect ratio (1080x1350) & no cropping */}
+      <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`} className="relative aspect-[4/5] w-full overflow-hidden block bg-[#020A17] flex items-center justify-center">
+        {/* Subtle ambient blur backdrop for non-4:5 legacy images */}
+        <img
+          src={
+            resolveMediaUrl(course.thumbnail) ||
+            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
+          }
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover blur-md opacity-20 scale-110 pointer-events-none"
+        />
+
+        {/* Main 4:5 image (complete full image visible without cropping) */}
         <img
           src={
             resolveMediaUrl(course.thumbnail) ||
             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
           }
           alt={course.title}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+          className="relative z-[1] w-full h-full object-contain hover:scale-[1.02] transition-transform duration-300"
         />
       </Link>
 

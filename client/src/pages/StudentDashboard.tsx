@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Enrollment } from '../types';
-import { api } from '../lib/api';
+import { api, resolveMediaUrl } from '../lib/api';
 import { CertificateModal } from '../components/CertificateModal';
 import { NotificationPreferencesModal } from '../components/NotificationPreferencesModal';
 import { Modal } from '../components/Modal';
@@ -599,15 +599,24 @@ export const StudentDashboard: React.FC = () => {
               {enrollments.map((enr) => (
                 <div key={enr.enrollmentId} className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between">
                   <div>
-                    {/* Thumbnail */}
-                    <div className="relative aspect-square w-full overflow-hidden bg-[#04152D]">
+                    {/* Thumbnail with fixed 4:5 aspect ratio (1080x1350) */}
+                    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#020A17] flex items-center justify-center">
                       <img
                         src={
-                          enr.course.thumbnail ||
+                          resolveMediaUrl(enr.course.thumbnail) ||
+                          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
+                        }
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-20 scale-110 pointer-events-none"
+                      />
+                      <img
+                        src={
+                          resolveMediaUrl(enr.course.thumbnail) ||
                           'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
                         }
                         alt={enr.course.title}
-                        className="w-full h-full object-cover"
+                        className="relative z-[1] w-full h-full object-contain"
                       />
                     </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Course, Category } from '../../types';
-import { api } from '../../lib/api';
+import { api, resolveMediaUrl } from '../../lib/api';
 import { Modal } from '../../components/Modal';
 import {
   BookOpen,
@@ -405,7 +405,7 @@ export const AdminCoursesPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <img
                           src={
-                            c.thumbnail ||
+                            resolveMediaUrl(c.thumbnail) ||
                             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
                           }
                           alt={c.title}
