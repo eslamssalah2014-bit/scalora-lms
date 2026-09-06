@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { communityService } from '../services/community.service.js';
@@ -12,7 +14,8 @@ const courseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   slug: z.string().optional(),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  thumbnail: z.string().url('Invalid thumbnail URL').optional().or(z.literal('')),
+  thumbnail: z.string().optional().or(z.literal('')),
+  thumbnail_url: z.string().optional().or(z.literal('')),
   price: z.number().min(0, 'Price must be 0 or positive').default(0),
   basePrice: z.number().min(0, 'Base price must be 0 or positive').optional(),
   discountPrice: z.number().min(0, 'Discount price must be 0 or positive').optional(),
@@ -989,6 +992,80 @@ export const getUpcomingCourses = async (_req: Request, res: Response): Promise<
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Error fetching upcoming courses' });
+  }
+};
+
+export const uploadCourseThumbnail = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { imageBase64, fileName } = req.body;
+
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      res.status(400).json({ success: false, message: 'No image data provided.' });
+      return;
+    }
+
+    // Check payload size (max 5 MB)
+    const base64Content = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    const sizeInBytes = Math.round((base64Content.length * 3) / 4);
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+
+    if (sizeInBytes > MAX_SIZE) {
+      res.status(400).json({
+        success: false,
+        message: 'File exceeds the 5 MB maximum upload limit.',
+      });
+      return;
+    }
+
+    // Parse MIME format
+    let ext = 'jpg';
+    const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,/);
+    if (matches && matches[1]) {
+      const mime = matches[1].toLowerCase();
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(mime)) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid image format. Allowed formats: JPG, JPEG, PNG, WEBP.',
+        });
+        return;
+      }
+      if (mime.includes('png')) ext = 'png';
+      else if (mime.includes('webp')) ext = 'webp';
+      else ext = 'jpg';
+    } else if (fileName && typeof fileName === 'string') {
+      const parsedExt = fileName.split('.').pop()?.toLowerCase();
+      if (parsedExt && ['jpg', 'jpeg', 'png', 'webp'].includes(parsedExt)) {
+        ext = parsedExt === 'jpeg' ? 'jpg' : parsedExt;
+      }
+    }
+
+    const buffer = Buffer.from(base64Content, 'base64');
+
+    // Create uploads directory if not existing
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'thumbnails');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const safeFileName = `course_thumb_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+    const filePath = path.join(uploadsDir, safeFileName);
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/thumbnails/${safeFileName}`;
+
+    res.json({
+      success: true,
+      url: publicUrl,
+      thumbnail_url: publicUrl,
+      fileName: safeFileName,
+      message: 'Course thumbnail uploaded successfully',
+    });
+  } catch (error: any) {
+    console.error('Failed to upload course thumbnail:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error processing uploaded thumbnail',
+    });
   }
 };
 

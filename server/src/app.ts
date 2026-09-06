@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import authRoutes from './routes/auth.routes.js';
 import courseRoutes from './routes/course.routes.js';
 import moduleRoutes from './routes/module.routes.js';
@@ -61,6 +62,10 @@ app.use(
 );
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ limit: '25mb', extended: true }));
+
+// Serve static uploaded assets
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Health Check
 app.get('/api/health', (_req, res) => {

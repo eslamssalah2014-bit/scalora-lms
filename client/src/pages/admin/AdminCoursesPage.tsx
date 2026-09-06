@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getCoursePricing, calculateDiscountPercent } from '../../lib/currency';
 import { formatLaunchDate } from '../../components/CourseCard';
+import { ThumbnailUpload } from '../../components/ThumbnailUpload';
 import { Calendar, Bell, Rocket } from 'lucide-react';
 
 export const AdminCoursesPage: React.FC = () => {
@@ -259,10 +260,13 @@ export const AdminCoursesPage: React.FC = () => {
 
     const effectivePrice = discount > 0 && discount < base ? discount : base;
 
+    const effectiveThumbnail = thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80';
+
     const payload = {
       title,
       description,
-      thumbnail: thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
+      thumbnail: effectiveThumbnail,
+      thumbnail_url: effectiveThumbnail,
       price: effectivePrice,
       basePrice: base,
       discountPrice: discount,
@@ -780,19 +784,11 @@ export const AdminCoursesPage: React.FC = () => {
             )}
           </div>
 
-          {/* Thumbnail URL */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Thumbnail Image URL
-            </label>
-            <input
-              type="url"
-              value={thumbnail}
-              onChange={(e) => setThumbnail(e.target.value)}
-              placeholder="https://images.unsplash.com/photo-..."
-              className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
-            />
-          </div>
+          {/* Course Thumbnail Image Upload */}
+          <ThumbnailUpload
+            value={thumbnail}
+            onChange={(url) => setThumbnail(url)}
+          />
 
           {/* Description */}
           <div className="space-y-1">

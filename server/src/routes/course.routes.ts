@@ -14,6 +14,7 @@ import {
   registerCourseInterest,
   removeCourseInterest,
   getUpcomingCourses,
+  uploadCourseThumbnail,
 } from '../controllers/course.controller.js';
 import { authenticate, optionalAuth, requireAdmin } from '../middleware/auth.middleware.js';
 
@@ -35,6 +36,7 @@ router.delete('/:id/interest', authenticate, removeCourseInterest);
 
 // Admin-only routes
 router.get('/admin/all', authenticate, requireAdmin, getAllCoursesAdmin);
+router.post('/upload-thumbnail', authenticate, requireAdmin, uploadCourseThumbnail);
 router.post('/', authenticate, requireAdmin, createCourse);
 router.put('/:id/pricing', authenticate, requireAdmin, updateCoursePricing);
 router.put('/:id', authenticate, requireAdmin, updateCourse);
