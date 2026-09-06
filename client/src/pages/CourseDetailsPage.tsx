@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Course, Module, Lesson } from '../types';
-import { api } from '../lib/api';
+import { api, resolveMediaUrl } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { formatLaunchDate } from '../components/CourseCard';
@@ -426,7 +426,7 @@ export const CourseDetailsPage: React.FC = () => {
             <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-[#04152D] border border-scalora-blue/30 shadow-lg">
               <img
                 src={
-                  course.thumbnail ||
+                  resolveMediaUrl(course.thumbnail) ||
                   'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
                 }
                 alt={course.title}

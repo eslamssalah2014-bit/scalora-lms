@@ -4,7 +4,7 @@ import { Course } from '../types';
 import { PlayCircle, ArrowRight, Bell, CheckCircle2, Calendar, Sparkles, Loader2 } from 'lucide-react';
 import { getCoursePricing } from '../lib/currency';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../lib/api';
+import { api, resolveMediaUrl } from '../lib/api';
 import confetti from 'canvas-confetti';
 
 interface CourseCardProps {
@@ -109,7 +109,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
         <Link to={`/courses/${course.slug}`} className="relative aspect-video w-full overflow-hidden block bg-[#030E1D]">
           <img
             src={
-              course.thumbnail ||
+              resolveMediaUrl(course.thumbnail) ||
               'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
             }
             alt={course.title}
@@ -202,7 +202,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
       <Link to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`} className="relative aspect-video w-full overflow-hidden block bg-[#030F20]">
         <img
           src={
-            course.thumbnail ||
+            resolveMediaUrl(course.thumbnail) ||
             'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
           }
           alt={course.title}

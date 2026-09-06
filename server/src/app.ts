@@ -63,9 +63,9 @@ app.use(
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ limit: '25mb', extended: true }));
 
-// Serve static uploaded assets
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Serve static uploaded assets with CORS
+app.use('/uploads', cors(), express.static(path.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
+app.use('/api/uploads', cors(), express.static(path.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
 
 // Health Check
 app.get('/api/health', (_req, res) => {

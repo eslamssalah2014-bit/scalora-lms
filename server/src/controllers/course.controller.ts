@@ -365,7 +365,15 @@ export const getCourseBySlug = async (req: AuthenticatedRequest, res: Response):
 export const createCourse = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const validatedData = courseSchema.parse(req.body);
-    const { trainerIds, basePrice, discountPrice, discountedPrice, launchDate, ...courseData } = validatedData;
+    const {
+      trainerIds,
+      basePrice,
+      discountPrice,
+      discountedPrice,
+      launchDate,
+      thumbnail_url,
+      ...courseData
+    } = validatedData;
 
     let slug = courseData.slug || generateSlug(courseData.title);
 
@@ -380,13 +388,19 @@ export const createCourse = async (req: AuthenticatedRequest, res: Response): Pr
       : (typeof discountedPrice === 'number' ? discountedPrice : initialBase);
     const effectivePrice = initialDiscount > 0 && initialDiscount < initialBase ? initialDiscount : initialBase;
 
+    // Map thumbnail strictly to Prisma Course model's thumbnail field
+    const effectiveThumbnail =
+      courseData.thumbnail ||
+      thumbnail_url ||
+      'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80';
+
     const course = await prisma.course.create({
       data: {
         title: courseData.title,
         slug,
         description: courseData.description,
         comingSoonDescription: courseData.comingSoonDescription || null,
-        thumbnail: courseData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
+        thumbnail: effectiveThumbnail,
         price: effectivePrice,
         instructor: courseData.instructor,
         category: courseData.category,
@@ -457,7 +471,15 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
   try {
     const id = req.params.id as string;
     const validatedData = courseSchema.partial().parse(req.body);
-    const { trainerIds, basePrice, discountPrice, discountedPrice, launchDate, ...courseData } = validatedData;
+    const {
+      trainerIds,
+      basePrice,
+      discountPrice,
+      discountedPrice,
+      launchDate,
+      thumbnail_url,
+      ...courseData
+    } = validatedData;
 
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
@@ -483,10 +505,24 @@ export const updateCourse = async (req: AuthenticatedRequest, res: Response): Pr
       courseData.price = effectivePrice;
     }
 
+    // Build strictly valid Prisma update payload (ONLY Course schema properties)
     const updatePayload: any = { ...courseData };
     if (launchDate !== undefined) {
       updatePayload.launchDate = launchDate ? new Date(launchDate) : null;
     }
+
+    if (courseData.thumbnail !== undefined) {
+      updatePayload.thumbnail = courseData.thumbnail || null;
+    } else if (thumbnail_url !== undefined) {
+      updatePayload.thumbnail = thumbnail_url || null;
+    }
+
+    // Safeguard: Strip any non-Course-model fields to prevent Prisma "Unknown argument" runtime exceptions
+    delete updatePayload.thumbnail_url;
+    delete updatePayload.trainerIds;
+    delete updatePayload.basePrice;
+    delete updatePayload.discountPrice;
+    delete updatePayload.discountedPrice;
 
     const updated = await prisma.course.update({
       where: { id },
@@ -1052,11 +1088,16 @@ export const uploadCourseThumbnail = async (req: AuthenticatedRequest, res: Resp
     fs.writeFileSync(filePath, buffer);
 
     const publicUrl = `/uploads/thumbnails/${safeFileName}`;
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
+    const host = req.get('host') || 'localhost:5000';
+    const absoluteUrl = `${protocol}://${host}${publicUrl}`;
 
     res.json({
       success: true,
-      url: publicUrl,
-      thumbnail_url: publicUrl,
+      url: absoluteUrl,
+      path: publicUrl,
+      thumbnail: absoluteUrl,
+      thumbnail_url: absoluteUrl,
       fileName: safeFileName,
       message: 'Course thumbnail uploaded successfully',
     });

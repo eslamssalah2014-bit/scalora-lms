@@ -266,7 +266,6 @@ export const AdminCoursesPage: React.FC = () => {
       title,
       description,
       thumbnail: effectiveThumbnail,
-      thumbnail_url: effectiveThumbnail,
       price: effectivePrice,
       basePrice: base,
       discountPrice: discount,

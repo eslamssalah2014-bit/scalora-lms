@@ -7,6 +7,34 @@ export const getApiBase = (): string => {
   return '/api';
 };
 
+export const resolveMediaUrl = (url: string | null | undefined): string => {
+  if (!url || typeof url !== 'string' || !url.trim()) return '';
+  const trimmed = url.trim();
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
+  }
+
+  const apiBase = getApiBase();
+  if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
+    const origin = apiBase.replace(/\/api\/?$/, '');
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `${origin}${cleanPath}`;
+  }
+
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `http://localhost:5000${cleanPath}`;
+  }
+
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return cleanPath;
+};
+
 export class ApiError extends Error {
   status: number;
   data: any;
