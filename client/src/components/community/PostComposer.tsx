@@ -63,9 +63,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
 
   if (isLocked && !isAdmin) {
     return (
-      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between shadow-sm">
+      <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <Megaphone className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <span>This community is currently in announcement-only mode. Only instructors and admins can publish.</span>
         </div>
       </div>
@@ -169,18 +169,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({
   const firstName = user?.name ? user.name.split(' ')[0] : 'there';
 
   return (
-    <div className="bg-[#0B1528] rounded-3xl p-4 sm:p-5 border border-white/10 shadow-xl space-y-3 transition-all">
-      {/* 1. COLLAPSED LINKEDIN-STYLE TRIGGER BOX */}
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-3 transition-all text-slate-900">
+      {/* 1. COLLAPSED TRIGGER BOX */}
       {!isOpen ? (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <img
               src={
                 user?.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0284C7&color=fff`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=2563EB&color=fff`
               }
               alt={user?.name}
-              className="w-11 h-11 rounded-2xl object-cover border border-cyan-400 shadow-md flex-shrink-0"
+              className="w-10 h-10 rounded-full object-cover border-2 border-blue-100 shadow-sm flex-shrink-0"
             />
 
             <button
@@ -189,14 +189,14 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('TEXT');
                 setIsOpen(true);
               }}
-              className="flex-1 text-left px-4 py-3 rounded-2xl bg-[#071324] hover:bg-[#0E203C] text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-white/10 transition-all shadow-inner min-h-[44px]"
+              className="flex-1 text-left px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 text-xs sm:text-sm font-medium border border-slate-200 transition-all min-h-[42px]"
             >
               What's on your mind, {firstName}?
             </button>
           </div>
 
-          {/* Quick Action Pills - 2x2 Grid on Mobile, Flex on Desktop */}
-          <div className="pt-2 border-t border-white/5 grid grid-cols-2 sm:flex sm:items-center sm:gap-2 gap-1.5 text-xs font-semibold w-full">
+          {/* Quick Action Pills */}
+          <div className="pt-2 border-t border-slate-100 grid grid-cols-2 sm:flex sm:items-center sm:gap-2 gap-1.5 text-xs font-bold w-full">
             {/* 1. Create Post */}
             <button
               type="button"
@@ -204,9 +204,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('TEXT');
                 setIsOpen(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors min-h-[44px]"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100 transition-colors min-h-[38px]"
             >
-              <FileText className="w-4 h-4 text-cyan-400" />
+              <FileText className="w-4 h-4 text-blue-600" />
               <span>Post</span>
             </button>
 
@@ -218,9 +218,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setTitle('❓ Question: ');
                 setIsOpen(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition-colors min-h-[44px]"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 transition-colors min-h-[38px]"
             >
-              <HelpCircle className="w-4 h-4 text-blue-400" />
+              <HelpCircle className="w-4 h-4 text-indigo-600" />
               <span>Ask</span>
             </button>
 
@@ -231,9 +231,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('FILE');
                 setIsOpen(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-colors min-h-[44px]"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100 transition-colors min-h-[38px]"
             >
-              <FolderDown className="w-4 h-4 text-purple-400" />
+              <FolderDown className="w-4 h-4 text-purple-600" />
               <span>Resource</span>
             </button>
 
@@ -244,9 +244,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 setActiveTab('POLL');
                 setIsOpen(true);
               }}
-              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-colors min-h-[44px]"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-100 transition-colors min-h-[38px]"
             >
-              <BarChart2 className="w-4 h-4 text-amber-400" />
+              <BarChart2 className="w-4 h-4 text-amber-600" />
               <span>Poll</span>
             </button>
 
@@ -257,27 +257,27 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                   setActiveTab('ANNOUNCEMENT');
                   setIsOpen(true);
                 }}
-                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 transition-colors min-h-[44px]"
+                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-100 transition-colors min-h-[38px]"
               >
-                <Megaphone className="w-4 h-4 text-rose-400" />
+                <Megaphone className="w-4 h-4 text-rose-600" />
                 <span>Announcement</span>
               </button>
             )}
           </div>
         </div>
       ) : (
-        /* 2. EXPANDED COMPOSER MODAL-LIKE DRAWER */
-        <form onSubmit={handleSubmit} className="space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        /* 2. EXPANDED COMPOSER FORM */
+        <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-300">
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                 Publishing to {channelName}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -290,8 +290,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               onClick={() => setActiveTab('TEXT')}
               className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'TEXT'
-                  ? 'bg-cyan-500 text-white shadow-glow-accent'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -306,8 +306,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               }}
               className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'QUESTION'
-                  ? 'bg-blue-500 text-white shadow-glow-accent'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
               <HelpCircle className="w-3.5 h-3.5" />
@@ -319,8 +319,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               onClick={() => setActiveTab('IMAGE')}
               className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'IMAGE'
-                  ? 'bg-emerald-500 text-white shadow-glow-accent'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
@@ -332,8 +332,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               onClick={() => setActiveTab('FILE')}
               className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'FILE'
-                  ? 'bg-purple-500 text-white shadow-glow-accent'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
               <FolderDown className="w-3.5 h-3.5" />
@@ -345,8 +345,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               onClick={() => setActiveTab('POLL')}
               className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                 activeTab === 'POLL'
-                  ? 'bg-amber-500 text-white shadow-glow-accent'
-                  : 'bg-white/5 text-slate-400 hover:text-white'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
@@ -359,8 +359,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 onClick={() => setActiveTab('ANNOUNCEMENT')}
                 className={`px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
                   activeTab === 'ANNOUNCEMENT'
-                    ? 'bg-rose-500 text-white shadow-glow-accent'
-                    : 'bg-white/5 text-slate-400 hover:text-white'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
                 }`}
               >
                 <Megaphone className="w-3.5 h-3.5" />
@@ -375,22 +375,22 @@ export const PostComposer: React.FC<PostComposerProps> = ({
             placeholder="Post Title or Topic (Optional)..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-2xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs font-semibold focus:outline-none focus:border-cyan-400 transition-all"
+            className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs font-semibold focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all"
           />
 
           {/* Poll Builder Mode */}
           {activeTab === 'POLL' ? (
-            <div className="space-y-3 p-4 rounded-2xl bg-[#071324] border border-white/10">
+            <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
               <input
                 type="text"
                 placeholder="Ask a community question for the poll..."
                 value={pollQuestion}
                 onChange={(e) => setPollQuestion(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#050C1A] border border-white/10 text-white text-xs font-semibold focus:outline-none focus:border-amber-400"
+                className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs font-semibold focus:outline-none focus:border-amber-500"
               />
 
               <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-400">Poll Choices:</label>
+                <label className="text-[11px] font-bold text-slate-600">Poll Choices:</label>
                 {pollOptions.map((opt, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <input
@@ -398,13 +398,13 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                       placeholder={`Option ${idx + 1}...`}
                       value={opt}
                       onChange={(e) => handlePollOptionChange(idx, e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl bg-[#050C1A] border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400"
+                      className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:border-amber-500"
                     />
                     {pollOptions.length > 2 && (
                       <button
                         type="button"
                         onClick={() => handleRemovePollOption(idx)}
-                        className="p-2 text-slate-400 hover:text-rose-400"
+                        className="p-2 text-slate-400 hover:text-rose-500"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -417,7 +417,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 <button
                   type="button"
                   onClick={handleAddPollOption}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30 flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200 flex items-center gap-1.5 hover:bg-amber-100"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Option</span>
@@ -431,7 +431,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               placeholder={`Share an update, key insight, or question with your peers in ${channelName}...`}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs sm:text-sm leading-relaxed focus:outline-none focus:border-cyan-400 transition-all resize-none"
+              className="w-full p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs sm:text-sm leading-relaxed focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all resize-none"
             />
           )}
 
@@ -442,7 +442,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               placeholder="Paste Image URL (e.g. Screenshot, Flowchart, Diagram)..."
               value={mediaUrl}
               onChange={(e) => setMediaUrl(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#071324] border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-400"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:outline-none focus:border-emerald-500"
             />
           )}
 
@@ -453,46 +453,46 @@ export const PostComposer: React.FC<PostComposerProps> = ({
                 placeholder="Resource URL (PDF / Template Link)..."
                 value={fileUrl}
                 onChange={(e) => setFileUrl(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#071324] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:outline-none focus:border-purple-500"
               />
               <input
                 type="text"
                 placeholder="Resource Name (e.g. Checklist.pdf)"
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-[#071324] border border-white/10 text-white text-xs focus:outline-none focus:border-purple-400"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:outline-none focus:border-purple-500"
               />
             </div>
           )}
 
           {error && (
-            <p className="text-xs text-rose-400 bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
+            <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-200 font-semibold">
               {error}
             </p>
           )}
 
           {/* Submit Footer */}
-          <div className="flex items-center justify-between pt-2 border-t border-white/10">
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             {isAdmin ? (
-              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none font-semibold">
                 <input
                   type="checkbox"
                   checked={isPinned}
                   onChange={(e) => setIsPinned(e.target.checked)}
-                  className="rounded border-white/20 bg-black/40 text-cyan-400 focus:ring-0"
+                  className="rounded border-slate-300 text-blue-600 focus:ring-0"
                 />
-                <Pin className="w-3 h-3 text-amber-400" />
+                <Pin className="w-3.5 h-3.5 text-amber-500" />
                 <span>Pin to top</span>
               </label>
             ) : (
-              <span className="text-[11px] text-slate-500">Markdown formatting supported</span>
+              <span className="text-[11px] text-slate-400">Markdown formatting supported</span>
             )}
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-all"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
               >
                 Cancel
               </button>
@@ -500,7 +500,7 @@ export const PostComposer: React.FC<PostComposerProps> = ({
               <button
                 type="submit"
                 disabled={submitting || (!content.trim() && !pollQuestion.trim())}
-                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white text-xs font-bold shadow-glow-accent hover:opacity-95 disabled:opacity-40 transition-all flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-500/25 hover:shadow-md disabled:opacity-40 transition-all flex items-center gap-2"
               >
                 {submitting ? (
                   <>

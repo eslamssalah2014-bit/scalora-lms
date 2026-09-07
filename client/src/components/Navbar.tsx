@@ -43,18 +43,7 @@ export const Navbar: React.FC = () => {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const { isInstalled, installApp } = usePwa();
 
-  const isAppRoute = [
-    '/dashboard',
-    '/profile',
-    '/my-study-plan',
-    '/study-plan',
-    '/messages',
-    '/notifications',
-    '/trainer',
-    '/learn',
-    '/quiz',
-    '/community',
-  ].some((p) => location.pathname.startsWith(p));
+
 
   // Scroll Lock when mobile drawer is open
   useEffect(() => {
@@ -153,6 +142,9 @@ export const Navbar: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   // Render Light Header for public pages and Dark Header for internal LMS
+  const isAppRoute = ['/dashboard', '/learn', '/profile', '/quizzes', '/certificates', '/messages'].some(
+    (prefix) => location.pathname.startsWith(prefix)
+  );
   const isLight = !isAppRoute;
 
   return (

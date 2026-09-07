@@ -58,68 +58,68 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-card rounded-3xl w-full max-w-2xl border border-cyan-500/30 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-2xl border border-slate-200 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] flex flex-col">
         {/* Modal Header */}
-        <div className="p-6 border-b border-scalora-blue/20 flex items-center justify-between bg-[#04152D]/90">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-cyan-300" />
-            <h2 className="text-lg font-black text-white">Community Member Profile</h2>
+            <User className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-black text-slate-900">Community Member Profile</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 scrollbar-thin scrollbar-thumb-scalora-blue/30">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 scrollbar-thin scrollbar-thumb-slate-200">
           {loading ? (
-            <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+            <div className="py-16 text-center text-xs text-slate-500 flex flex-col items-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
               <span>Loading member details...</span>
             </div>
           ) : error ? (
-            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs text-center">
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs text-center">
               {error}
             </div>
           ) : profile ? (
             <>
               {/* User Hero Banner */}
-              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 rounded-3xl bg-gradient-to-r from-scalora-navy via-[#0A264F] to-[#04152D] border border-cyan-400/30">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 rounded-2xl bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 border border-blue-100">
                 <img
                   src={
                     profile.avatar ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=2D8CFF&color=fff`
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=2563EB&color=fff`
                   }
                   alt={profile.name}
-                  className="w-20 h-20 rounded-2xl object-cover border-2 border-cyan-400/40 shadow-xl flex-shrink-0"
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-blue-200 shadow-md flex-shrink-0"
                 />
 
                 <div className="space-y-1.5 text-center sm:text-left min-w-0">
                   <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                    <h3 className="text-xl font-black text-white">{profile.name}</h3>
+                    <h3 className="text-xl font-black text-slate-900">{profile.name}</h3>
                     {profile.role === 'ADMIN' ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 flex items-center gap-1">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1">
                         <Shield className="w-3 h-3" />
                         <span>Administrator</span>
                       </span>
                     ) : (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-scalora-blue/20 text-scalora-accent border border-scalora-blue/30">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-700 border border-slate-200">
                         Enrolled Student
                       </span>
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     {profile.bio || 'Scalora Academy Learner & Community Member.'}
                   </p>
 
-                  <div className="flex items-center justify-center sm:justify-start gap-3 text-[11px] text-slate-400 pt-1">
+                  <div className="flex items-center justify-center sm:justify-start gap-3 text-[11px] text-slate-500 pt-1">
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
                       <span>Joined {new Date(profile.joinedAt).toLocaleDateString()}</span>
                     </span>
                   </div>
@@ -128,31 +128,31 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
 
               {/* Stats Matrix (4 Tiles) */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="glass-card p-3.5 rounded-2xl text-center space-y-1 border border-scalora-blue/20">
-                  <div className="text-xl font-black text-white">{profile.enrolledCourses.length}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Courses</div>
+                <div className="bg-slate-50 p-3.5 rounded-xl text-center space-y-1 border border-slate-200">
+                  <div className="text-xl font-black text-slate-900">{profile.enrolledCourses.length}</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Courses</div>
                 </div>
 
-                <div className="glass-card p-3.5 rounded-2xl text-center space-y-1 border border-scalora-blue/20">
-                  <div className="text-xl font-black text-cyan-300">{profile.totalPosts}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Posts</div>
+                <div className="bg-slate-50 p-3.5 rounded-xl text-center space-y-1 border border-slate-200">
+                  <div className="text-xl font-black text-blue-600">{profile.totalPosts}</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Posts</div>
                 </div>
 
-                <div className="glass-card p-3.5 rounded-2xl text-center space-y-1 border border-scalora-blue/20">
-                  <div className="text-xl font-black text-emerald-400">{profile.totalComments}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Comments</div>
+                <div className="bg-slate-50 p-3.5 rounded-xl text-center space-y-1 border border-slate-200">
+                  <div className="text-xl font-black text-emerald-600">{profile.totalComments}</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Comments</div>
                 </div>
 
-                <div className="glass-card p-3.5 rounded-2xl text-center space-y-1 border border-scalora-blue/20">
-                  <div className="text-xl font-black text-amber-300">{profile.certificatesCount}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Certificates</div>
+                <div className="bg-slate-50 p-3.5 rounded-xl text-center space-y-1 border border-slate-200">
+                  <div className="text-xl font-black text-amber-600">{profile.certificatesCount}</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Certificates</div>
                 </div>
               </div>
 
               {/* Enrolled Courses Badges */}
               <div className="space-y-3">
-                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-cyan-400" />
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-blue-600" />
                   <span>Enrolled Course Tracks ({profile.enrolledCourses.length})</span>
                 </h4>
 
@@ -163,18 +163,18 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                     {profile.enrolledCourses.map((c) => (
                       <div
                         key={c.id}
-                        className="p-3 rounded-2xl bg-scalora-navy/60 border border-scalora-blue/20 flex items-center gap-3"
+                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3"
                       >
                         {c.thumbnail && (
                           <img
                             src={resolveMediaUrl(c.thumbnail)}
                             alt={c.title}
-                            className="w-10 h-10 rounded-xl object-cover border border-scalora-blue/30 flex-shrink-0"
+                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 flex-shrink-0"
                           />
                         )}
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-white truncate">{c.title}</div>
-                          <div className="text-[10px] text-cyan-300">{c.category}</div>
+                          <div className="text-xs font-bold text-slate-900 truncate">{c.title}</div>
+                          <div className="text-[10px] text-blue-600 font-medium">{c.category}</div>
                         </div>
                       </div>
                     ))}
@@ -185,8 +185,8 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
               {/* Recent Community Posts */}
               {profile.recentPosts.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                    <MessageSquare className="w-4 h-4 text-cyan-400" />
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <MessageSquare className="w-4 h-4 text-blue-600" />
                     <span>Recent Community Activity</span>
                   </h4>
 
@@ -194,15 +194,15 @@ export const MemberProfileModal: React.FC<MemberProfileModalProps> = ({
                     {profile.recentPosts.map((p) => (
                       <div
                         key={p.id}
-                        className="p-3.5 rounded-2xl bg-scalora-navy/40 border border-scalora-blue/15 space-y-1 text-xs"
+                        className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs"
                       >
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="font-bold text-cyan-300">{p.channelName}</span>
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                          <span className="font-bold text-blue-600">{p.channelName}</span>
                           <span>{new Date(p.createdAt).toLocaleDateString()}</span>
                         </div>
-                        {p.title && <div className="font-bold text-white">{p.title}</div>}
-                        <p className="text-slate-300 line-clamp-2 leading-relaxed">{p.content}</p>
-                        <div className="text-[10px] text-slate-400 pt-1 flex items-center gap-3 font-semibold">
+                        {p.title && <div className="font-bold text-slate-900">{p.title}</div>}
+                        <p className="text-slate-600 line-clamp-2 leading-relaxed">{p.content}</p>
+                        <div className="text-[10px] text-slate-500 pt-1 flex items-center gap-3 font-semibold">
                           <span>❤️ {p.likesCount} likes</span>
                           <span>💬 {p.commentsCount} comments</span>
                         </div>

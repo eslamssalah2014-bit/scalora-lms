@@ -39,7 +39,7 @@ export const CommunityPage: React.FC = () => {
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [loadingChannels, setLoadingChannels] = useState(true);
 
-  // 4 Core Facebook Group Style Tabs ('FEED' | 'CHAT' | 'RESOURCES' | 'MEMBERS')
+  // 4 Core Tabs ('FEED' | 'CHAT' | 'RESOURCES' | 'MEMBERS')
   const [activeMainTab, setActiveMainTab] = useState<'FEED' | 'CHAT' | 'RESOURCES' | 'MEMBERS' | 'EVENTS'>('FEED');
 
   // Feed State
@@ -84,7 +84,6 @@ export const CommunityPage: React.FC = () => {
             : res.channels[0];
           const activeId = matched ? matched.id : res.channels[0].id;
           setSelectedChannelId(activeId);
-          // Directly trigger post fetch immediately on channel resolution
           fetchPosts(activeId, feedFilter, postSearch);
         }
       }
@@ -139,41 +138,26 @@ export const CommunityPage: React.FC = () => {
     fetchPosts(channelId, 'ALL', postSearch);
   };
 
-  const handleSelectFilter = (filter: string) => {
-    if (filter === 'SAVED') {
-      setFeedFilter('SAVED');
-      setActiveMainTab('FEED');
-    } else if (filter === 'RESOURCES') {
-      setActiveMainTab('RESOURCES');
-    } else {
-      setFeedFilter('ALL');
-      setActiveMainTab('FEED');
-    }
-  };
-
   const selectedChannel = channels.find((c) => c.id === selectedChannelId) || null;
-  const rawTrainers = (selectedChannel?.course as any)?.trainers || [];
-  const assignedTrainers = rawTrainers.map((t: any) => t.trainer).filter(Boolean);
-  const trainersCount = assignedTrainers.length > 0 ? assignedTrainers.length : 2;
 
-  // Unauthenticated or Access Denied Screen (Only after auth resolves and channels resolve with 0 access)
+  // Unauthenticated or Access Denied Screen (Light SaaS Design)
   if (!authLoading && !loadingChannels && (!user || hasAccess === false)) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-4">
-        <div className="max-w-lg w-full bg-[#0B1528] rounded-3xl p-8 border border-white/10 shadow-2xl text-center space-y-5">
-          <div className="w-16 h-16 rounded-3xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto border border-cyan-500/30">
+      <div className="min-h-[80vh] flex items-center justify-center p-4 bg-white">
+        <div className="max-w-lg w-full bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-xl text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto border border-blue-200 shadow-sm">
             <Lock className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-white">Private Learning Community</h2>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              The Scalora Community is exclusively available to enrolled students and certified instructors.
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Private Learning Community</h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              The Scalora Community is exclusively available to enrolled students and certified instructors. Join an engineering track to participate in peer discussions, code reviews, and live office hours.
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/courses"
-              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-scalora-blue text-white font-bold text-sm shadow-glow-accent hover:opacity-95 transition-all flex items-center justify-center gap-2"
+              className="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md hover:shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
               <span>Explore Programs & Enroll</span>
@@ -185,15 +169,15 @@ export const CommunityPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#040D1B] w-full max-w-full overflow-x-hidden py-3 sm:py-6 pb-24">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 space-y-4 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-white text-slate-900 w-full max-w-full overflow-x-hidden py-6 sm:py-10 pb-24">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 w-full max-w-full overflow-x-hidden">
         {/* Top Channel Selector & Clean Segmented Tabs (Feed | Chat | Resources | Members) */}
-        <div className="bg-[#0B1528] rounded-xl p-2.5 sm:p-3 border border-white/10 shadow-sm space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             {/* Channel Title & Switcher */}
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-              <h1 className="text-xs sm:text-sm font-black text-white truncate">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+              <h1 className="text-base sm:text-lg font-black text-slate-900 truncate">
                 {selectedChannel?.name || (loadingChannels ? 'Connecting to Community...' : 'Community Hub')}
               </h1>
             </div>
@@ -203,7 +187,7 @@ export const CommunityPage: React.FC = () => {
               <select
                 value={selectedChannelId || ''}
                 onChange={(e) => handleSelectChannel(e.target.value)}
-                className="px-2.5 py-1 rounded-lg bg-[#04152D] text-xs text-white border border-white/10 font-bold focus:outline-none"
+                className="px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs text-slate-800 border border-slate-300 font-bold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 transition-all shadow-sm"
               >
                 {channels.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -215,56 +199,56 @@ export const CommunityPage: React.FC = () => {
           </div>
 
           {/* Top 4 Core Tabs */}
-          <div className="grid grid-cols-4 gap-1 pt-0.5 border-t border-white/10 text-xs font-bold">
+          <div className="grid grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-xs font-bold">
             <button
               type="button"
               onClick={() => setActiveMainTab('FEED')}
-              className={`py-1.5 px-1.5 rounded-lg transition-all flex items-center justify-center gap-1 min-h-[34px] ${
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
                 activeMainTab === 'FEED'
-                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
-                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25 font-bold'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <MessageSquare className="w-3 h-3" />
+              <MessageSquare className="w-3.5 h-3.5" />
               <span>Feed</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveMainTab('CHAT')}
-              className={`py-1.5 px-1.5 rounded-lg transition-all flex items-center justify-center gap-1 min-h-[34px] ${
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
                 activeMainTab === 'CHAT'
-                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
-                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25 font-bold'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <Radio className="w-3 h-3 text-emerald-400" />
-              <span>Chat</span>
+              <Radio className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Live Chat</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveMainTab('RESOURCES')}
-              className={`py-1.5 px-1.5 rounded-lg transition-all flex items-center justify-center gap-1 min-h-[34px] ${
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
                 activeMainTab === 'RESOURCES'
-                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
-                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25 font-bold'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <FolderDown className="w-3 h-3" />
+              <FolderDown className="w-3.5 h-3.5" />
               <span>Resources</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveMainTab('MEMBERS')}
-              className={`py-1.5 px-1.5 rounded-lg transition-all flex items-center justify-center gap-1 min-h-[34px] ${
+              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1.5 min-h-[38px] ${
                 activeMainTab === 'MEMBERS'
-                  ? 'bg-gradient-to-r from-cyan-500 to-scalora-blue text-white shadow-sm'
-                  : 'bg-[#04152D] text-slate-400 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25 font-bold'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <Users className="w-3 h-3" />
+              <Users className="w-3.5 h-3.5" />
               <span>Members</span>
             </button>
           </div>
@@ -272,9 +256,9 @@ export const CommunityPage: React.FC = () => {
 
         {/* Content Container */}
         <div className="w-full max-w-full">
-          <main className="w-full max-w-full space-y-3">
+          <main className="w-full max-w-full space-y-4">
             {activeMainTab === 'FEED' && (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {/* LinkedIn-style Post Composer */}
                 {selectedChannel && (
                   <PostComposer
@@ -286,84 +270,84 @@ export const CommunityPage: React.FC = () => {
                 )}
 
                 {/* Feed Filter & Search Bar */}
-                <div className="p-2.5 bg-[#0B1528] rounded-xl border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-semibold w-full max-w-full">
-                  <div className="grid grid-cols-3 sm:flex items-center gap-1 w-full sm:w-auto">
+                <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold w-full max-w-full">
+                  <div className="grid grid-cols-3 sm:flex items-center gap-1.5 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setFeedFilter('ALL')}
-                      className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
+                      className={`py-2 px-3 rounded-xl transition-all min-h-[36px] flex items-center justify-center text-center font-bold ${
                         feedFilter === 'ALL'
-                          ? 'bg-cyan-500 text-white shadow-sm'
-                          : 'bg-white/5 text-slate-400 hover:text-white'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
                       }`}
                     >
-                      All
+                      All Discussions
                     </button>
                     <button
                       type="button"
                       onClick={() => setFeedFilter('ANNOUNCEMENTS')}
-                      className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
+                      className={`py-2 px-3 rounded-xl transition-all min-h-[36px] flex items-center justify-center text-center font-bold ${
                         feedFilter === 'ANNOUNCEMENTS'
-                          ? 'bg-rose-500 text-white shadow-sm'
-                          : 'bg-white/5 text-slate-400 hover:text-white'
+                          ? 'bg-rose-600 text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
                       }`}
                     >
-                      News
+                      News & Updates
                     </button>
                     <button
                       type="button"
                       onClick={() => setFeedFilter('SAVED')}
-                      className={`py-1.5 px-2 rounded-lg transition-all min-h-[34px] flex items-center justify-center text-center ${
+                      className={`py-2 px-3 rounded-xl transition-all min-h-[36px] flex items-center justify-center text-center font-bold ${
                         feedFilter === 'SAVED'
-                          ? 'bg-amber-500 text-white shadow-sm'
-                          : 'bg-white/5 text-slate-400 hover:text-white'
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
                       }`}
                     >
                       Saved
                     </button>
                   </div>
 
-                  <div className="relative w-full sm:w-56">
-                    <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Filter discussions..."
+                      placeholder="Search discussions..."
                       value={postSearch}
                       onChange={(e) => setPostSearch(e.target.value)}
-                      className="w-full pl-7 pr-2.5 py-1.5 rounded-lg bg-[#071324] border border-white/10 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-400 min-h-[34px]"
+                      className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-xs focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 min-h-[36px] transition-all"
                     />
                   </div>
                 </div>
 
                 {/* Feed Posts Stream with Instant Skeletons */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {loadingPosts || loadingChannels ? (
-                    <div className="space-y-3 animate-pulse">
+                    <div className="space-y-4 animate-pulse">
                       {[1, 2, 3].map((n) => (
-                        <div key={n} className="p-3.5 rounded-xl bg-[#0B1528] border border-white/10 space-y-3">
+                        <div key={n} className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-800" />
-                            <div className="space-y-1.5 flex-1">
-                              <div className="h-3.5 bg-slate-800 rounded w-1/3" />
-                              <div className="h-2.5 bg-slate-800/60 rounded w-1/4" />
+                            <div className="w-10 h-10 rounded-full bg-slate-100" />
+                            <div className="space-y-2 flex-1">
+                              <div className="h-4 bg-slate-100 rounded w-1/3" />
+                              <div className="h-3 bg-slate-100/60 rounded w-1/4" />
                             </div>
                           </div>
-                          <div className="space-y-1.5 pt-1">
-                            <div className="h-3 bg-slate-800 rounded w-full" />
-                            <div className="h-3 bg-slate-800 rounded w-4/5" />
+                          <div className="space-y-2 pt-1">
+                            <div className="h-3.5 bg-slate-100 rounded w-full" />
+                            <div className="h-3.5 bg-slate-100 rounded w-4/5" />
                           </div>
-                          <div className="pt-2 border-t border-white/5 flex gap-4">
-                            <div className="h-5 bg-slate-800 rounded w-14" />
-                            <div className="h-5 bg-slate-800 rounded w-14" />
+                          <div className="pt-2 border-t border-slate-100 flex gap-4">
+                            <div className="h-6 bg-slate-100 rounded w-16" />
+                            <div className="h-6 bg-slate-100 rounded w-16" />
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : posts.length === 0 ? (
-                    <div className="p-8 text-center bg-[#0B1528] rounded-2xl border border-white/10 space-y-1.5">
-                      <MessageSquare className="w-8 h-8 text-slate-600 mx-auto" />
-                      <h4 className="text-xs font-bold text-white">No discussions yet</h4>
-                      <p className="text-[11px] text-slate-400">Be the first to share an insight or question!</p>
+                    <div className="p-12 text-center bg-slate-50 rounded-2xl border border-slate-200 space-y-2 max-w-md mx-auto">
+                      <MessageSquare className="w-10 h-10 text-slate-400 mx-auto" />
+                      <h4 className="text-base font-bold text-slate-900">No discussions yet</h4>
+                      <p className="text-xs text-slate-500">Be the first to share an insight, question, or architecture diagram!</p>
                     </div>
                   ) : (
                     posts.map((post) => (
@@ -382,29 +366,23 @@ export const CommunityPage: React.FC = () => {
               </div>
             )}
 
-                {/* ========================================================================= */}
-                {/* TAB CONTENT: 2. LIVE GROUP CHAT ROOM */}
-                {/* ========================================================================= */}
-                {activeMainTab === 'CHAT' && selectedChannel && (
-                  <CommunityChatRoom channelId={selectedChannel.id} channelName={selectedChannel.name} />
-                )}
+            {/* TAB CONTENT: 2. LIVE GROUP CHAT ROOM */}
+            {activeMainTab === 'CHAT' && selectedChannel && (
+              <CommunityChatRoom channelId={selectedChannel.id} channelName={selectedChannel.name} />
+            )}
 
-                {/* ========================================================================= */}
-                {/* TAB CONTENT: 3. RESOURCES VAULT */}
-                {/* ========================================================================= */}
-                {activeMainTab === 'RESOURCES' && (
-                  <CommunityResourcesTab posts={posts} />
-                )}
+            {/* TAB CONTENT: 3. RESOURCES VAULT */}
+            {activeMainTab === 'RESOURCES' && (
+              <CommunityResourcesTab posts={posts} />
+            )}
 
-                {/* ========================================================================= */}
-                {/* TAB CONTENT: 4. MEMBERS DIRECTORY */}
-                {/* ========================================================================= */}
-                {activeMainTab === 'MEMBERS' && selectedChannel && (
-                  <CommunityMembersTab
-                    channel={selectedChannel}
-                    onUserClick={(userId) => setInspectUserId(userId)}
-                  />
-                )}
+            {/* TAB CONTENT: 4. MEMBERS DIRECTORY */}
+            {activeMainTab === 'MEMBERS' && selectedChannel && (
+              <CommunityMembersTab
+                channel={selectedChannel}
+                onUserClick={(userId) => setInspectUserId(userId)}
+              />
+            )}
           </main>
         </div>
       </div>

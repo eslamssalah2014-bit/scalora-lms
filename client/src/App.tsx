@@ -55,16 +55,9 @@ import { useLocation } from 'react-router-dom';
 // Layout with Header & Footer
 const MainLayout: React.FC = () => {
   const location = useLocation();
-  const isAppRoute = [
-    '/dashboard',
-    '/profile',
-    '/my-study-plan',
-    '/study-plan',
-    '/messages',
-    '/notifications',
-    '/trainer',
-    '/community',
-  ].some((p) => location.pathname.startsWith(p));
+  const isAppRoute = ['/dashboard', '/learn', '/profile', '/quizzes', '/certificates', '/messages'].some(
+    (prefix) => location.pathname.startsWith(prefix)
+  );
 
   return (
     <div

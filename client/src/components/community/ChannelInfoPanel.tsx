@@ -71,14 +71,14 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
       {/* ========================================================================= */}
       {/* 1. COMMUNITY OVERVIEW CARD */}
       {/* ========================================================================= */}
-      <div className="bg-[#0B1528] rounded-3xl p-5 border border-white/10 shadow-xl space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-400">
-            <Info className="w-4 h-4 text-cyan-400" />
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-500">
+            <Info className="w-4 h-4 text-blue-600" />
             <span>Community Overview</span>
           </div>
           {channel.isLocked && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
               <Lock className="w-2.5 h-2.5" />
               <span>Announcements</span>
             </span>
@@ -86,25 +86,25 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <h3 className="text-base font-black text-white leading-snug">{channel.name}</h3>
-          <p className="text-xs text-slate-300 leading-relaxed">
+          <h3 className="text-base font-black text-slate-900 leading-snug">{channel.name}</h3>
+          <p className="text-xs text-slate-600 leading-relaxed">
             {channel.description || 'Private collaboration and social-learning hub for enrolled peers and certified instructors.'}
           </p>
         </div>
 
         {/* 3 Overview Statistics Cards */}
         <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-          <div className="p-2.5 rounded-2xl bg-[#091324] border border-white/5 space-y-0.5">
-            <div className="text-lg font-black text-purple-400">{displayTrainers.length}</div>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Trainers</div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
+            <div className="text-lg font-black text-blue-600">{displayTrainers.length}</div>
+            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Trainers</div>
           </div>
-          <div className="p-2.5 rounded-2xl bg-[#091324] border border-white/5 space-y-0.5">
-            <div className="text-lg font-black text-white">{channel.membersCount || 43}</div>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Members</div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
+            <div className="text-lg font-black text-slate-900">{channel.membersCount || 43}</div>
+            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Members</div>
           </div>
-          <div className="p-2.5 rounded-2xl bg-[#091324] border border-white/5 space-y-0.5">
-            <div className="text-lg font-black text-cyan-300">{channel.postsCount || 18}</div>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Discussions</div>
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
+            <div className="text-lg font-black text-blue-600">{channel.postsCount || 18}</div>
+            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Discussions</div>
           </div>
         </div>
       </div>
@@ -112,13 +112,13 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
       {/* ========================================================================= */}
       {/* 2. ASSIGNED INSTRUCTORS SECTION */}
       {/* ========================================================================= */}
-      <div className="bg-[#0B1528] rounded-3xl p-5 border border-white/10 shadow-xl space-y-3.5">
-        <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400 pb-2 border-b border-white/10">
-          <span className="flex items-center gap-2 text-cyan-300">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-500 pb-2 border-b border-slate-100">
+          <span className="flex items-center gap-2 text-slate-900 font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>Course Instructors</span>
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
             {displayTrainers.length} Assigned
           </span>
         </div>
@@ -127,25 +127,25 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
           {displayTrainers.map((trainer: any) => (
             <div
               key={trainer.id}
-              className="p-3.5 rounded-2xl bg-[#071324] border border-white/5 space-y-2.5 transition-all hover:border-cyan-500/30"
+              className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 transition-all hover:border-blue-300"
             >
               <div className="flex items-center gap-3">
                 <img
                   src={
                     trainer.avatar ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(trainer.name)}&background=0284C7&color=fff`
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(trainer.name)}&background=2563EB&color=fff`
                   }
                   alt={trainer.name}
-                  className="w-10 h-10 rounded-2xl object-cover border border-cyan-400 shadow-sm"
+                  className="w-10 h-10 rounded-xl object-cover border border-blue-200 shadow-sm"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                  <div className="text-xs font-bold text-slate-900 truncate flex items-center gap-1.5">
                     <span>{trainer.name}</span>
-                    <span className="px-1 py-0.2 rounded text-[8px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300">
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-blue-100 text-blue-700">
                       Pro
                     </span>
                   </div>
-                  <div className="text-[11px] text-cyan-300 font-semibold truncate">
+                  <div className="text-[11px] text-blue-600 font-semibold truncate">
                     {trainer.title || 'Course Lead'}
                   </div>
                 </div>
@@ -155,9 +155,9 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
               <button
                 type="button"
                 onClick={() => handleMessageTrainer(trainer.id)}
-                className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-scalora-blue/20 hover:from-cyan-500 hover:to-scalora-blue text-cyan-300 hover:text-white text-xs font-bold border border-cyan-400/30 transition-all flex items-center justify-center gap-2 shadow-sm"
+                className="w-full py-2 rounded-lg bg-white hover:bg-blue-50 text-blue-700 text-xs font-bold border border-slate-200 hover:border-blue-300 transition-all flex items-center justify-center gap-2 shadow-sm"
               >
-                <Mail className="w-3.5 h-3.5" />
+                <Mail className="w-3.5 h-3.5 text-blue-600" />
                 <span>Message Instructor</span>
               </button>
             </div>
@@ -168,29 +168,29 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
       {/* ========================================================================= */}
       {/* 3. UPCOMING LIVE SESSION CARD */}
       {/* ========================================================================= */}
-      <div className="bg-[#0B1528] rounded-3xl p-5 border border-white/10 shadow-xl space-y-3.5">
-        <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400">
-          <span className="flex items-center gap-2 text-rose-400">
-            <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-500">
+          <span className="flex items-center gap-2 text-rose-600 font-bold">
+            <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
             <span>Upcoming Live Session</span>
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
             Weekly AMA
           </span>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-rose-500/10 via-[#071324] to-[#071324] border border-rose-500/20 space-y-2.5">
-          <div className="text-xs font-bold text-white leading-tight">
+        <div className="p-3.5 rounded-xl bg-rose-50/50 border border-rose-100 space-y-2.5">
+          <div className="text-xs font-bold text-slate-900 leading-tight">
             Advanced Operations & Automation Masterclass
           </div>
 
-          <div className="space-y-1 text-[11px] text-slate-300">
+          <div className="space-y-1 text-[11px] text-slate-600">
             <div className="flex items-center gap-2">
-              <Calendar className="w-3 h-3 text-rose-400" />
+              <Calendar className="w-3 h-3 text-rose-500" />
               <span>This Thursday, August 27</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="w-3 h-3 text-rose-400" />
+              <Clock className="w-3 h-3 text-rose-500" />
               <span>07:00 PM (GMT+3) • 60 Mins</span>
             </div>
           </div>
@@ -198,7 +198,7 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
           <button
             type="button"
             onClick={() => alert('Live session link will activate 15 minutes before scheduled start time.')}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-xs shadow-glow-rose hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold text-xs shadow-sm shadow-rose-500/20 hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
           >
             <span>Join Live Session</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -209,14 +209,14 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
       {/* ========================================================================= */}
       {/* 4. TOP CONTRIBUTORS LEADERBOARD */}
       {/* ========================================================================= */}
-      <div className="bg-[#0B1528] rounded-3xl p-5 border border-white/10 shadow-xl space-y-3.5">
-        <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-400 pb-2 border-b border-white/10">
-          <span className="flex items-center gap-2 text-amber-300">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+      <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3.5">
+        <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-slate-500 pb-2 border-b border-slate-100">
+          <span className="flex items-center gap-2 text-slate-900 font-bold">
+            <Trophy className="w-3.5 h-3.5 text-amber-500" />
             <span>Top Contributors</span>
           </span>
-          <span className="flex items-center gap-1 text-[10px] text-slate-400">
-            <Flame className="w-3 h-3 text-amber-400" />
+          <span className="flex items-center gap-1 text-[10px] text-slate-500">
+            <Flame className="w-3 h-3 text-amber-500" />
             <span>Leaderboard</span>
           </span>
         </div>
@@ -225,22 +225,22 @@ export const ChannelInfoPanel: React.FC<ChannelInfoPanelProps> = ({
           {topContributors.map((c) => (
             <div
               key={c.rank}
-              className="p-2.5 rounded-2xl bg-[#071324] border border-white/5 flex items-center justify-between gap-2.5"
+              className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2.5 transition-all hover:bg-slate-100"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="text-base">{c.badge}</span>
                 <img
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=0F172A&color=38BDF8`}
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=E2E8F0&color=0F172A`}
                   alt={c.name}
-                  className="w-7 h-7 rounded-xl object-cover border border-white/10"
+                  className="w-7 h-7 rounded-lg object-cover border border-slate-200"
                 />
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-white truncate">{c.name}</div>
-                  <div className="text-[10px] text-slate-400">{c.role}</div>
+                  <div className="text-xs font-bold text-slate-900 truncate">{c.name}</div>
+                  <div className="text-[10px] text-slate-500">{c.role}</div>
                 </div>
               </div>
 
-              <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-300 text-[10px] font-bold border border-amber-500/20 font-mono">
+              <span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200 font-mono">
                 {c.xp}
               </span>
             </div>
