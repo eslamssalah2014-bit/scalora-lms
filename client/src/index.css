@@ -5,8 +5,12 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    background-color: #FFFFFF;
+    color: #0F172A;
   }
   body {
+    background-color: #FFFFFF;
+    color: #0F172A;
     @apply bg-white text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white;
   }
   section {

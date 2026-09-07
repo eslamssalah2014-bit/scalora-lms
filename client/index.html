@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #ffffff; color: #0f172a;">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/scalora-logo.png" />
+    <link rel="icon" type="image/png" href="/scalora-icon-transparent.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     
     <!-- Primary PWA Identity -->
@@ -11,14 +11,14 @@
     <link rel="manifest" href="/manifest.json" />
     
     <!-- Theme & Color Configuration -->
-    <meta name="theme-color" content="#04152D" />
-    <meta name="background-color" content="#04152D" />
-    <meta name="msapplication-TileColor" content="#04152D" />
-    <meta name="msapplication-navbutton-color" content="#04152D" />
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="background-color" content="#FFFFFF" />
+    <meta name="msapplication-TileColor" content="#2563EB" />
+    <meta name="msapplication-navbutton-color" content="#2563EB" />
     
     <!-- iOS Web App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Scalora" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -49,12 +49,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
+      html, body {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        margin: 0;
+        padding: 0;
+      }
+
       #scalora-splash {
         position: fixed;
         inset: 0;
         width: 100vw;
         height: 100vh;
-        background-color: #04152D;
+        background-color: #FFFFFF;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -63,7 +70,7 @@
         font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         user-select: none;
         -webkit-user-select: none;
-        animation: splashSequence 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
       }
 
       .splash-content {
@@ -71,79 +78,70 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        animation: splashLogoScale 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      .splash-logo-box {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: #EFF6FF;
+        border: 1px solid #DBEAFE;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.12);
       }
 
       .splash-logo {
-        width: 108px;
-        height: 108px;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
-        background: transparent !important;
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        display: block;
       }
 
       .splash-text {
-        margin-top: 18px;
-        font-size: 15px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        color: #FFFFFF;
-        text-transform: uppercase;
-        opacity: 0.95;
+        margin-top: 14px;
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #0F172A;
       }
 
-      @keyframes splashSequence {
-        0% {
-          opacity: 0;
-          visibility: visible;
-        }
-        23% { /* 300ms Fade In */
-          opacity: 1;
-          visibility: visible;
-        }
-        84% { /* 800ms Hold */
-          opacity: 1;
-          visibility: visible;
-        }
-        100% { /* 200ms Fade Out */
-          opacity: 0;
-          visibility: hidden;
-          pointer-events: none;
-        }
+      .splash-spinner {
+        margin-top: 16px;
+        width: 20px;
+        height: 20px;
+        border: 2.5px solid #E2E8F0;
+        border-top-color: #2563EB;
+        border-radius: 50%;
+        animation: splashSpin 0.7s linear infinite;
       }
 
-      @keyframes splashLogoScale {
-        0% {
-          transform: scale(0.95);
-        }
-        23% {
-          transform: scale(1);
-        }
-        84% {
-          transform: scale(1);
-        }
-        100% {
-          transform: scale(1.02);
-        }
+      @keyframes splashSpin {
+        to { transform: rotate(360deg); }
       }
     </style>
   </head>
-  <body class="bg-[#04152D] text-slate-100 min-h-screen antialiased selection:bg-scalora-blue selection:text-white" style="background-color: #04152D; margin: 0;">
-    <!-- Scalora Native Splash Screen (True Transparency, Exact SaaS Palette) -->
+  <body class="bg-white text-slate-900 min-h-screen antialiased selection:bg-blue-600 selection:text-white" style="background-color: #FFFFFF; color: #0F172A; margin: 0;">
+    <!-- Scalora Native Splash Screen (Clean White + Scalora Blue SaaS Theme) -->
     <div id="scalora-splash">
       <div class="splash-content">
-        <img src="/scalora-icon-transparent.png" alt="Scalora" class="splash-logo" />
+        <div class="splash-logo-box">
+          <img src="/scalora-icon-transparent.png" alt="Scalora" class="splash-logo" />
+        </div>
         <div class="splash-text">Scalora</div>
+        <div class="splash-spinner"></div>
       </div>
     </div>
     <script>
+      // Fallback auto-dismiss
       setTimeout(function() {
         var splash = document.getElementById('scalora-splash');
-        if (splash) splash.remove();
-      }, 1400);
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(function() { splash.remove(); }, 200);
+        }
+      }, 800);
     </script>
 
     <div id="root"></div>

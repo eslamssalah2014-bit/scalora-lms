@@ -1,14 +1,14 @@
 {
   "name": "Scalora LMS",
   "short_name": "Scalora",
-  "description": "Enterprise Learning Management System & Executive Executive Community",
+  "description": "Enterprise Learning Management System & Executive Community",
   "start_url": "/",
   "id": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#04152D",
-  "theme_color": "#04152D",
+  "background_color": "#FFFFFF",
+  "theme_color": "#2563EB",
   "icons": [
     {
       "src": "/pwa-512x512.png",
