@@ -5,10 +5,8 @@ import {
   Globe,
   Briefcase,
   GraduationCap,
-  ShieldCheck,
   Users,
   ArrowRight,
-  TrendingUp,
   Quote,
   Sparkles,
 } from 'lucide-react';
@@ -32,10 +30,9 @@ export const AboutPage: React.FC = () => {
 
   const founder = about?.founder;
   const teamMembers = about?.team || [];
-  const milestones = about?.milestones || [];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-20 bg-white text-slate-900">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 space-y-16 sm:space-y-20 bg-white text-slate-900">
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto space-y-4">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
@@ -160,70 +157,6 @@ export const AboutPage: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Timeline Milestones (if available) */}
-      {milestones.length > 0 && (
-        <div className="space-y-8">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900">Our Journey & Milestones</h2>
-            <p className="text-sm text-slate-500">Key milestones in the evolution of Scalora.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {milestones.map((m) => (
-              <div
-                key={m.id}
-                className="bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-3 relative"
-              >
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-blue-600 text-white">
-                  {m.year}
-                </span>
-                <h3 className="font-bold text-slate-900 text-base pt-1">{m.title}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">{m.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Core Principles */}
-      <div className="rounded-3xl bg-white p-8 sm:p-14 border border-slate-200 shadow-sm space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2">
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900">Our Core Commitments</h2>
-          <p className="text-sm text-slate-500">What guides every consulting sprint and course we produce.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h4 className="text-lg font-bold text-slate-900">Zero Theory, 100% Execution</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Everything we teach and deploy is battle-tested in live enterprise environments. No vanity decks.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <h4 className="text-lg font-bold text-slate-900">Measurable Velocity</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              We focus relentlessly on quantitative outcomes: cycle time acceleration, error reduction, and margin expansion.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
-            <h4 className="text-lg font-bold text-slate-900">Enduring Peer Ecosystem</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Long-term alumni network access, continuous template updates, and collaborative growth across industries.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
