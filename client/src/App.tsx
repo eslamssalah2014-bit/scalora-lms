@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { CmsProvider } from './context/CmsContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -27,6 +28,7 @@ import { StudyPlanPage } from './pages/StudyPlanPage';
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminCmsPage } from './pages/admin/AdminCmsPage';
 import { AdminPaymentsPage } from './pages/admin/AdminPaymentsPage';
 import { AdminLeadsPage } from './pages/admin/AdminLeadsPage';
 import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
@@ -85,135 +87,138 @@ const MainLayout: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Public / Student Standard Layout Routes */}
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/services" element={<ServicesPage />} />
-          <Route path="/community" element={<CommunityPage />} />
-          <Route path="/courses" element={<CoursesPage />} />
-          <Route path="/courses/:slug" element={<CourseDetailsPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/set-password/:token" element={<PasswordSetupPage />} />
+      <CmsProvider>
+        <Routes>
+          {/* Public / Student Standard Layout Routes */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/courses" element={<CoursesPage />} />
+            <Route path="/courses/:slug" element={<CourseDetailsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/set-password/:token" element={<PasswordSetupPage />} />
 
-          {/* Student Dashboard & Profile */}
+            {/* Student Dashboard & Profile */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Direct Messages & Student Inquiry Module */}
+            <Route
+              path="/messages"
+              element={
+                <ProtectedRoute>
+                  <MessagesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Unified Notification Center */}
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <NotificationCenterPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Smart Study Plan & Learning Pace */}
+            <Route
+              path="/my-study-plan"
+              element={
+                <ProtectedRoute>
+                  <StudyPlanPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/study-plan"
+              element={
+                <ProtectedRoute>
+                  <StudyPlanPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Dedicated Trainer Workspace */}
+            <Route
+              path="/trainer"
+              element={
+                <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+                  <TrainerDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+
+          {/* Full-Screen Distraction-Free Classroom Learning Player */}
           <Route
-            path="/dashboard"
+            path="/learn/:slug"
             element={
               <ProtectedRoute>
-                <StudentDashboard />
+                <CoursePlayerPage />
               </ProtectedRoute>
             }
           />
+
+          {/* Interactive Quiz Assessment */}
           <Route
-            path="/profile"
+            path="/learn/:slug/quiz/:quizId"
             element={
               <ProtectedRoute>
-                <StudentDashboard />
+                <QuizPage />
               </ProtectedRoute>
             }
           />
 
-          {/* Direct Messages & Student Inquiry Module */}
+          {/* Admin Dashboard Console (Role Protected) */}
           <Route
-            path="/messages"
+            path="/admin"
             element={
-              <ProtectedRoute>
-                <MessagesPage />
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<AdminDashboardPage />} />
+            <Route path="cms" element={<AdminCmsPage />} />
+            <Route path="pwa-analytics" element={<PwaAnalyticsPage />} />
+            <Route path="notifications" element={<AdminNotificationsPage />} />
+            <Route path="trainers" element={<AdminTrainersPage />} />
+            <Route path="community" element={<AdminCommunityPage />} />
+            <Route path="payments" element={<AdminPaymentsPage />} />
+            <Route path="leads" element={<AdminLeadsPage />} />
+            <Route path="courses" element={<AdminCoursesPage />} />
+            <Route path="courses/:courseId/curriculum" element={<AdminCurriculumPage />} />
+            <Route path="quizzes" element={<AdminQuizzesPage />} />
+            <Route path="enrollments" element={<AdminEnrollmentsPage />} />
+            <Route path="students" element={<AdminStudentsPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+          </Route>
 
-          {/* Unified Notification Center */}
-          <Route
-            path="/notifications"
-            element={
-              <ProtectedRoute>
-                <NotificationCenterPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Smart Study Plan & Learning Pace */}
-          <Route
-            path="/my-study-plan"
-            element={
-              <ProtectedRoute>
-                <StudyPlanPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/study-plan"
-            element={
-              <ProtectedRoute>
-                <StudyPlanPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Dedicated Trainer Workspace */}
-          <Route
-            path="/trainer"
-            element={
-              <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
-                <TrainerDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-
-        {/* Full-Screen Distraction-Free Classroom Learning Player */}
-        <Route
-          path="/learn/:slug"
-          element={
-            <ProtectedRoute>
-              <CoursePlayerPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Interactive Quiz Assessment */}
-        <Route
-          path="/learn/:slug/quiz/:quizId"
-          element={
-            <ProtectedRoute>
-              <QuizPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin Dashboard Console (Role Protected) */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="pwa-analytics" element={<PwaAnalyticsPage />} />
-          <Route path="notifications" element={<AdminNotificationsPage />} />
-          <Route path="trainers" element={<AdminTrainersPage />} />
-          <Route path="community" element={<AdminCommunityPage />} />
-          <Route path="payments" element={<AdminPaymentsPage />} />
-          <Route path="leads" element={<AdminLeadsPage />} />
-          <Route path="courses" element={<AdminCoursesPage />} />
-          <Route path="courses/:courseId/curriculum" element={<AdminCurriculumPage />} />
-          <Route path="quizzes" element={<AdminQuizzesPage />} />
-          <Route path="enrollments" element={<AdminEnrollmentsPage />} />
-          <Route path="students" element={<AdminStudentsPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-        </Route>
-
-        {/* Catch-all fallback */}
-        <Route path="*" element={<HomePage />} />
-      </Routes>
+          {/* Catch-all fallback */}
+          <Route path="*" element={<HomePage />} />
+        </Routes>
+      </CmsProvider>
     </AuthProvider>
   );
 };

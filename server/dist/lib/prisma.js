@@ -39,6 +39,7 @@ exports.PROTECTED_TABLES = [
     'CourseTrainer',
     'DirectMessage',
     'CommunityChatMessage',
+    'CourseInterest',
 ];
 exports.SOFT_DELETE_MODELS = [
     'User',

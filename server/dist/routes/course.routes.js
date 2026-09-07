@@ -8,11 +8,16 @@ const router = (0, express_1.Router)();
 router.get('/categories', course_controller_js_1.getCategories);
 router.post('/categories', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.createCategory);
 router.delete('/categories/:id', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.deleteCategory);
-// Public routes (with optional auth to detect enrollment)
+// Public routes (with optional auth to detect enrollment / interest)
 router.get('/', course_controller_js_1.getPublishedCourses);
+router.get('/upcoming', course_controller_js_1.getUpcomingCourses);
 router.get('/details/:slug', auth_middleware_js_1.optionalAuth, course_controller_js_1.getCourseBySlug);
+// Course Interest Registration (Student)
+router.post('/:id/interest', auth_middleware_js_1.authenticate, course_controller_js_1.registerCourseInterest);
+router.delete('/:id/interest', auth_middleware_js_1.authenticate, course_controller_js_1.removeCourseInterest);
 // Admin-only routes
 router.get('/admin/all', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.getAllCoursesAdmin);
+router.post('/upload-thumbnail', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.uploadCourseThumbnail);
 router.post('/', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.createCourse);
 router.put('/:id/pricing', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.updateCoursePricing);
 router.put('/:id', auth_middleware_js_1.authenticate, auth_middleware_js_1.requireAdmin, course_controller_js_1.updateCourse);

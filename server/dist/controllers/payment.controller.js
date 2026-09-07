@@ -55,10 +55,14 @@ const submitInstaPayPayment = async (req, res) => {
         const { courseId, referenceNumber, screenshotUrl, notes, fullName, email, phone } = instapaySubmitSchema.parse(req.body);
         const course = await prisma_js_1.prisma.course.findUnique({
             where: { id: courseId },
-            select: { id: true, title: true, price: true, slug: true },
+            select: { id: true, title: true, price: true, slug: true, isComingSoon: true },
         });
         if (!course) {
             res.status(404).json({ success: false, message: 'Course not found' });
+            return;
+        }
+        if (course.isComingSoon) {
+            res.status(400).json({ success: false, message: 'This course is currently Coming Soon and not yet open for enrollment or payment.' });
             return;
         }
         const loggedInUser = req.user;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCms } from '../context/CmsContext';
 import { Course } from '../types';
 import { api } from '../lib/api';
 import { CourseCard } from '../components/CourseCard';
@@ -23,14 +24,19 @@ import {
   MessageSquare,
   BookOpen,
   Check,
+  Star,
+  ChevronDown,
+  HelpCircle,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
+  const { home, partners } = useCms();
 
   const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
   const [selectedCourseForCheckout, setSelectedCourseForCheckout] = useState<Course | null>(null);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchFeaturedCourses();
@@ -63,36 +69,36 @@ export const HomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto">
             {/* Announcement Pill */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 max-w-full">
-              <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-ping flex-shrink-0" />
-              <span className="text-xs font-bold tracking-wide truncate">
-                Enterprise Operations Consulting & Technical Academy
-              </span>
-              <Sparkles className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-            </div>
+            {home?.hero?.pillBadge && (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500 max-w-full">
+                {home.hero.pillPing !== false && (
+                  <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-ping flex-shrink-0" />
+                )}
+                <span className="text-xs font-bold tracking-wide truncate">
+                  {home.hero.pillBadge}
+                </span>
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+              </div>
+            )}
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.12]">
-              Elevate Enterprise Excellence with{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600">
-                Scalora
-              </span>
+              {home?.hero?.headline || 'Elevate Enterprise Excellence with Scalora'}
             </h1>
 
             {/* Subtitle */}
             <p className="text-base sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-              We empower modern organizations through two unified pillars: high-impact{' '}
-              <strong className="text-slate-900 font-semibold">Operations Consulting</strong> that structures business systems, and a premier{' '}
-              <strong className="text-slate-900 font-semibold">Community & Academy</strong> for engineers and operators.
+              {home?.hero?.subheadline ||
+                'We empower modern organizations through two unified pillars: high-impact Operations Consulting that structures business systems, and a premier Community & Academy for engineers and operators.'}
             </p>
 
             {/* Quick Action CTAs */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-2">
               <a
-                href="#featured-courses"
+                href={home?.hero?.cta1Link || '#featured-courses'}
                 className="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
               >
-                <span>Explore Courses</span>
+                <span>{home?.hero?.cta1Text || 'Explore Courses'}</span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </a>
 
@@ -106,11 +112,11 @@ export const HomePage: React.FC = () => {
                 </Link>
               ) : (
                 <Link
-                  to="/services"
+                  to={home?.hero?.cta2Link || '/services'}
                   className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm sm:text-base border border-slate-300 shadow-sm transition-all flex items-center justify-center gap-2"
                 >
                   <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                  <span>Explore Consulting</span>
+                  <span>{home?.hero?.cta2Text || 'Explore Consulting'}</span>
                 </Link>
               )}
             </div>
@@ -424,7 +430,120 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 6. GATEWAY CALL TO ACTION BANNER (Dark Navy Corporate Accent)             */}
+      {/* 6. DYNAMIC TESTIMONIALS & REVIEWS SECTION (CMS MANAGED)                   */}
+      {/* ========================================================================= */}
+      {home?.testimonials && home.testimonials.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
+              <Award className="w-3.5 h-3.5 text-blue-600" />
+              <span>Proven Impact</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Trusted by Leading Practitioners & Teams
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Hear directly from developers, cloud architects, and operations managers who transformed their systems.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {home.testimonials.map((t) => (
+              <div
+                key={t.id}
+                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1 text-amber-400">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star <= t.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
+                    "{t.review}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
+                  {t.photoUrl ? (
+                    <img
+                      src={t.photoUrl}
+                      alt={t.name}
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs">
+                      {t.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs sm:text-sm font-bold text-slate-900">{t.name}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {t.role} {t.company && `• ${t.company}`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 7. FREQUENTLY ASKED QUESTIONS SECTION (CMS MANAGED)                       */}
+      {/* ========================================================================= */}
+      {home?.faq && home.faq.length > 0 && (
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">
+              <HelpCircle className="w-3.5 h-3.5 text-blue-600" />
+              <span>Got Questions?</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              Frequently Asked Questions
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {home.faq.map((f, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div
+                  key={f.id}
+                  className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm transition-all"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left gap-4 hover:bg-slate-50 transition-colors"
+                  >
+                    <span className="text-sm font-bold text-slate-900">{f.question}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-slate-400 transition-transform ${
+                        isOpen ? 'rotate-180 text-blue-600' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-6 pb-4 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                      {f.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 8. GATEWAY CALL TO ACTION BANNER (Dark Navy Corporate Accent)             */}
       {/* ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-3xl bg-[#0F172A] border border-slate-800 p-8 sm:p-12 md:p-14 overflow-hidden text-center shadow-2xl">

@@ -20,6 +20,7 @@ import realtimeRoutes from './routes/realtime.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import pwaAnalyticsRoutes from './routes/pwa-analytics.routes.js';
 import studyPlannerRoutes from './routes/study-planner.routes.js';
+import cmsRoutes from './routes/cms.routes.js';
 
 dotenv.config();
 
@@ -143,6 +144,9 @@ app.use('/pwa', pwaAnalyticsRoutes);
 app.use('/api/admin/pwa-analytics', pwaAnalyticsRoutes);
 app.use('/api/study-planner', studyPlannerRoutes);
 app.use('/study-planner', studyPlannerRoutes);
+
+app.use('/api/cms', cmsRoutes);
+app.use('/cms', cmsRoutes);
 
 app.use('/api/admin', adminRoutes);
 app.use('/admin', adminRoutes);

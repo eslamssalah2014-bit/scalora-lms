@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Course } from '../types';
 import { api } from '../lib/api';
+import { useCms } from '../context/CmsContext';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
-import { Search, Filter, BookOpen, Sparkles } from 'lucide-react';
+import { Search, Filter, BookOpen, Sparkles, Clock, Calendar } from 'lucide-react';
 
 const DEFAULT_CATEGORIES = [
   'All',
@@ -17,6 +18,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 export const CoursesPage: React.FC = () => {
+  const { courses: cmsCourses } = useCms();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'All';
 
@@ -87,22 +89,24 @@ export const CoursesPage: React.FC = () => {
     setSearchParams(searchParams);
   };
 
+  const comingSoonCourses = cmsCourses?.comingSoonCourses || [];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 bg-white text-slate-900">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 bg-white text-slate-900">
       {/* Header Banner */}
       <div className="relative p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white overflow-hidden shadow-xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full pointer-events-none" />
         <div className="relative z-10 space-y-4 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 text-white border border-white/30 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Mastery Catalog</span>
+            <span>{cmsCourses?.headerTitle || 'Mastery Catalog'}</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Explore All Engineering Tracks
+            {cmsCourses?.headerHeadline || 'Explore All Engineering Tracks'}
           </h1>
           <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
-            Choose from comprehensive, hands-on enterprise tracks. Learn at your own pace with lifetime access,
-            interactive assessments, and verifiable certification.
+            {cmsCourses?.headerDescription ||
+              'Choose from comprehensive, hands-on enterprise tracks. Learn at your own pace with lifetime access, interactive assessments, and verifiable certification.'}
           </p>
         </div>
       </div>
@@ -197,6 +201,49 @@ export const CoursesPage: React.FC = () => {
               onEnrollClick={(c) => setSelectedCourseForCheckout(c)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Coming Soon Courses from CMS */}
+      {comingSoonCourses.length > 0 && (
+        <div className="pt-8 border-t border-slate-200 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{cmsCourses?.upcomingSectionTitle || 'Upcoming Releases'}</span>
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">Coming Soon to Scalora</h2>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {comingSoonCourses.map((track) => (
+              <div
+                key={track.id}
+                className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 hover:shadow-md transition-shadow relative overflow-hidden"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                    {track.category || 'Engineering Track'}
+                  </span>
+                  <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                    {track.featured ? 'Featured Track' : 'Coming Soon'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{track.title}</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">{track.description}</p>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                    <span>{track.launchDate ? `Target: ${track.launchDate}` : 'Coming This Quarter'}</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

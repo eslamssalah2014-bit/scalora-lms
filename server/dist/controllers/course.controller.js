@@ -1,16 +1,24 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCoursePricing = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
+exports.uploadCourseThumbnail = exports.getUpcomingCourses = exports.removeCourseInterest = exports.registerCourseInterest = exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCoursePricing = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
 const zod_1 = require("zod");
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 const prisma_js_1 = require("../lib/prisma.js");
 const community_service_js_1 = require("../services/community.service.js");
 const audit_service_js_1 = require("../services/audit.service.js");
 const course_pricing_service_js_1 = require("../services/course-pricing.service.js");
+const realtime_service_js_1 = require("../services/realtime.service.js");
+const webpush_service_js_1 = require("../services/webpush.service.js");
 const courseSchema = zod_1.z.object({
     title: zod_1.z.string().min(3, 'Title must be at least 3 characters'),
     slug: zod_1.z.string().optional(),
     description: zod_1.z.string().min(10, 'Description must be at least 10 characters'),
-    thumbnail: zod_1.z.string().url('Invalid thumbnail URL').optional().or(zod_1.z.literal('')),
+    thumbnail: zod_1.z.string().optional().or(zod_1.z.literal('')),
+    thumbnail_url: zod_1.z.string().optional().or(zod_1.z.literal('')),
     price: zod_1.z.number().min(0, 'Price must be 0 or positive').default(0),
     basePrice: zod_1.z.number().min(0, 'Base price must be 0 or positive').optional(),
     discountPrice: zod_1.z.number().min(0, 'Discount price must be 0 or positive').optional(),
@@ -19,6 +27,9 @@ const courseSchema = zod_1.z.object({
     category: zod_1.z.string().min(2, 'Category is required'),
     level: zod_1.z.string().optional().default('All Levels'),
     isPublished: zod_1.z.boolean().optional().default(false),
+    isComingSoon: zod_1.z.boolean().optional().default(false),
+    launchDate: zod_1.z.string().nullable().optional(),
+    comingSoonDescription: zod_1.z.string().nullable().optional().or(zod_1.z.literal('')),
     trainerIds: zod_1.z.array(zod_1.z.string()).optional(),
 });
 const generateSlug = (title) => {
@@ -75,7 +86,7 @@ const getPublishedCourses = async (req, res) => {
                     },
                 },
                 _count: {
-                    select: { enrollments: true },
+                    select: { enrollments: true, interests: true },
                 },
             },
         });
@@ -90,6 +101,7 @@ const getPublishedCourses = async (req, res) => {
                 title: course.title,
                 slug: course.slug,
                 description: course.description,
+                comingSoonDescription: course.comingSoonDescription,
                 thumbnail: course.thumbnail,
                 price: effectivePrice,
                 basePrice,
@@ -100,12 +112,15 @@ const getPublishedCourses = async (req, res) => {
                 category: course.category,
                 level: course.level,
                 isPublished: course.isPublished,
+                isComingSoon: course.isComingSoon || false,
+                launchDate: course.launchDate,
                 createdAt: course.createdAt,
                 updatedAt: course.updatedAt,
                 modulesCount: course.modules.length,
                 lessonsCount: allLessons.length,
                 quizzesCount: course.quizzes.length,
                 studentsCount: course._count.enrollments,
+                interestsCount: course._count.interests || 0,
                 trainers: course.trainers.map((t) => t.trainer),
             };
         });
@@ -140,6 +155,7 @@ const getAllCoursesAdmin = async (_req, res) => {
                 _count: {
                     select: {
                         enrollments: true,
+                        interests: true,
                     },
                 },
             },
@@ -152,6 +168,9 @@ const getAllCoursesAdmin = async (_req, res) => {
             const effectivePrice = discountPrice > 0 && discountPrice < basePrice ? discountPrice : basePrice;
             return {
                 ...course,
+                isComingSoon: course.isComingSoon || false,
+                launchDate: course.launchDate,
+                comingSoonDescription: course.comingSoonDescription,
                 modules: course.modules.map((m) => ({
                     ...m,
                     lessons: m.lessons.map((l) => ({
@@ -168,6 +187,7 @@ const getAllCoursesAdmin = async (_req, res) => {
                 lessonsCount: totalLessons,
                 quizzesCount: course.quizzes.length,
                 studentsCount: course._count.enrollments,
+                interestsCount: course._count.interests || 0,
                 trainers: course.trainers.map((t) => t.trainer),
             };
         });
@@ -230,7 +250,7 @@ const getCourseBySlug = async (req, res) => {
                     },
                 },
                 _count: {
-                    select: { enrollments: true },
+                    select: { enrollments: true, interests: true },
                 },
             },
         });
@@ -239,21 +259,35 @@ const getCourseBySlug = async (req, res) => {
             return;
         }
         let isEnrolled = false;
+        let isInterested = false;
         let progressSummary = {
             completedLessonIds: [],
             completionPercentage: 0,
         };
         if (userId) {
-            const enrollment = await prisma_js_1.prisma.enrollment.findUnique({
-                where: {
-                    userId_courseId: {
-                        userId,
-                        courseId: course.id,
+            const [enrollment, interest] = await Promise.all([
+                prisma_js_1.prisma.enrollment.findUnique({
+                    where: {
+                        userId_courseId: {
+                            userId,
+                            courseId: course.id,
+                        },
                     },
-                },
-            });
+                }),
+                prisma_js_1.prisma.courseInterest.findUnique({
+                    where: {
+                        userId_courseId: {
+                            userId,
+                            courseId: course.id,
+                        },
+                    },
+                }),
+            ]);
             if (enrollment || req.user?.role === 'ADMIN') {
                 isEnrolled = true;
+            }
+            if (interest) {
+                isInterested = true;
             }
             const allLessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
             if (allLessonIds.length > 0) {
@@ -282,6 +316,9 @@ const getCourseBySlug = async (req, res) => {
             success: true,
             course: {
                 ...course,
+                isComingSoon: course.isComingSoon || false,
+                launchDate: course.launchDate,
+                comingSoonDescription: course.comingSoonDescription,
                 modules: course.modules.map((m) => ({
                     ...m,
                     lessons: m.lessons.map((l) => ({
@@ -297,7 +334,9 @@ const getCourseBySlug = async (req, res) => {
                 currency: 'EGP',
                 lessonsCount: totalLessons,
                 studentsCount: course._count.enrollments,
+                interestsCount: course._count.interests || 0,
                 isEnrolled,
+                isInterested,
                 userProgress: progressSummary,
                 trainers: course.trainers.map((t) => t.trainer),
             },
@@ -311,7 +350,7 @@ exports.getCourseBySlug = getCourseBySlug;
 const createCourse = async (req, res) => {
     try {
         const validatedData = courseSchema.parse(req.body);
-        const { trainerIds, basePrice, discountPrice, discountedPrice, ...courseData } = validatedData;
+        const { trainerIds, basePrice, discountPrice, discountedPrice, launchDate, thumbnail_url, ...courseData } = validatedData;
         let slug = courseData.slug || generateSlug(courseData.title);
         const existing = await prisma_js_1.prisma.course.findUnique({ where: { slug } });
         if (existing) {
@@ -322,17 +361,24 @@ const createCourse = async (req, res) => {
             ? discountPrice
             : (typeof discountedPrice === 'number' ? discountedPrice : initialBase);
         const effectivePrice = initialDiscount > 0 && initialDiscount < initialBase ? initialDiscount : initialBase;
+        // Map thumbnail strictly to Prisma Course model's thumbnail field
+        const effectiveThumbnail = courseData.thumbnail ||
+            thumbnail_url ||
+            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80';
         const course = await prisma_js_1.prisma.course.create({
             data: {
                 title: courseData.title,
                 slug,
                 description: courseData.description,
-                thumbnail: courseData.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80',
+                comingSoonDescription: courseData.comingSoonDescription || null,
+                thumbnail: effectiveThumbnail,
                 price: effectivePrice,
                 instructor: courseData.instructor,
                 category: courseData.category,
                 level: courseData.level || 'All Levels',
                 isPublished: courseData.isPublished || false,
+                isComingSoon: courseData.isComingSoon || false,
+                launchDate: launchDate ? new Date(launchDate) : null,
             },
         });
         // Save custom pricing
@@ -391,7 +437,7 @@ const updateCourse = async (req, res) => {
     try {
         const id = req.params.id;
         const validatedData = courseSchema.partial().parse(req.body);
-        const { trainerIds, basePrice, discountPrice, discountedPrice, ...courseData } = validatedData;
+        const { trainerIds, basePrice, discountPrice, discountedPrice, launchDate, thumbnail_url, ...courseData } = validatedData;
         const existing = await prisma_js_1.prisma.course.findUnique({ where: { id } });
         if (!existing) {
             res.status(404).json({ success: false, message: 'Course not found' });
@@ -413,10 +459,77 @@ const updateCourse = async (req, res) => {
                 : updatedPricing.basePrice;
             courseData.price = effectivePrice;
         }
+        // Build strictly valid Prisma update payload (ONLY Course schema properties)
+        const updatePayload = { ...courseData };
+        if (launchDate !== undefined) {
+            updatePayload.launchDate = launchDate ? new Date(launchDate) : null;
+        }
+        if (courseData.thumbnail !== undefined) {
+            updatePayload.thumbnail = courseData.thumbnail || null;
+        }
+        else if (thumbnail_url !== undefined) {
+            updatePayload.thumbnail = thumbnail_url || null;
+        }
+        // Safeguard: Strip any non-Course-model fields to prevent Prisma "Unknown argument" runtime exceptions
+        delete updatePayload.thumbnail_url;
+        delete updatePayload.trainerIds;
+        delete updatePayload.basePrice;
+        delete updatePayload.discountPrice;
+        delete updatePayload.discountedPrice;
         const updated = await prisma_js_1.prisma.course.update({
             where: { id },
-            data: courseData,
+            data: updatePayload,
         });
+        // Check if course was previously Coming Soon and is now released (isComingSoon changed from true to false)
+        const wasComingSoon = existing.isComingSoon === true;
+        const isNowReleased = wasComingSoon && courseData.isComingSoon === false;
+        if (isNowReleased) {
+            try {
+                const interestedUsers = await prisma_js_1.prisma.courseInterest.findMany({
+                    where: { courseId: id },
+                    select: { userId: true },
+                });
+                const recipientIds = interestedUsers.map((item) => item.userId);
+                if (recipientIds.length > 0) {
+                    const notifMessage = `[🚀 The course you were waiting for is now available!]: "${updated.title}" is now open for enrollment.`;
+                    // 1. In-app notifications
+                    await prisma_js_1.prisma.communityNotification.createMany({
+                        data: recipientIds.map((userId) => ({
+                            userId,
+                            actorId: req.user?.id || null,
+                            type: 'COURSE_ANNOUNCEMENT',
+                            message: notifMessage,
+                            isRead: false,
+                        })),
+                    });
+                    // 2. Realtime SSE push
+                    recipientIds.forEach((uid) => {
+                        realtime_service_js_1.realtimeService.sendToUser(uid, 'notification', {
+                            notification: {
+                                type: 'COURSE_ANNOUNCEMENT',
+                                title: '🚀 The course you were waiting for is now available!',
+                                message: `"${updated.title}" is now open for enrollment.`,
+                                actionUrl: `/courses/${updated.slug}`,
+                                isRead: false,
+                                createdAt: new Date().toISOString(),
+                            },
+                        });
+                    });
+                    // 3. Web Push OS Notification
+                    webpush_service_js_1.webPushService
+                        .sendPushToUsers(recipientIds, {
+                        title: '🚀 The course you were waiting for is now available!',
+                        body: `"${updated.title}" is now open for enrollment.`,
+                        url: `/courses/${updated.slug}`,
+                        type: 'COURSE_ANNOUNCEMENT',
+                    })
+                        .catch((err) => console.error('[Push Notification Error]', err));
+                }
+            }
+            catch (notifyErr) {
+                console.error('Error sending coming soon release notifications:', notifyErr);
+            }
+        }
         // Sync trainers if array provided
         if (trainerIds !== undefined) {
             await prisma_js_1.prisma.courseTrainer.deleteMany({
@@ -695,3 +808,208 @@ const deleteCategory = async (req, res) => {
     }
 };
 exports.deleteCategory = deleteCategory;
+// ============================================================================
+// COMING SOON INTEREST & UPCOMING COURSES HANDLERS
+// ============================================================================
+const registerCourseInterest = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: 'Authentication required to register interest' });
+            return;
+        }
+        const id = req.params.id;
+        const course = await prisma_js_1.prisma.course.findFirst({
+            where: {
+                OR: [{ id }, { slug: id }],
+            },
+        });
+        if (!course) {
+            res.status(404).json({ success: false, message: 'Course not found' });
+            return;
+        }
+        // Upsert interest registration (prevents duplicate registrations)
+        await prisma_js_1.prisma.courseInterest.upsert({
+            where: {
+                userId_courseId: {
+                    userId,
+                    courseId: course.id,
+                },
+            },
+            create: {
+                userId,
+                courseId: course.id,
+            },
+            update: {},
+        });
+        const interestCount = await prisma_js_1.prisma.courseInterest.count({
+            where: { courseId: course.id },
+        });
+        res.json({
+            success: true,
+            isInterested: true,
+            interestCount,
+            message: `You're on the priority list! We'll notify you the moment "${course.title}" launches.`,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error registering interest' });
+    }
+};
+exports.registerCourseInterest = registerCourseInterest;
+const removeCourseInterest = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: 'Authentication required' });
+            return;
+        }
+        const id = req.params.id;
+        const course = await prisma_js_1.prisma.course.findFirst({
+            where: {
+                OR: [{ id }, { slug: id }],
+            },
+        });
+        if (!course) {
+            res.status(404).json({ success: false, message: 'Course not found' });
+            return;
+        }
+        await prisma_js_1.prisma.courseInterest.deleteMany({
+            where: {
+                userId,
+                courseId: course.id,
+            },
+        });
+        const interestCount = await prisma_js_1.prisma.courseInterest.count({
+            where: { courseId: course.id },
+        });
+        res.json({
+            success: true,
+            isInterested: false,
+            interestCount,
+            message: 'Notification alert removed.',
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error removing interest' });
+    }
+};
+exports.removeCourseInterest = removeCourseInterest;
+const getUpcomingCourses = async (_req, res) => {
+    try {
+        const courses = await prisma_js_1.prisma.course.findMany({
+            where: {
+                isPublished: true,
+                isComingSoon: true,
+            },
+            orderBy: { launchDate: 'asc' },
+            include: {
+                _count: { select: { interests: true } },
+                trainers: {
+                    include: {
+                        trainer: {
+                            select: { id: true, name: true, avatar: true, title: true },
+                        },
+                    },
+                },
+            },
+        });
+        res.json({
+            success: true,
+            courses: courses.map((c) => ({
+                id: c.id,
+                title: c.title,
+                slug: c.slug,
+                description: c.description,
+                comingSoonDescription: c.comingSoonDescription,
+                thumbnail: c.thumbnail,
+                category: c.category,
+                instructor: c.instructor,
+                level: c.level,
+                isComingSoon: true,
+                launchDate: c.launchDate,
+                interestsCount: c._count.interests,
+                trainers: c.trainers.map((t) => t.trainer),
+            })),
+        });
+    }
+    catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error fetching upcoming courses' });
+    }
+};
+exports.getUpcomingCourses = getUpcomingCourses;
+const uploadCourseThumbnail = async (req, res) => {
+    try {
+        const { imageBase64, fileName } = req.body;
+        if (!imageBase64 || typeof imageBase64 !== 'string') {
+            res.status(400).json({ success: false, message: 'No image data provided.' });
+            return;
+        }
+        // Check payload size (max 5 MB)
+        const base64Content = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+        const sizeInBytes = Math.round((base64Content.length * 3) / 4);
+        const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+        if (sizeInBytes > MAX_SIZE) {
+            res.status(400).json({
+                success: false,
+                message: 'File exceeds the 5 MB maximum upload limit.',
+            });
+            return;
+        }
+        // Parse MIME format
+        let ext = 'jpg';
+        const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,/);
+        if (matches && matches[1]) {
+            const mime = matches[1].toLowerCase();
+            if (!['image/jpeg', 'image/png', 'image/webp', 'image/jpg'].includes(mime)) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid image format. Allowed formats: JPG, JPEG, PNG, WEBP.',
+                });
+                return;
+            }
+            if (mime.includes('png'))
+                ext = 'png';
+            else if (mime.includes('webp'))
+                ext = 'webp';
+            else
+                ext = 'jpg';
+        }
+        else if (fileName && typeof fileName === 'string') {
+            const parsedExt = fileName.split('.').pop()?.toLowerCase();
+            if (parsedExt && ['jpg', 'jpeg', 'png', 'webp'].includes(parsedExt)) {
+                ext = parsedExt === 'jpeg' ? 'jpg' : parsedExt;
+            }
+        }
+        const buffer = Buffer.from(base64Content, 'base64');
+        // Create uploads directory if not existing
+        const uploadsDir = path_1.default.join(process.cwd(), 'uploads', 'thumbnails');
+        if (!fs_1.default.existsSync(uploadsDir)) {
+            fs_1.default.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const safeFileName = `course_thumb_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        const filePath = path_1.default.join(uploadsDir, safeFileName);
+        fs_1.default.writeFileSync(filePath, buffer);
+        const publicUrl = `/uploads/thumbnails/${safeFileName}`;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+        const host = req.get('host') || 'localhost:5000';
+        const absoluteUrl = `${protocol}://${host}${publicUrl}`;
+        res.json({
+            success: true,
+            url: absoluteUrl,
+            path: publicUrl,
+            thumbnail: absoluteUrl,
+            thumbnail_url: absoluteUrl,
+            fileName: safeFileName,
+            message: 'Course thumbnail uploaded successfully',
+        });
+    }
+    catch (error) {
+        console.error('Failed to upload course thumbnail:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Error processing uploaded thumbnail',
+        });
+    }
+};
+exports.uploadCourseThumbnail = uploadCourseThumbnail;

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const auth_routes_js_1 = __importDefault(require("./routes/auth.routes.js"));
 const course_routes_js_1 = __importDefault(require("./routes/course.routes.js"));
 const module_routes_js_1 = __importDefault(require("./routes/module.routes.js"));
@@ -24,6 +25,7 @@ const realtime_routes_js_1 = __importDefault(require("./routes/realtime.routes.j
 const notification_routes_js_1 = __importDefault(require("./routes/notification.routes.js"));
 const pwa_analytics_routes_js_1 = __importDefault(require("./routes/pwa-analytics.routes.js"));
 const study_planner_routes_js_1 = __importDefault(require("./routes/study-planner.routes.js"));
+const cms_routes_js_1 = __importDefault(require("./routes/cms.routes.js"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Path Normalizer for Vercel Serverless Function [...path]
@@ -57,6 +59,9 @@ app.use((0, cors_1.default)({
 }));
 app.use(express_1.default.json({ limit: '25mb' }));
 app.use(express_1.default.urlencoded({ limit: '25mb', extended: true }));
+// Serve static uploaded assets with CORS
+app.use('/uploads', (0, cors_1.default)(), express_1.default.static(path_1.default.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
+app.use('/api/uploads', (0, cors_1.default)(), express_1.default.static(path_1.default.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
 // Health Check
 app.get('/api/health', (_req, res) => {
     res.json({
@@ -116,6 +121,8 @@ app.use('/pwa', pwa_analytics_routes_js_1.default);
 app.use('/api/admin/pwa-analytics', pwa_analytics_routes_js_1.default);
 app.use('/api/study-planner', study_planner_routes_js_1.default);
 app.use('/study-planner', study_planner_routes_js_1.default);
+app.use('/api/cms', cms_routes_js_1.default);
+app.use('/cms', cms_routes_js_1.default);
 app.use('/api/admin', admin_routes_js_1.default);
 app.use('/admin', admin_routes_js_1.default);
 app.use('/students', admin_routes_js_1.default);

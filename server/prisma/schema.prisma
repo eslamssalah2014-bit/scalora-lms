@@ -526,8 +526,53 @@ model CourseInterest {
   @@map("course_interest")
 }
 
+// ============================================================================
+// ENTERPRISE CMS (CONTENT MANAGEMENT SYSTEM) MODELS
+// ============================================================================
 
+model CmsDocument {
+  id            String        @id @default(cuid())
+  key           String        @unique // e.g. "page_home", "page_courses", "page_community", "page_about", "trainers", "partners", "navigation", "theme", "seo", "faq"
+  draftData     String        // JSON string storing active draft state
+  publishedData String?       // JSON string storing active published state for live website
+  isPublished   Boolean       @default(false)
+  publishedAt   DateTime?
+  lastUpdatedBy String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
+  revisions     CmsRevision[]
 
+  @@map("cms_documents")
+}
 
+model CmsRevision {
+  id          String      @id @default(cuid())
+  documentId  String      @map("document_id")
+  document    CmsDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version     Int         @default(1)
+  data        String      // JSON snapshot of document state
+  note        String?     // e.g. "Published home hero updates", "Rollback to version 2"
+  author      String?     // Admin user name / ID
+  createdAt   DateTime    @default(now()) @map("created_at")
 
+  @@map("cms_revisions")
+}
+
+model CmsMedia {
+  id          String    @id @default(cuid())
+  name        String
+  fileName    String    @map("file_name")
+  fileUrl     String    @map("file_url")
+  fileType    String    @default("IMAGE") @map("file_type") // "IMAGE" | "SVG" | "VIDEO" | "PDF" | "OTHER"
+  mimeType    String    @default("image/jpeg") @map("mime_type")
+  fileSize    String    @default("0 KB") @map("file_size")
+  folder      String    @default("general") // "general" | "banners" | "courses" | "trainers" | "testimonials" | "logos" | "documents"
+  altText     String?   @map("alt_text")
+  uploadedBy  String?   @map("uploaded_by")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("cms_media")
+}
