@@ -14,14 +14,11 @@ import {
   Award,
   CheckCircle2,
   Users,
-  Code2,
   Cpu,
   Layers,
   Terminal,
-  Zap,
   Briefcase,
   GraduationCap,
-  Workflow,
   Calendar,
   MessageSquare,
   BookOpen,
@@ -118,43 +115,8 @@ export const HomePage: React.FC = () => {
               )}
             </div>
 
-            {/* Trust & Highlights Strip */}
-            <div className="pt-6 sm:pt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-left">
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-1">
-                <div className="flex items-center gap-2 text-blue-600">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Enterprise</span>
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900">Production Systems</div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-1">
-                <div className="flex items-center gap-2 text-amber-600">
-                  <Award className="w-4 h-4" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Verified</span>
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900">Official Certificates</div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-1">
-                <div className="flex items-center gap-2 text-emerald-600">
-                  <Workflow className="w-4 h-4" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Zero Fluff</span>
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900">Practical Real-World Labs</div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-1">
-                <div className="flex items-center gap-2 text-indigo-600">
-                  <Zap className="w-4 h-4" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider">Offline PWA</span>
-                </div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900">Learn Anywhere</div>
-              </div>
-            </div>
-
             {/* Permanent PWA Installation CTA Card */}
-            <div className="pt-2">
+            <div className="pt-4 sm:pt-6">
               <PwaHeroCard />
             </div>
           </div>
@@ -462,88 +424,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 6. PLATFORM BENEFITS SECTION (WHY SCALORA)                                */}
-      {/* ========================================================================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
-        <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-blue-600">
-            <Award className="w-4 h-4" />
-            <span>Why Scalora</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            Built for Real-World Impact, Zero Fluff
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600">
-            Our curriculum and consulting engagements are engineered to deliver immediate ROI and durable systems.
-          </p>
-        </div>
-
-        {/* 6 Benefits: 1 col on mobile, 2 col on tablet, 3 col on desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
-              <Code2 className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Enterprise-Grade Curriculum</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Every course is extracted directly from enterprise production engagements. No toy projects or synthetic filler.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
-              <Award className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Verifiable Certifications</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Earn cryptographically verifiable credentials upon passing rigorous project milestones and quizzes.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
-              <Workflow className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Zero-Touch Automation</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Master n8n, Make, custom webhooks, and AI agent pipelines that eliminate manual operational drag.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200">
-              <Zap className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Offline PWA Learning</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Install Scalora directly to your phone or desktop for lightning-fast, offline-capable learning anywhere.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Senior Practitioner Mentors</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Get personalized feedback and direct answers from veteran architects with 10+ years in the field.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-3 hover:shadow-md transition-all">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
-              <Users className="w-5 h-5" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Lifelong Alumni Network</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Retain continuous access to community channels, live masterclasses, templates, and event replays.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 7. GATEWAY CALL TO ACTION BANNER (Dark Navy Corporate Accent)             */}
+      {/* 6. GATEWAY CALL TO ACTION BANNER (Dark Navy Corporate Accent)             */}
       {/* ========================================================================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-3xl bg-[#0F172A] border border-slate-800 p-8 sm:p-12 md:p-14 overflow-hidden text-center shadow-2xl">
