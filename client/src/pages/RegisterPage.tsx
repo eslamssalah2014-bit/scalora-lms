@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, Lock, Mail, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -32,21 +32,22 @@ export const RegisterPage: React.FC = () => {
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex items-center space-x-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center">
-              <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
-            </div>
-            <span className="text-2xl font-black text-white">Scalora</span>
+        <div className="text-center space-y-3 flex flex-col items-center">
+          <Link to="/" className="inline-flex items-center justify-center group focus:outline-none">
+            <img
+              src="/scalora-logo-transparent.png"
+              alt="Scalora"
+              className="h-16 sm:h-20 w-auto max-w-[240px] object-contain transition-transform duration-300 group-hover:scale-105"
+            />
           </Link>
-          <h2 className="text-2xl font-black text-white tracking-tight">Create your account</h2>
-          <p className="text-xs text-slate-400">Join Scalora Academy to unlock hands-on engineering tracks</p>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create your account</h2>
+          <p className="text-xs text-slate-500">Join Scalora Academy to unlock hands-on engineering tracks</p>
         </div>
 
         {/* Register Card */}
-        <div className="glass-panel p-8 rounded-3xl space-y-6 shadow-2xl border border-scalora-blue/25">
+        <div className="bg-white p-8 rounded-3xl space-y-6 shadow-xl border border-slate-200">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
               {error}
             </div>
           )}
@@ -54,7 +55,7 @@ export const RegisterPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Full Name
               </label>
               <div className="relative">
@@ -65,14 +66,14 @@ export const RegisterPage: React.FC = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Alex Johnson"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                 />
               </div>
             </div>
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Email Address
               </label>
               <div className="relative">
@@ -83,14 +84,14 @@ export const RegisterPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="alex.johnson@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Password
               </label>
               <div className="relative">
@@ -102,7 +103,7 @@ export const RegisterPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 characters"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                 />
               </div>
             </div>
@@ -111,7 +112,7 @@ export const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-bold text-sm shadow-glow-blue hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
             >
               {loading ? (
                 <>
@@ -129,9 +130,9 @@ export const RegisterPage: React.FC = () => {
           </form>
 
           {/* Footer Link */}
-          <div className="text-center pt-2 text-xs text-slate-400">
+          <div className="text-center pt-2 text-xs text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="text-scalora-blue hover:text-scalora-accent font-bold">
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-bold">
               Sign In
             </Link>
           </div>
@@ -140,3 +141,4 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
+

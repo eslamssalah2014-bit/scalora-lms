@@ -61,10 +61,15 @@ const MainLayout: React.FC = () => {
     '/messages',
     '/notifications',
     '/trainer',
+    '/community',
   ].some((p) => location.pathname.startsWith(p));
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[#04152D]">
+    <div
+      className={`min-h-screen flex flex-col justify-between ${
+        isAppRoute ? 'bg-[#04152D] text-slate-100' : 'bg-white text-slate-900'
+      }`}
+    >
       <OfflineBanner />
       <Navbar />
       <main className="flex-1 pb-20 md:pb-0">

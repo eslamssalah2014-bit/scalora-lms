@@ -10,7 +10,6 @@ import {
   AlertCircle,
   Loader2,
   ShieldCheck,
-  Sparkles,
   ArrowRight,
   BookOpen,
 } from 'lucide-react';
@@ -119,7 +118,7 @@ export const PasswordSetupPage: React.FC = () => {
           particleCount: 90,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#2D8CFF', '#00D2FF', '#10B981', '#FFFFFF'],
+          colors: ['#2563EB', '#3B82F6', '#10B981', '#FFFFFF'],
         });
 
         setTimeout(() => {
@@ -149,40 +148,41 @@ export const PasswordSetupPage: React.FC = () => {
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-3">
-          <Link to="/" className="inline-flex items-center space-x-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-[#04152D] border border-scalora-blue/30 p-1.5 shadow-glow-blue flex items-center justify-center group-hover:scale-105 transition-transform">
-              <img src="/scalora-icon-transparent.png" alt="Scalora Logo" className="w-full h-full object-contain" />
-            </div>
-            <span className="text-2xl font-black text-white">Scalora</span>
+        <div className="text-center space-y-3 flex flex-col items-center">
+          <Link to="/" className="inline-flex items-center justify-center group focus:outline-none">
+            <img
+              src="/scalora-logo-transparent.png"
+              alt="Scalora"
+              className="h-16 sm:h-20 w-auto max-w-[240px] object-contain transition-transform duration-300 group-hover:scale-105"
+            />
           </Link>
         </div>
 
         {/* Card Body */}
-        <div className="glass-panel p-8 rounded-3xl space-y-6 shadow-2xl border border-scalora-blue/25 relative overflow-hidden">
+        <div className="bg-white p-8 rounded-3xl space-y-6 shadow-xl border border-slate-200 relative overflow-hidden">
           {loading ? (
             <div className="py-12 text-center space-y-4">
-              <Loader2 className="w-8 h-8 text-scalora-blue animate-spin mx-auto" />
-              <p className="text-xs text-slate-300 font-semibold">Validating your activation link...</p>
+              <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
+              <p className="text-xs text-slate-600 font-semibold">Validating your activation link...</p>
             </div>
           ) : tokenError ? (
             /* Error / Expired State */
             <div className="py-6 text-center space-y-5 animate-in fade-in">
-              <div className="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center mx-auto shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shadow-sm">
                 <AlertCircle className="w-8 h-8" />
               </div>
               <div className="space-y-1.5">
-                <h3 className="text-xl font-bold text-white">Activation Link Expired or Invalid</h3>
-                <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">{tokenError}</p>
+                <h3 className="text-xl font-bold text-slate-900">Activation Link Expired or Invalid</h3>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">{tokenError}</p>
               </div>
               <div className="pt-2 flex flex-col gap-2.5">
                 <Link
                   to="/login"
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-bold text-xs shadow-glow-blue hover:opacity-95 text-center"
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md text-center transition-all"
                 >
                   Go to Sign In
                 </Link>
-                <Link to="/contact" className="text-xs text-scalora-blue hover:underline">
+                <Link to="/contact" className="text-xs text-blue-600 hover:underline">
                   Need assistance? Contact Scalora Support
                 </Link>
               </div>
@@ -190,50 +190,50 @@ export const PasswordSetupPage: React.FC = () => {
           ) : isSuccess ? (
             /* Success State */
             <div className="py-8 text-center space-y-4 animate-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/10">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h3 className="text-2xl font-black text-white">Account Activated!</h3>
-              <p className="text-xs text-slate-300 max-w-xs mx-auto leading-relaxed">
-                Welcome, <strong className="text-white">{tokenData?.user.name}</strong>! Your password has been set.
+              <h3 className="text-2xl font-black text-slate-900">Account Activated!</h3>
+              <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
+                Welcome, <strong className="text-slate-900">{tokenData?.user.name}</strong>! Your password has been set.
                 Redirecting to your student dashboard...
               </p>
             </div>
           ) : (
             /* Password Setup Form */
             <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in">
-              <div className="text-center space-y-1.5 pb-2 border-b border-scalora-blue/15">
-                <h2 className="text-2xl font-black text-white tracking-tight">Create Your Password</h2>
-                <p className="text-xs text-slate-400">
-                  Welcome <strong className="text-white">{tokenData?.user.name}</strong> ({tokenData?.user.email})
+              <div className="text-center space-y-1.5 pb-2 border-b border-slate-100">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Create Your Password</h2>
+                <p className="text-xs text-slate-500">
+                  Welcome <strong className="text-slate-900">{tokenData?.user.name}</strong> ({tokenData?.user.email})
                 </p>
               </div>
 
               {/* Course Welcome Banner if available */}
               {tokenData?.course && (
-                <div className="p-3.5 rounded-2xl bg-scalora-navy/70 border border-scalora-blue/25 flex items-center gap-3 text-xs">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3 text-xs">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center flex-shrink-0">
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">
+                    <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider block">
                       Enrolled Course Ready
                     </span>
-                    <p className="font-bold text-white truncate">{tokenData.course.title}</p>
+                    <p className="font-bold text-slate-900 truncate">{tokenData.course.title}</p>
                   </div>
                 </div>
               )}
 
               {/* Error Message */}
               {submitError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
                   {submitError}
                 </div>
               )}
 
               {/* Password */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
                   New Password (Min 8 Characters) *
                 </label>
                 <div className="relative">
@@ -245,12 +245,12 @@ export const PasswordSetupPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-3 rounded-xl glass-input text-xs"
+                    className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -266,16 +266,16 @@ export const PasswordSetupPage: React.FC = () => {
                           className={`flex-1 rounded-full transition-all ${
                             strength >= step
                               ? strength >= 3
-                                ? 'bg-emerald-400'
+                                ? 'bg-emerald-500'
                                 : strength === 2
-                                ? 'bg-amber-400'
-                                : 'bg-rose-400'
-                              : 'bg-white/10'
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
+                              : 'bg-slate-200'
                           }`}
                         />
                       ))}
                     </div>
-                    <span className="text-[10px] text-slate-400 block text-right">
+                    <span className="text-[10px] text-slate-500 block text-right">
                       {strength >= 4
                         ? 'Very Strong'
                         : strength === 3
@@ -290,7 +290,7 @@ export const PasswordSetupPage: React.FC = () => {
 
               {/* Confirm Password */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
                   Confirm New Password *
                 </label>
                 <div className="relative">
@@ -302,12 +302,12 @@ export const PasswordSetupPage: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-10 py-3 rounded-xl glass-input text-xs"
+                    className="w-full pl-10 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -318,7 +318,7 @@ export const PasswordSetupPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-scalora-blue via-scalora-hover to-scalora-accent text-white font-extrabold text-xs shadow-glow-blue hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {submitting ? (
                   <>
@@ -335,7 +335,7 @@ export const PasswordSetupPage: React.FC = () => {
               </button>
 
               <div className="text-center pt-2">
-                <span className="text-[11px] text-slate-500">
+                <span className="text-[11px] text-slate-400">
                   Link valid for 24 hours. By activating, you agree to Scalora's Terms of Service.
                 </span>
               </div>
@@ -346,3 +346,4 @@ export const PasswordSetupPage: React.FC = () => {
     </div>
   );
 };
+

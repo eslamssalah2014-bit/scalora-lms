@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GraduationCap, Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -39,17 +39,17 @@ export const LoginPage: React.FC = () => {
             <img
               src="/scalora-logo-transparent.png"
               alt="Scalora"
-              className="h-16 sm:h-20 w-auto max-w-[240px] object-contain drop-shadow-[0_0_25px_rgba(45,140,255,0.4)] transition-transform duration-300 group-hover:scale-105"
+              className="h-16 sm:h-20 w-auto max-w-[240px] object-contain transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
-          <h2 className="text-2xl font-black text-white tracking-tight">Sign in to your account</h2>
-          <p className="text-xs text-slate-400">Access your courses, quizzes, and digital certificates</p>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Sign in to your account</h2>
+          <p className="text-xs text-slate-500">Access your courses, quizzes, and digital certificates</p>
         </div>
 
         {/* Login Card */}
-        <div className="glass-panel p-8 rounded-3xl space-y-6 shadow-2xl border border-scalora-blue/25">
+        <div className="bg-white p-8 rounded-3xl space-y-6 shadow-xl border border-slate-200">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
               {error}
             </div>
           )}
@@ -57,7 +57,7 @@ export const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Email Address
               </label>
               <div className="relative">
@@ -68,7 +68,7 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@company.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                 />
               </div>
             </div>
@@ -76,12 +76,12 @@ export const LoginPage: React.FC = () => {
             {/* Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
                   Password
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs text-scalora-blue hover:text-scalora-accent font-semibold"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-semibold"
                 >
                   Forgot password?
                 </Link>
@@ -94,7 +94,7 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl glass-input text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                 />
               </div>
             </div>
@@ -103,7 +103,7 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-scalora-blue to-scalora-accent text-white font-bold text-sm shadow-glow-blue hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -120,9 +120,9 @@ export const LoginPage: React.FC = () => {
           </form>
 
           {/* Footer Link */}
-          <div className="text-center pt-2 text-xs text-slate-400">
+          <div className="text-center pt-2 text-xs text-slate-500">
             Don't have an account?{' '}
-            <Link to="/register" className="text-scalora-blue hover:text-scalora-accent font-bold">
+            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-bold">
               Create an account
             </Link>
           </div>
@@ -131,3 +131,4 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+

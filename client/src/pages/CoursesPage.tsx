@@ -4,7 +4,7 @@ import { Course } from '../types';
 import { api } from '../lib/api';
 import { CourseCard } from '../components/CourseCard';
 import { CheckoutModal } from '../components/CheckoutModal';
-import { Search, Filter, BookOpen, Sparkles, Layers, RefreshCw, AlertCircle } from 'lucide-react';
+import { Search, Filter, BookOpen, Sparkles } from 'lucide-react';
 
 const DEFAULT_CATEGORIES = [
   'All',
@@ -88,19 +88,19 @@ export const CoursesPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 bg-white text-slate-900">
       {/* Header Banner */}
-      <div className="relative p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#082B5B] via-[#0D3E82] to-[#04152D] border border-scalora-blue/30 overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-scalora-accent/10 blur-3xl rounded-full pointer-events-none" />
+      <div className="relative p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white overflow-hidden shadow-xl">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full pointer-events-none" />
         <div className="relative z-10 space-y-4 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-scalora-blue/20 text-scalora-accent border border-scalora-blue/30 text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 text-white border border-white/30 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Mastery Catalog</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
             Explore All Engineering Tracks
           </h1>
-          <p className="text-slate-200 text-sm sm:text-base leading-relaxed">
+          <p className="text-blue-100 text-sm sm:text-base leading-relaxed">
             Choose from comprehensive, hands-on enterprise tracks. Learn at your own pace with lifetime access,
             interactive assessments, and verifiable certification.
           </p>
@@ -118,11 +118,11 @@ export const CoursesPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by title, instructor, or topic..."
-              className="w-full pl-10 pr-24 py-3 rounded-xl glass-input text-sm"
+              className="w-full pl-10 pr-24 py-3 rounded-xl bg-white border border-slate-300 text-slate-900 placeholder-slate-400 text-sm shadow-sm focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-scalora-blue text-white text-xs font-bold hover:bg-scalora-hover transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
             >
               Search
             </button>
@@ -130,18 +130,18 @@ export const CoursesPage: React.FC = () => {
 
           {/* Sort Selector */}
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-            <span className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
+            <span className="text-xs text-slate-500 font-semibold flex items-center gap-1.5">
               <Filter className="w-3.5 h-3.5" /> Sort:
             </span>
             <select
               value={selectedSort}
               onChange={(e) => setSelectedSort(e.target.value)}
-              className="px-3.5 py-2.5 rounded-xl glass-input text-xs font-semibold focus:outline-none"
+              className="px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 shadow-sm"
             >
-              <option value="newest" className="bg-[#04152D]">Newest Releases</option>
-              <option value="price-low" className="bg-[#04152D]">Price: Low to High</option>
-              <option value="price-high" className="bg-[#04152D]">Price: High to Low</option>
-              <option value="title" className="bg-[#04152D]">Alphabetical (A-Z)</option>
+              <option value="newest">Newest Releases</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="title">Alphabetical (A-Z)</option>
             </select>
           </div>
         </div>
@@ -154,8 +154,8 @@ export const CoursesPage: React.FC = () => {
               onClick={() => handleCategoryChange(cat)}
               className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                 selectedCategory === cat
-                  ? 'bg-scalora-blue text-white shadow-glow-blue'
-                  : 'bg-scalora-navy/50 text-slate-300 hover:text-white hover:bg-scalora-navy/80 border border-scalora-blue/20'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 shadow-sm'
               }`}
             >
               {cat}
@@ -166,16 +166,16 @@ export const CoursesPage: React.FC = () => {
 
       {/* Courses Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div key={n} className="h-96 rounded-2xl glass-card animate-pulse bg-scalora-navy/40" />
+            <div key={n} className="h-96 rounded-2xl bg-slate-50 border border-slate-200 animate-pulse" />
           ))}
         </div>
       ) : courses.length === 0 ? (
-        <div className="text-center py-20 glass-panel rounded-2xl space-y-4 max-w-md mx-auto">
-          <BookOpen className="w-12 h-12 text-slate-500 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No Courses Found</h3>
-          <p className="text-xs text-slate-400">
+        <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 max-w-md mx-auto">
+          <BookOpen className="w-12 h-12 text-slate-400 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-900">No Courses Found</h3>
+          <p className="text-xs text-slate-500">
             We couldn't find any courses matching your search criteria. Try adjusting your keywords or category filter.
           </p>
           <button
@@ -183,13 +183,13 @@ export const CoursesPage: React.FC = () => {
               setSelectedCategory('All');
               setSearchQuery('');
             }}
-            className="px-4 py-2 rounded-xl bg-scalora-blue text-white text-xs font-bold"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm"
           >
             Reset Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {courses.map((course) => (
             <CourseCard
               key={course.id}

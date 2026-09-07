@@ -7,14 +7,35 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-[#04152D] text-slate-100 font-sans;
+    @apply bg-white text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white;
   }
   section {
     scroll-margin-top: 5.5rem;
   }
 }
 
-/* Glassmorphism Styles */
+/* Light SaaS UI Styles */
+.saas-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.saas-card:hover {
+  border-color: #93C5FD;
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+}
+
+.saas-badge-blue {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid #DBEAFE;
+}
+
+/* Dark LMS Glassmorphism Styles (Preserved for internal LMS dashboard/player) */
 .glass-panel {
   background: rgba(8, 43, 91, 0.45);
   backdrop-filter: blur(16px);
@@ -55,16 +76,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #04152D;
+  background: #F8FAFC;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #0D3E82;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2D8CFF;
+  background: #94A3B8;
 }
 
 /* Subtle Shimmer Animation */
@@ -78,7 +99,7 @@
 }
 
 .shimmer-text {
-  background: linear-gradient(90deg, #FFFFFF 0%, #2D8CFF 50%, #00D2FF 100%);
+  background: linear-gradient(90deg, #0F172A 0%, #2563EB 50%, #3B82F6 100%);
   background-size: 200% auto;
   color: transparent;
   -webkit-background-clip: text;
