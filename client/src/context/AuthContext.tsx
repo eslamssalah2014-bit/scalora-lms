@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role?: Role) => Promise<void>;
+  setAuthSession: (token: string, user: User) => void;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
   demoLogin: (role: 'ADMIN' | 'STUDENT') => Promise<void>;
@@ -121,6 +122,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const setAuthSession = (newToken: string, newUser: User) => {
+    localStorage.setItem('scalora_token', newToken);
+    localStorage.setItem('scalora_user', JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  };
+
   const logout = () => {
     localStorage.removeItem('scalora_token');
     localStorage.removeItem('scalora_user');
@@ -144,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
+        setAuthSession,
         logout,
         updateUser,
         demoLogin,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
 import {
   Award,
@@ -29,6 +29,27 @@ import {
   Linkedin,
   Calendar,
   Sparkles,
+  Bold,
+  Italic,
+  Underline,
+  Strikethrough,
+  Heading1,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Quote,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Link as LinkIcon,
+  Minus,
+  Table as TableIcon,
+  Palette,
+  Code2,
+  Maximize2,
+  Type,
 } from 'lucide-react';
 
 interface Submission {
@@ -106,6 +127,11 @@ interface Policy {
   _count?: { acceptances: number };
 }
 
+function isArabicText(text: string): boolean {
+  if (!text) return false;
+  return /[\u0600-\u06FF]/.test(text);
+}
+
 export const AdminTrainerSubmissionsPage: React.FC = () => {
   const [activeMainTab, setActiveMainTab] = useState<'SUBMISSIONS' | 'TRACKS' | 'POLICY'>('SUBMISSIONS');
 
@@ -147,13 +173,16 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
   const [trackFormOrder, setTrackFormOrder] = useState<number>(1);
   const [trackFormActive, setTrackFormActive] = useState<boolean>(true);
 
-  // Policy Management State
+  // Policy Rich Editor State
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [policyTitle, setPolicyTitle] = useState<string>('');
   const [policyContent, setPolicyContent] = useState<string>('');
   const [policyNote, setPolicyNote] = useState<string>('');
   const [policySaving, setPolicySaving] = useState<boolean>(false);
   const [policySuccess, setPolicySuccess] = useState<string | null>(null);
+  const [editorMode, setEditorMode] = useState<'VISUAL' | 'HTML' | 'PREVIEW'>('VISUAL');
+  const [editorDirection, setEditorDirection] = useState<'rtl' | 'ltr'>('rtl');
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // 1. Fetch Submissions & Stats
   const fetchSubmissions = async () => {
@@ -201,6 +230,12 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
         setPolicy(res.data);
         setPolicyTitle(res.data.title || 'Scalora Trainer & Academic Standards Policy');
         setPolicyContent(res.data.content || '');
+        if (editorRef.current) {
+          editorRef.current.innerHTML = res.data.content || '';
+        }
+        if (isArabicText(res.data.content || '')) {
+          setEditorDirection('rtl');
+        }
       }
     } catch (err: any) {
       console.error('Error fetching admin policy:', err);
@@ -217,6 +252,13 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
     }
   }, [activeMainTab, statusFilter, trackFilter]);
 
+  // Sync content with editorRef when switching to VISUAL mode
+  useEffect(() => {
+    if (editorMode === 'VISUAL' && editorRef.current) {
+      editorRef.current.innerHTML = policyContent;
+    }
+  }, [editorMode]);
+
   // Handle Search Debounce
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -226,6 +268,46 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Execute Rich Text Command
+  const execCmd = (command: string, value: string | undefined = undefined) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      setPolicyContent(editorRef.current.innerHTML);
+    }
+  };
+
+  const handleInsertLink = () => {
+    const url = prompt('Enter URL (e.g. https://example.com):', 'https://');
+    if (url) {
+      execCmd('createLink', url);
+    }
+  };
+
+  const handleInsertTable = () => {
+    const tableHtml = `
+      <table style="width:100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #334155;">
+        <thead>
+          <tr style="background: rgba(37,99,235,0.15); text-align: ${editorDirection === 'rtl' ? 'right' : 'left'};">
+            <th style="border: 1px solid #334155; padding: 10px; font-weight: bold;">Standard / المعيار</th>
+            <th style="border: 1px solid #334155; padding: 10px; font-weight: bold;">Requirement / المتطلب</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid #334155; padding: 10px;">Audio / Video Quality</td>
+            <td style="border: 1px solid #334155; padding: 10px;">1080p HD, Crystal Clear Audio</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #334155; padding: 10px;">Practical Outcomes</td>
+            <td style="border: 1px solid #334155; padding: 10px;">Real-world blueprints and hands-on deliverables</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><br></p>
+    `;
+    execCmd('insertHTML', tableHtml);
+  };
 
   // Open Full Review Modal
   const openReviewModal = async (id: string) => {
@@ -363,7 +445,8 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
   // Policy Save
   const handleSavePolicy = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!policyContent.trim()) return;
+    const finalContent = editorMode === 'VISUAL' && editorRef.current ? editorRef.current.innerHTML : policyContent;
+    if (!finalContent.trim()) return;
 
     try {
       setPolicySaving(true);
@@ -371,7 +454,7 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
         '/admin/trainer-submissions/policy',
         {
           title: policyTitle.trim(),
-          content: policyContent.trim(),
+          content: finalContent.trim(),
           note: policyNote.trim() || undefined,
         }
       );
@@ -392,37 +475,37 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
     switch (status) {
       case 'APPROVED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span>Approved & Live</span>
           </span>
         );
       case 'PENDING_REVIEW':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
-            <Clock className="w-3.5 h-3.5 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>Pending Review (48h SLA)</span>
           </span>
         );
       case 'NEEDS_REVISION':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-purple-50 text-purple-700 border border-purple-200">
-            <AlertCircle className="w-3.5 h-3.5 text-purple-600" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            <AlertCircle className="w-3.5 h-3.5 text-purple-400" />
             <span>Needs Revision</span>
           </span>
         );
       case 'REJECTED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-50 text-rose-700 border border-rose-200">
-            <XCircle className="w-3.5 h-3.5 text-rose-600" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/30">
+            <XCircle className="w-3.5 h-3.5 text-rose-400" />
             <span>Rejected</span>
           </span>
         );
       case 'DRAFT':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-slate-100 text-slate-700 border border-slate-200">
-            <FileText className="w-3.5 h-3.5 text-slate-500" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-slate-500/20 text-slate-300 border border-slate-500/30">
+            <FileText className="w-3.5 h-3.5 text-slate-400" />
             <span>Draft</span>
           </span>
         );
@@ -561,19 +644,11 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
                   className="p-5 sm:p-6 rounded-2xl bg-[#04152D] border border-scalora-blue/15 hover:border-scalora-blue/30 transition-all space-y-4"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    {/* Left: Thumbnail & Info */}
+                    {/* Left: Info */}
                     <div className="flex items-start gap-4 min-w-0">
-                      {sub.thumbnail ? (
-                        <img
-                          src={sub.thumbnail}
-                          alt={sub.title}
-                          className="w-20 h-16 sm:w-28 sm:h-20 rounded-xl object-cover border border-scalora-blue/20 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-20 h-16 sm:w-28 sm:h-20 rounded-xl bg-scalora-navy border border-scalora-blue/20 text-slate-500 flex items-center justify-center flex-shrink-0">
-                          <BookOpen className="w-7 h-7" />
-                        </div>
-                      )}
+                      <div className="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-500/30 text-cyan-300 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-7 h-7" />
+                      </div>
 
                       <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -729,59 +804,320 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 3: TRAINER POLICY MANAGEMENT */}
+      {/* TAB 3: TRAINER POLICY RICH TEXT EDITOR (Notion / Medium Style) */}
       {/* ==================================================================== */}
       {activeMainTab === 'POLICY' && (
         <div className="space-y-6">
           {policySuccess && (
-            <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm flex items-center gap-3">
+            <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm flex items-center gap-3 animate-in fade-in">
               <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
               <span>{policySuccess}</span>
             </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Editor Area */}
-            <div className="lg:col-span-2 p-6 rounded-3xl bg-[#04152D] border border-scalora-blue/15 space-y-5">
-              <div className="flex items-center justify-between">
+            {/* Rich Editor Main Area */}
+            <div className="lg:col-span-2 p-6 sm:p-8 rounded-3xl bg-[#04152D] border border-scalora-blue/20 space-y-6 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-scalora-blue/15 pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white">Active Trainer Policy Editor</h2>
+                  <h2 className="text-xl font-black text-white">Trainer Policy & Academic Standards</h2>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Currently published version: <strong className="text-cyan-300">v{policy?.version || 1}</strong>
+                    Currently published: <strong className="text-cyan-300">Version {policy?.version || 1}.0</strong>
                   </p>
                 </div>
 
-                <span className="px-3 py-1 rounded-full bg-blue-500/20 text-cyan-300 text-xs font-bold border border-blue-500/30">
-                  {policy?._count?.acceptances || 0} Trainer Acceptances
-                </span>
+                {/* Editor Mode Tabs */}
+                <div className="flex items-center gap-1 p-1 bg-[#020C1B] rounded-xl border border-scalora-blue/20">
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('VISUAL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      editorMode === 'VISUAL' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Visual Editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editorRef.current) setPolicyContent(editorRef.current.innerHTML);
+                      setEditorMode('HTML');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                      editorMode === 'HTML' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>HTML Code</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editorRef.current) setPolicyContent(editorRef.current.innerHTML);
+                      setEditorMode('PREVIEW');
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                      editorMode === 'PREVIEW' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Student View</span>
+                  </button>
+                </div>
               </div>
 
-              <form onSubmit={handleSavePolicy} className="space-y-4">
+              <form onSubmit={handleSavePolicy} className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                    Policy Document Title
+                    Policy Title
                   </label>
                   <input
                     type="text"
                     required
                     value={policyTitle}
                     onChange={(e) => setPolicyTitle(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#020C1B] border border-scalora-blue/20 text-white text-sm font-semibold focus:border-blue-500"
+                    className="w-full px-4 py-3 rounded-xl bg-[#020C1B] border border-scalora-blue/20 text-white text-sm font-bold focus:border-blue-500"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                    Policy Content (Markdown & Formatted Text)
-                  </label>
+                {/* RICH TEXT TOOLBAR (Enabled in Visual Mode) */}
+                {editorMode === 'VISUAL' && (
+                  <div className="p-3 rounded-2xl bg-[#020C1B] border border-scalora-blue/20 flex flex-wrap items-center gap-1.5 text-slate-300">
+                    {/* Headings */}
+                    <button
+                      type="button"
+                      onClick={() => execCmd('formatBlock', '<h1>')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Heading 1"
+                    >
+                      <Heading1 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('formatBlock', '<h2>')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Heading 2"
+                    >
+                      <Heading2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('formatBlock', '<h3>')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Heading 3"
+                    >
+                      <Heading3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('formatBlock', '<p>')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white text-xs font-bold"
+                      title="Normal Paragraph"
+                    >
+                      ¶ Text
+                    </button>
+
+                    <div className="w-[1px] h-5 bg-slate-700 mx-1" />
+
+                    {/* Inline Styles */}
+                    <button
+                      type="button"
+                      onClick={() => execCmd('bold')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Bold"
+                    >
+                      <Bold className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('italic')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Italic"
+                    >
+                      <Italic className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('underline')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Underline"
+                    >
+                      <Underline className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('strikeThrough')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Strikethrough"
+                    >
+                      <Strikethrough className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-5 bg-slate-700 mx-1" />
+
+                    {/* Lists & Quote */}
+                    <button
+                      type="button"
+                      onClick={() => execCmd('insertUnorderedList')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Bullet List"
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('insertOrderedList')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Numbered List"
+                    >
+                      <ListOrdered className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('formatBlock', '<blockquote>')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Quote Block"
+                    >
+                      <Quote className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-5 bg-slate-700 mx-1" />
+
+                    {/* Alignment */}
+                    <button
+                      type="button"
+                      onClick={() => execCmd('justifyRight')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Align Right (Arabic)"
+                    >
+                      <AlignRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('justifyCenter')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Align Center"
+                    >
+                      <AlignCenter className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('justifyLeft')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Align Left (English)"
+                    >
+                      <AlignLeft className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-[1px] h-5 bg-slate-700 mx-1" />
+
+                    {/* Direction Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setEditorDirection(editorDirection === 'rtl' ? 'ltr' : 'rtl')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all ${
+                        editorDirection === 'rtl' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-white/5 text-slate-400'
+                      }`}
+                      title="Toggle Writing Direction"
+                    >
+                      {editorDirection === 'rtl' ? '🌐 RTL (عربي)' : '🌐 LTR (English)'}
+                    </button>
+
+                    <div className="w-[1px] h-5 bg-slate-700 mx-1" />
+
+                    {/* Insert Tools */}
+                    <button
+                      type="button"
+                      onClick={handleInsertLink}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Insert Link"
+                    >
+                      <LinkIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleInsertTable}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Insert Table"
+                    >
+                      <TableIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCmd('insertHorizontalRule')}
+                      className="p-2 rounded-lg hover:bg-white/10 hover:text-white"
+                      title="Section Separator"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+
+                    {/* Color Highlights */}
+                    <div className="flex items-center gap-1 ml-auto">
+                      {[
+                        { color: '#2563EB', title: 'Blue' },
+                        { color: '#10B981', title: 'Emerald' },
+                        { color: '#F59E0B', title: 'Amber' },
+                        { color: '#EF4444', title: 'Rose' },
+                        { color: '#CBD5E1', title: 'Light' },
+                      ].map((c) => (
+                        <button
+                          key={c.color}
+                          type="button"
+                          onClick={() => execCmd('foreColor', c.color)}
+                          className="w-5 h-5 rounded-full border border-white/20 hover:scale-110 transition-transform"
+                          style={{ backgroundColor: c.color }}
+                          title={c.title}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* EDITOR CANVAS */}
+                {editorMode === 'VISUAL' && (
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    dir={editorDirection}
+                    onInput={() => {
+                      if (editorRef.current) {
+                        setPolicyContent(editorRef.current.innerHTML);
+                      }
+                    }}
+                    className="min-h-[360px] p-6 rounded-2xl bg-[#020C1B] border border-scalora-blue/20 text-slate-100 text-sm leading-relaxed focus:outline-none focus:border-blue-500 overflow-y-auto prose prose-invert max-w-none"
+                    style={{
+                      direction: editorDirection,
+                      textAlign: editorDirection === 'rtl' ? 'right' : 'left',
+                      unicodeBidi: 'plaintext',
+                    }}
+                  />
+                )}
+
+                {/* HTML SOURCE MODE */}
+                {editorMode === 'HTML' && (
                   <textarea
-                    rows={14}
-                    required
+                    rows={16}
                     value={policyContent}
                     onChange={(e) => setPolicyContent(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-[#020C1B] border border-scalora-blue/20 text-slate-200 text-xs font-mono leading-relaxed focus:border-blue-500"
+                    className="w-full p-6 rounded-2xl bg-[#020C1B] border border-scalora-blue/20 text-cyan-300 font-mono text-xs leading-relaxed focus:outline-none focus:border-blue-500"
+                    placeholder="Enter raw HTML or Markdown here..."
                   />
-                </div>
+                )}
+
+                {/* STUDENT VIEW PREVIEW MODE */}
+                {editorMode === 'PREVIEW' && (
+                  <div
+                    dir={isArabicText(policyContent) ? 'rtl' : 'ltr'}
+                    className={`p-6 sm:p-8 rounded-2xl bg-white text-slate-900 border border-slate-200 min-h-[360px] prose text-sm space-y-4 leading-relaxed ${
+                      isArabicText(policyContent) ? 'text-right font-sans' : 'text-left'
+                    }`}
+                    style={{
+                      direction: isArabicText(policyContent) ? 'rtl' : 'ltr',
+                      textAlign: isArabicText(policyContent) ? 'right' : 'left',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: policyContent }}
+                  />
+                )}
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
@@ -791,7 +1127,7 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
                     type="text"
                     value={policyNote}
                     onChange={(e) => setPolicyNote(e.target.value)}
-                    placeholder="e.g. Updated 48-hour SLA review clause and audio clarity standards"
+                    placeholder="e.g. Updated academic guidelines, audio quality requirements, and SLA terms"
                     className="w-full px-4 py-2.5 rounded-xl bg-[#020C1B] border border-scalora-blue/20 text-slate-300 text-xs"
                   />
                 </div>
@@ -800,7 +1136,7 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={policySaving}
-                    className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-glow-blue transition-all flex items-center gap-2"
+                    className="px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-glow-blue transition-all flex items-center gap-2"
                   >
                     {policySaving ? (
                       <>
@@ -810,7 +1146,7 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        <span>Save & Publish New Policy Version</span>
+                        <span>Save & Publish Policy Version</span>
                       </>
                     )}
                   </button>
@@ -1094,7 +1430,7 @@ export const AdminTrainerSubmissionsPage: React.FC = () => {
                 value={suggestedImprovements}
                 onChange={(e) => setSuggestedImprovements(e.target.value)}
                 placeholder="e.g. Add downloadable PDF checklist in session 2"
-                className="w-full px-3.5 py-2 rounded-xl bg-[#020C1B] border border-purple-500/30 text-white text-xs"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#020C1B] border border-purple-500/30 text-white text-xs"
               />
             </div>
 

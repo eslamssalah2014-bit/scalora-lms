@@ -83,8 +83,14 @@ const TRACK_ICONS: Record<string, React.FC<{ className?: string }>> = {
   BarChart3,
 };
 
+// Helper to detect Arabic text
+function isArabicText(text: string): boolean {
+  if (!text) return false;
+  return /[\u0600-\u06FF]/.test(text);
+}
+
 export const BecomeTrainerPage: React.FC = () => {
-  const { user, login } = useAuth();
+  const { user, setAuthSession } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editSubmissionId = searchParams.get('edit');
@@ -117,15 +123,12 @@ export const BecomeTrainerPage: React.FC = () => {
   const [policyAccepted, setPolicyAccepted] = useState<boolean>(false);
   const [acceptCheckbox, setAcceptCheckbox] = useState<boolean>(false);
 
-  // Step 4: Course Submission State
+  // Step 4: Course Submission State (Price & Thumbnail removed as requested)
   const [submissionId, setSubmissionId] = useState<string | null>(editSubmissionId || null);
   const [courseTitle, setCourseTitle] = useState<string>('');
   const [shortDescription, setShortDescription] = useState<string>('');
   const [fullDescription, setFullDescription] = useState<string>('');
-  const [thumbnail, setThumbnail] = useState<string>('');
   const [level, setLevel] = useState<string>('All Levels');
-  const [price, setPrice] = useState<number>(0);
-  const [currency, setCurrency] = useState<string>('USD');
   const [numberOfSessions, setNumberOfSessions] = useState<number>(3);
   const [submissionNotes, setSubmissionNotes] = useState<string>('');
   const [sessions, setSessions] = useState<SessionData[]>([
@@ -133,6 +136,28 @@ export const BecomeTrainerPage: React.FC = () => {
       title: 'Session 1: Introduction & Core Frameworks',
       description: 'Overview of key objectives and practical foundational setups.',
       sessionNumber: 1,
+      durationMinutes: 45,
+      videoProvider: 'bunny',
+      videoId: '',
+      videoUrl: '',
+      fileUrl: '',
+      fileName: '',
+    },
+    {
+      title: 'Session 2: Deep Dive & Production Implementation',
+      description: 'Hands-on practical walkthrough and core blueprints.',
+      sessionNumber: 2,
+      durationMinutes: 45,
+      videoProvider: 'bunny',
+      videoId: '',
+      videoUrl: '',
+      fileUrl: '',
+      fileName: '',
+    },
+    {
+      title: 'Session 3: Optimization & Case Studies',
+      description: 'Advanced real-world workflows, troubleshooting, and summary.',
+      sessionNumber: 3,
       durationMinutes: 45,
       videoProvider: 'bunny',
       videoId: '',
@@ -210,10 +235,7 @@ export const BecomeTrainerPage: React.FC = () => {
             setCourseTitle(s.title || '');
             setShortDescription(s.shortDescription || '');
             setFullDescription(s.fullDescription || '');
-            setThumbnail(s.thumbnail || '');
             setLevel(s.level || 'All Levels');
-            setPrice(s.price || 0);
-            setCurrency(s.currency || 'USD');
             setNumberOfSessions(s.numberOfSessions || s.sessions?.length || 1);
             setSubmissionNotes(s.submissionNotes || '');
             if (s.trackId) {
@@ -360,14 +382,16 @@ export const BecomeTrainerPage: React.FC = () => {
 
       if (res.success) {
         if (res.data.token && res.data.user) {
-          // Log user in automatically
-          login(res.data.token, res.data.user);
+          // Immediately set token in localStorage and AuthContext
+          localStorage.setItem('scalora_token', res.data.token);
+          localStorage.setItem('scalora_user', JSON.stringify(res.data.user));
+          setAuthSession(res.data.token, res.data.user);
         }
         setSuccessMessage('Profile registered successfully!');
         setTimeout(() => {
           setSuccessMessage(null);
           setCurrentStep(2);
-        }, 600);
+        }, 400);
       } else {
         setErrorMessage(res.message || 'Failed to save trainer profile.');
       }
@@ -443,10 +467,7 @@ export const BecomeTrainerPage: React.FC = () => {
           title: courseTitle || 'Untitled Course Draft',
           shortDescription,
           fullDescription,
-          thumbnail,
           level,
-          price: Number(price) || 0,
-          currency,
           numberOfSessions: sessions.length,
           submissionNotes,
           sessions,
@@ -510,10 +531,7 @@ export const BecomeTrainerPage: React.FC = () => {
           title: courseTitle.trim(),
           shortDescription,
           fullDescription,
-          thumbnail,
           level,
-          price: Number(price) || 0,
-          currency,
           numberOfSessions: sessions.length,
           submissionNotes,
           sessions,
@@ -608,6 +626,8 @@ export const BecomeTrainerPage: React.FC = () => {
     );
   }
 
+  const isArabicPolicy = isArabicText(policy?.content || '');
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24">
       {/* Hero Banner */}
@@ -623,8 +643,8 @@ export const BecomeTrainerPage: React.FC = () => {
                 Teach on Scalora. <span className="text-blue-600">Empower Thousands.</span>
               </h1>
               <p className="text-slate-600 text-sm sm:text-base max-w-2xl">
-                Submit your production-ready curriculum, monetize your expertise, and reach top learners and enterprises
-                across MENA and globally.
+                Submit your production-ready curriculum, share your expertise, and reach top learners and enterprises
+                across the region.
               </p>
             </div>
 
@@ -957,7 +977,7 @@ export const BecomeTrainerPage: React.FC = () => {
         )}
 
         {/* ------------------------------------------------------------------ */}
-        {/* STEP 3: TRAINER POLICY ACCEPTANCE */}
+        {/* STEP 3: TRAINER POLICY ACCEPTANCE (RTL & Multi-Language Support) */}
         {/* ------------------------------------------------------------------ */}
         {currentStep === 3 && (
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8 animate-in fade-in duration-150">
@@ -978,12 +998,29 @@ export const BecomeTrainerPage: React.FC = () => {
               )}
             </div>
 
-            {/* Policy Reader Box */}
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 max-h-[360px] overflow-y-auto prose prose-slate text-sm space-y-4 leading-relaxed">
+            {/* Policy Reader Box with Arabic RTL & Rich Text HTML Support */}
+            <div
+              dir={isArabicPolicy ? 'rtl' : 'ltr'}
+              className={`p-6 sm:p-8 rounded-2xl bg-slate-50 border border-slate-200 max-h-[420px] overflow-y-auto prose prose-slate text-sm space-y-4 leading-relaxed ${
+                isArabicPolicy ? 'text-right font-sans font-medium' : 'text-left'
+              }`}
+              style={{
+                direction: isArabicPolicy ? 'rtl' : 'ltr',
+                textAlign: isArabicPolicy ? 'right' : 'left',
+                unicodeBidi: 'plaintext',
+              }}
+            >
               {policy?.content ? (
-                <div className="whitespace-pre-wrap font-sans text-slate-700 text-xs sm:text-sm">
-                  {policy.content}
-                </div>
+                policy.content.includes('<') && policy.content.includes('>') ? (
+                  <div
+                    className="prose prose-slate max-w-none text-slate-800 text-xs sm:text-sm space-y-3"
+                    dangerouslySetInnerHTML={{ __html: policy.content }}
+                  />
+                ) : (
+                  <div className="whitespace-pre-wrap font-sans text-slate-700 text-xs sm:text-sm leading-relaxed">
+                    {policy.content}
+                  </div>
+                )
               ) : (
                 <p className="text-slate-500 italic">Loading policy guidelines...</p>
               )}
@@ -1080,7 +1117,7 @@ export const BecomeTrainerPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       Course Level
@@ -1099,21 +1136,6 @@ export const BecomeTrainerPage: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                      Price (USD)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={price}
-                      onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                      placeholder="0.00 (Free if 0)"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 text-slate-900 text-sm font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                       Number of Sessions
                     </label>
                     <input
@@ -1125,20 +1147,6 @@ export const BecomeTrainerPage: React.FC = () => {
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 text-slate-900 text-sm font-bold text-blue-600"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                    Course Thumbnail Image URL
-                  </label>
-                  <input
-                    type="url"
-                    value={thumbnail}
-                    onChange={(e) => setThumbnail(e.target.value)}
-                    placeholder="https://images.unsplash.com/... or uploaded image URL"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-600 text-slate-900 text-sm font-medium"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">Recommended size: 1280x720 (16:9 ratio)</p>
                 </div>
 
                 <div>
