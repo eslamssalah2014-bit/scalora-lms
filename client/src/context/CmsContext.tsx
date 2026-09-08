@@ -24,6 +24,8 @@ import {
   DEFAULT_ALL_CMS,
 } from '../data/defaultCmsData';
 
+export const CACHE_KEY = 'scalora_cms_cache_v2';
+
 interface CmsContextType {
   home: CmsHomePageData;
   courses: CmsCoursesPageData;
@@ -36,37 +38,127 @@ interface CmsContextType {
   seo: CmsSeoData;
   cmsData: Record<string, any>;
   loading: boolean;
+  hasCache: boolean;
   refreshCms: () => Promise<void>;
   getPageSeo: (pageKey: string) => { title: string; description: string; keywords: string; ogImage: string; canonicalUrl: string };
 }
 
 const CmsContext = createContext<CmsContextType | undefined>(undefined);
 
-export const CmsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cmsData, setCmsData] = useState<Record<string, any>>(DEFAULT_ALL_CMS);
-  const [loading, setLoading] = useState<boolean>(true);
+// Helper to broadcast CMS updates across tabs
+export const broadcastCmsUpdate = (payload?: Record<string, any>) => {
+  if (typeof window !== 'undefined') {
+    if ('BroadcastChannel' in window) {
+      try {
+        const channel = new BroadcastChannel('scalora_cms_sync');
+        channel.postMessage({ type: 'CMS_UPDATED', payload, timestamp: Date.now() });
+        channel.close();
+      } catch {}
+    }
+    if (payload) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+      } catch {}
+    }
+  }
+};
 
-  const fetchPublishedCms = useCallback(async () => {
+const getInitialCmsData = (): { data: Record<string, any>; hasCache: boolean } => {
+  if (typeof window === 'undefined') {
+    return { data: DEFAULT_ALL_CMS, hasCache: false };
+  }
+  try {
+    const cachedStr = localStorage.getItem(CACHE_KEY);
+    if (cachedStr) {
+      const parsed = JSON.parse(cachedStr);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          data: { ...DEFAULT_ALL_CMS, ...parsed },
+          hasCache: true,
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('[CMS Cache] Failed to parse cached CMS data:', e);
+  }
+  return { data: DEFAULT_ALL_CMS, hasCache: false };
+};
+
+export const CmsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const initial = getInitialCmsData();
+  const [cmsData, setCmsData] = useState<Record<string, any>>(initial.data);
+  const [hasCache, setHasCache] = useState<boolean>(initial.hasCache);
+  const [loading, setLoading] = useState<boolean>(!initial.hasCache);
+
+  const fetchPublishedCms = useCallback(async (isBackground = false) => {
+    if (!isBackground && !hasCache) {
+      setLoading(true);
+    }
     try {
-      const res = await api.get<{ success: boolean; data: Record<string, any> }>('/cms/published-all');
+      const res = await api.get<{ success: boolean; data: Record<string, any> }>(
+        `/cms/published-all?_t=${Date.now()}`
+      );
       if (res.success && res.data) {
         setCmsData((prev) => ({
           ...prev,
           ...res.data,
         }));
+        setHasCache(true);
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
+        } catch (e) {
+          console.warn('[CMS Cache] Storage write failed:', e);
+        }
       }
     } catch (err) {
-      console.warn('[CMS] Using built-in high-converting fallback defaults:', err);
+      console.warn('[CMS] Using cached/built-in fallback defaults:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [hasCache]);
 
   useEffect(() => {
-    fetchPublishedCms();
+    fetchPublishedCms(hasCache);
+  }, [fetchPublishedCms, hasCache]);
+
+  // Listen for Cross-Tab Real-time CMS Broadcasts & Storage Events
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('scalora_cms_sync');
+      channel.onmessage = (event) => {
+        if (event.data?.type === 'CMS_UPDATED') {
+          if (event.data?.payload) {
+            setCmsData((prev) => ({ ...prev, ...event.data.payload }));
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify(event.data.payload));
+            } catch {}
+          } else {
+            fetchPublishedCms(true);
+          }
+        }
+      };
+    }
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === CACHE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed && typeof parsed === 'object') {
+            setCmsData((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      channel?.close();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [fetchPublishedCms]);
 
-  // Inject Dynamic Theme Variables into :root
+  // Inject Dynamic Theme Variables into :root immediately
   useEffect(() => {
     const theme: CmsThemeData = { ...DEFAULT_THEME_CMS, ...(cmsData.theme || {}) };
     if (typeof document !== 'undefined') {
@@ -101,7 +193,8 @@ export const CmsProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     seo: { ...DEFAULT_SEO_CMS, ...(cmsData.seo || {}) },
     cmsData,
     loading,
-    refreshCms: fetchPublishedCms,
+    hasCache,
+    refreshCms: () => fetchPublishedCms(false),
     getPageSeo,
   };
 

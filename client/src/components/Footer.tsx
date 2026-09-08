@@ -37,41 +37,41 @@ export const Footer: React.FC = () => {
   const logoUrl = theme?.logoUrl || '/scalora-icon-transparent.png';
 
   return (
-    <footer className="bg-[#0F172A] border-t border-slate-800 text-slate-400 pt-16 pb-12 transition-colors">
+    <footer className="bg-slate-50 border-t border-slate-200 text-slate-600 pt-16 pb-12 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 pb-12 border-b border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 pb-12 border-b border-slate-200">
           {/* Brand Info */}
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600/15 border border-blue-500/30 p-1.5 shadow-sm flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 p-1.5 shadow-sm flex items-center justify-center">
                 <img src={logoUrl} alt={`${brandName} Logo`} className="w-full h-full object-contain" />
               </div>
-              <span className="text-2xl font-black text-white tracking-tight">{brandName}</span>
+              <span className="text-2xl font-black text-slate-900 tracking-tight">{brandName}</span>
             </Link>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
+            <p className="text-slate-600 text-sm leading-relaxed max-w-sm">
               Enterprise Operations Consulting & Premier Technical Academy. We empower modern companies with scalable architectures, workflow automations, and practical engineering masterclasses.
             </p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <div className="flex items-center space-x-1.5 text-xs text-slate-300">
-                <ShieldCheck className="w-4 h-4 text-blue-400" />
+              <div className="flex items-center space-x-1.5 text-xs text-slate-700 font-medium">
+                <ShieldCheck className="w-4 h-4 text-blue-600" />
                 <span>Enterprise Verified</span>
               </div>
-              <div className="flex items-center space-x-1.5 text-xs text-slate-300">
-                <Award className="w-4 h-4 text-amber-400" />
+              <div className="flex items-center space-x-1.5 text-xs text-slate-700 font-medium">
+                <Award className="w-4 h-4 text-amber-500" />
                 <span>Accredited Credentials</span>
               </div>
               {isInstalled ? (
-                <div className="flex items-center space-x-1.5 text-xs text-emerald-400 font-semibold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="flex items-center space-x-1.5 text-xs text-emerald-700 font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Scalora App Installed ✓</span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={installApp}
-                  className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 hover:text-white text-xs font-semibold transition-all"
+                  className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-semibold transition-all"
                 >
-                  <Download className="w-3.5 h-3.5 text-blue-400" />
+                  <Download className="w-3.5 h-3.5 text-blue-600" />
                   <span>Install App</span>
                 </button>
               )}
@@ -81,7 +81,7 @@ export const Footer: React.FC = () => {
           {/* Dynamic Footer Sections from CMS */}
           {footerColumns.map((section) => (
             <div key={section.id || section.title} className="space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">{section.title}</h4>
+              <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">{section.title}</h4>
               <ul className="space-y-2.5 text-sm">
                 {(section.links || []).filter((l) => l.visible !== false).map((lnk) => (
                   <li key={lnk.id || lnk.label}>
@@ -90,12 +90,12 @@ export const Footer: React.FC = () => {
                         href={lnk.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="hover:text-blue-400 transition-colors"
+                        className="hover:text-blue-600 text-slate-600 transition-colors"
                       >
                         {lnk.label}
                       </a>
                     ) : (
-                      <Link to={lnk.url} className="hover:text-blue-400 transition-colors">
+                      <Link to={lnk.url} className="hover:text-blue-600 text-slate-600 transition-colors">
                         {lnk.label}
                       </Link>
                     )}
@@ -107,14 +107,14 @@ export const Footer: React.FC = () => {
 
           {/* Quick Links / Newsletter */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">Executive Briefs</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">Executive Briefs</h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
               Get monthly updates on enterprise systems, automation blueprints, and new course tracks.
             </p>
             <div className="space-y-2 pt-1">
               <Link
                 to="/register"
-                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-blue-500/25"
               >
                 <span>Get Started</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -127,14 +127,14 @@ export const Footer: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} {brandName} LMS & Systems Consulting. All rights reserved.</p>
           <div className="flex items-center space-x-6">
-            <Link to="/about" className="hover:text-slate-300 transition-colors">
+            <Link to="/about" className="hover:text-blue-600 transition-colors">
               About
             </Link>
-            <Link to="/contact" className="hover:text-slate-300 transition-colors">
+            <Link to="/contact" className="hover:text-blue-600 transition-colors">
               Contact
             </Link>
-            <span className="hover:text-slate-300 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-300 cursor-pointer">Terms of Service</span>
+            <span className="hover:text-blue-600 cursor-pointer">Privacy Policy</span>
+            <span className="hover:text-blue-600 cursor-pointer">Terms of Service</span>
           </div>
         </div>
       </div>

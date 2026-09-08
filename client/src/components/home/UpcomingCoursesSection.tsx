@@ -37,8 +37,27 @@ export const UpcomingCoursesSection: React.FC = () => {
     }
   };
 
-  if (loading || upcomingCourses.length === 0) {
+  if (!loading && upcomingCourses.length === 0) {
     return null;
+  }
+
+  if (loading) {
+    return (
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-slate-200">
+          <div className="space-y-2 max-w-2xl animate-pulse">
+            <div className="h-6 w-36 bg-amber-100/60 rounded-full" />
+            <div className="h-8 w-64 bg-slate-200 rounded-lg" />
+            <div className="h-4 w-96 bg-slate-100 rounded" />
+          </div>
+        </div>
+        <div className="flex gap-6 overflow-hidden pt-1">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="w-[260px] sm:w-[300px] md:w-[340px] flex-shrink-0 h-[430px] rounded-2xl bg-slate-50 border border-slate-200 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (

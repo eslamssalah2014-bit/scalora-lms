@@ -7,7 +7,7 @@
  * Profile, Courses, and Supabase Realtime) must NEVER be cached.
  */
 
-const CACHE_NAME = 'scalora-static-v8';
+const CACHE_NAME = 'scalora-static-v9';
 
 // ONLY immutable static shell assets are precached
 const STATIC_ASSETS = [
@@ -29,12 +29,12 @@ const STATIC_ASSETS = [
 // STRICT EXCLUSION LIST: Never intercept or cache these paths
 const EXCLUDED_PATTERNS = [
   '/api/',
+  '/api/cms',
+  '/api/courses',
+  '/api/community',
   '/api/messages',
   '/api/notifications',
-  '/api/community',
-  '/api/community/chat',
   '/api/realtime',
-  '/api/courses',
   '/api/enrollments',
   '/api/auth',
   '/api/trainers',
@@ -42,8 +42,12 @@ const EXCLUDED_PATTERNS = [
   '/api/payments',
   '/api/progress',
   '/api/quizzes',
+  '/uploads/',
+  '/api/uploads/',
   '/realtime',
   'supabase.co',
+  '_t=',
+  '?t=',
 ];
 
 // 1. Install Event: Precache core static shell with individual asset resilience

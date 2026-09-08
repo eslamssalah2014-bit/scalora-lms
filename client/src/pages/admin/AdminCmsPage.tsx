@@ -61,6 +61,7 @@ import {
   DEFAULT_THEME_CMS,
   DEFAULT_SEO_CMS,
 } from '../../data/defaultCmsData';
+import { broadcastCmsUpdate } from '../../context/CmsContext';
 
 type CmsTab =
   | 'home'
@@ -309,6 +310,19 @@ export const AdminCmsPage: React.FC = () => {
         setShowPublishModal(false);
         setPublishNote('');
         loadActiveDocument();
+
+        // Refresh all published CMS and broadcast to all tabs
+        api.get<{ success: boolean; data: any }>(`/cms/published-all?_t=${Date.now()}`)
+          .then((fresh) => {
+            if (fresh.success && fresh.data) {
+              broadcastCmsUpdate(fresh.data);
+            } else {
+              broadcastCmsUpdate();
+            }
+          })
+          .catch(() => {
+            broadcastCmsUpdate();
+          });
       }
     } catch (err: any) {
       showStatus('error', err.message || 'Error publishing CMS document');

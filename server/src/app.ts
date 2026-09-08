@@ -64,6 +64,19 @@ app.use(
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ limit: '25mb', extended: true }));
 
+// Enforce Zero Stale Cache policy across all dynamic API routes
+app.use((req, res, next) => {
+  if (req.path.startsWith('/uploads') || req.path.startsWith('/api/uploads')) {
+    res.set('Cache-Control', 'public, max-age=3600, must-revalidate');
+  } else if (req.path.startsWith('/api') || !req.path.includes('.')) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
 // Serve static uploaded assets with CORS
 app.use('/uploads', cors(), express.static(path.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
 app.use('/api/uploads', cors(), express.static(path.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
