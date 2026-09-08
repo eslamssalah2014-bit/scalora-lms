@@ -26,6 +26,8 @@ const notification_routes_js_1 = __importDefault(require("./routes/notification.
 const pwa_analytics_routes_js_1 = __importDefault(require("./routes/pwa-analytics.routes.js"));
 const study_planner_routes_js_1 = __importDefault(require("./routes/study-planner.routes.js"));
 const cms_routes_js_1 = __importDefault(require("./routes/cms.routes.js"));
+const trainer_submission_routes_js_1 = __importDefault(require("./routes/trainer-submission.routes.js"));
+const admin_submission_routes_js_1 = __importDefault(require("./routes/admin-submission.routes.js"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Path Normalizer for Vercel Serverless Function [...path]
@@ -136,6 +138,10 @@ app.use('/api/study-planner', study_planner_routes_js_1.default);
 app.use('/study-planner', study_planner_routes_js_1.default);
 app.use('/api/cms', cms_routes_js_1.default);
 app.use('/cms', cms_routes_js_1.default);
+app.use('/api/trainer-submissions', trainer_submission_routes_js_1.default);
+app.use('/trainer-submissions', trainer_submission_routes_js_1.default);
+app.use('/api/admin/trainer-submissions', admin_submission_routes_js_1.default);
+app.use('/admin/trainer-submissions', admin_submission_routes_js_1.default);
 app.use('/api/admin', admin_routes_js_1.default);
 app.use('/admin', admin_routes_js_1.default);
 app.use('/students', admin_routes_js_1.default);

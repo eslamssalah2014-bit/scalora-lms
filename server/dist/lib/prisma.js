@@ -59,6 +59,9 @@ exports.SOFT_DELETE_MODELS = [
     'CommunityComment',
     'DirectMessage',
     'CommunityChatMessage',
+    'TeachingTrack',
+    'TrainerProfile',
+    'TrainerCourseSubmission',
 ];
 // Prisma Middleware: Intercepts & Blocks Destructive Queries
 rawPrisma.$use(async (params, next) => {

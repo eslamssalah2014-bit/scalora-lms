@@ -250,6 +250,20 @@ export const Navbar: React.FC = () => {
               About
             </Link>
             <Link
+              to="/become-trainer"
+              className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-all ${
+                isActive('/become-trainer')
+                  ? isLight
+                    ? 'text-blue-600 bg-blue-50/80 border border-blue-200/60'
+                    : 'text-scalora-blue bg-scalora-blue/10 border border-scalora-blue/20'
+                  : isLight
+                  ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50/50'
+                  : 'text-cyan-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Become a Trainer
+            </Link>
+            <Link
               to="/contact"
               className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
                 isActive('/contact')
@@ -349,41 +363,80 @@ export const Navbar: React.FC = () => {
                       </div>
 
                       {user.role === 'ADMIN' ? (
-                        <Link
-                          to="/admin"
-                          className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                            isLight
-                              ? 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
-                              : 'text-slate-200 hover:text-white hover:bg-scalora-blue/20'
-                          }`}
-                        >
-                          <Shield className="w-4 h-4 text-blue-600" />
-                          <span>Admin Console</span>
-                        </Link>
+                        <>
+                          <Link
+                            to="/admin"
+                            className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                              isLight
+                                ? 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
+                                : 'text-slate-200 hover:text-white hover:bg-scalora-blue/20'
+                            }`}
+                          >
+                            <Shield className="w-4 h-4 text-blue-600" />
+                            <span>Admin Console</span>
+                          </Link>
+                          <Link
+                            to="/admin/trainer-submissions"
+                            className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                              isLight
+                                ? 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
+                                : 'text-slate-200 hover:text-white hover:bg-scalora-blue/20'
+                            }`}
+                          >
+                            <Award className="w-4 h-4 text-blue-600" />
+                            <span>Trainer Submissions</span>
+                          </Link>
+                        </>
                       ) : user.role === 'TRAINER' ? (
-                        <Link
-                          to="/trainer"
-                          className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-bold transition-colors ${
-                            isLight
-                              ? 'text-blue-600 hover:bg-blue-50'
-                              : 'text-cyan-300 hover:text-white hover:bg-cyan-500/20'
-                          }`}
-                        >
-                          <Shield className="w-4 h-4 text-blue-600" />
-                          <span>Trainer Workspace</span>
-                        </Link>
+                        <>
+                          <Link
+                            to="/trainer"
+                            className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-bold transition-colors ${
+                              isLight
+                                ? 'text-blue-600 hover:bg-blue-50'
+                                : 'text-cyan-300 hover:text-white hover:bg-cyan-500/20'
+                            }`}
+                          >
+                            <Shield className="w-4 h-4 text-blue-600" />
+                            <span>Trainer Workspace</span>
+                          </Link>
+                          <Link
+                            to="/trainer/submissions"
+                            className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                              isLight
+                                ? 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
+                                : 'text-slate-200 hover:text-white hover:bg-cyan-500/20'
+                            }`}
+                          >
+                            <Award className="w-4 h-4 text-blue-600" />
+                            <span>My Course Submissions</span>
+                          </Link>
+                        </>
                       ) : (
-                        <Link
-                          to="/dashboard"
-                          className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
-                            isLight
-                              ? 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
-                              : 'text-slate-200 hover:text-white hover:bg-scalora-blue/20'
-                          }`}
-                        >
-                          <LayoutDashboard className="w-4 h-4 text-blue-600" />
-                          <span>Student Dashboard</span>
-                        </Link>
+                        <>
+                          <Link
+                            to="/dashboard"
+                            className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                              isLight
+                                ? 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
+                                : 'text-slate-200 hover:text-white hover:bg-scalora-blue/20'
+                            }`}
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                            <span>Student Dashboard</span>
+                          </Link>
+                          <Link
+                            to="/become-trainer"
+                            className={`flex items-center space-x-2.5 px-4 py-2.5 text-sm font-semibold transition-colors ${
+                              isLight
+                                ? 'text-blue-600 hover:bg-blue-50'
+                                : 'text-cyan-300 hover:text-white hover:bg-cyan-500/20'
+                            }`}
+                          >
+                            <Award className="w-4 h-4 text-blue-600" />
+                            <span>Become a Trainer</span>
+                          </Link>
+                        </>
                       )}
 
                       <Link
@@ -747,6 +800,17 @@ export const Navbar: React.FC = () => {
                 >
                   <Layers className="w-5 h-5 text-blue-600" />
                   <span>About Us</span>
+                </Link>
+
+                <Link
+                  to="/become-trainer"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3.5 px-4 py-4 text-sm font-bold transition-colors ${
+                    isLight ? 'text-blue-600 hover:bg-blue-50 bg-blue-50/40' : 'text-cyan-300 hover:bg-white/5 bg-cyan-500/10'
+                  }`}
+                >
+                  <Award className="w-5 h-5 text-blue-600" />
+                  <span>Become a Trainer</span>
                 </Link>
 
                 <Link

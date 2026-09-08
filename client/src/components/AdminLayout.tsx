@@ -20,6 +20,7 @@ import {
   Bell,
   Smartphone,
   Globe,
+  Award,
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
@@ -30,6 +31,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/admin', icon: LayoutDashboard, exact: true },
+    { label: 'Trainer Submissions', path: '/admin/trainer-submissions', icon: Award },
     { label: 'Website CMS', path: '/admin/cms', icon: Globe },
     { label: 'PWA Analytics', path: '/admin/pwa-analytics', icon: Smartphone },
     { label: 'Notifications Broadcast', path: '/admin/notifications', icon: Bell },

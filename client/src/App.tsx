@@ -40,10 +40,13 @@ import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
 import { AdminCommunityPage } from './pages/admin/AdminCommunityPage';
 import { AdminTrainersPage } from './pages/admin/AdminTrainersPage';
 import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
+import { AdminTrainerSubmissionsPage } from './pages/admin/AdminTrainerSubmissionsPage';
 import { PwaAnalyticsPage } from './pages/admin/PwaAnalyticsPage';
 
 // Trainer, Messaging & Notifications Pages
+import { BecomeTrainerPage } from './pages/BecomeTrainerPage';
 import { TrainerDashboardPage } from './pages/trainer/TrainerDashboardPage';
+import { TrainerSubmissionsPage } from './pages/trainer/TrainerSubmissionsPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { NotificationCenterPage } from './pages/NotificationCenterPage';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
@@ -90,6 +93,7 @@ export const App: React.FC = () => {
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/:slug" element={<CourseDetailsPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/become-trainer" element={<BecomeTrainerPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -152,12 +156,20 @@ export const App: React.FC = () => {
               }
             />
 
-            {/* Dedicated Trainer Workspace */}
+            {/* Dedicated Trainer Workspace & Submissions */}
             <Route
               path="/trainer"
               element={
                 <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
                   <TrainerDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trainer/submissions"
+              element={
+                <ProtectedRoute allowedRoles={['TRAINER', 'ADMIN']}>
+                  <TrainerSubmissionsPage />
                 </ProtectedRoute>
               }
             />
@@ -193,6 +205,7 @@ export const App: React.FC = () => {
             }
           >
             <Route index element={<AdminDashboardPage />} />
+            <Route path="trainer-submissions" element={<AdminTrainerSubmissionsPage />} />
             <Route path="cms" element={<AdminCmsPage />} />
             <Route path="pwa-analytics" element={<PwaAnalyticsPage />} />
             <Route path="notifications" element={<AdminNotificationsPage />} />

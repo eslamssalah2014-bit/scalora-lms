@@ -53,6 +53,11 @@ model User {
   communityNotifications CommunityNotification[] @relation("NotificationRecipient")
   triggeredNotifications CommunityNotification[] @relation("NotificationActor")
 
+  // Trainer Submission System Relations
+  trainerProfile         TrainerProfile?
+  policyAcceptances      TrainerPolicyAcceptance[]
+  trainerSubmissions     TrainerCourseSubmission[]
+
   @@map("users")
 }
 
@@ -575,4 +580,146 @@ model CmsMedia {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@map("cms_media")
+}
+
+// ============================================================================
+// TRAINER SELF-SERVICE ONBOARDING & COURSE SUBMISSION SYSTEM
+// ============================================================================
+
+model TeachingTrack {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  icon        String?   // Lucide icon name e.g. "Briefcase", "Cpu", "TrendingUp"
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  submissions TrainerCourseSubmission[]
+
+  @@map("teaching_tracks")
+}
+
+model TrainerPolicy {
+  id            String    @id @default(cuid())
+  title         String    @default("Scalora Trainer & Academic Standards Policy")
+  content       String    // Rich Markdown or text content
+  version       Int       @default(1)
+  isActive      Boolean   @default(true)
+  publishedAt   DateTime?
+  lastUpdatedBy String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  revisions   TrainerPolicyRevision[]
+  acceptances TrainerPolicyAcceptance[]
+
+  @@map("trainer_policies")
+}
+
+model TrainerPolicyRevision {
+  id         String        @id @default(cuid())
+  policyId   String        @map("policy_id")
+  policy     TrainerPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  version    Int           @default(1)
+  title      String
+  content    String
+  note       String?
+  author     String?
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@map("trainer_policy_revisions")
+}
+
+model TrainerPolicyAcceptance {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  policyId      String        @map("policy_id")
+  policy        TrainerPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  policyVersion Int           @default(1) @map("policy_version")
+  ipAddress     String?       @map("ip_address")
+  userAgent     String?       @map("user_agent")
+  acceptedAt    DateTime      @default(now()) @map("accepted_at")
+
+  @@map("trainer_policy_acceptances")
+}
+
+model TrainerProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique @map("user_id")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName          String
+  email             String
+  mobile            String
+  country           String?
+  linkedin          String?
+  yearsExperience   Int       @default(0) @map("years_experience")
+  professionalTitle String?   @map("professional_title")
+  bio               String?
+  preferredTrackId  String?   @map("preferred_track_id")
+  status            String    @default("REGISTERED") // "REGISTERED" | "APPROVED" | "SUSPENDED"
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("trainer_profiles")
+}
+
+model TrainerCourseSubmission {
+  id                    String                   @id @default(cuid())
+  trainerId             String                   @map("trainer_id")
+  trainer               User                     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  trackId               String?                  @map("track_id")
+  track                 TeachingTrack?           @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  trackName             String?                  @map("track_name")
+  title                 String
+  slug                  String                   @unique
+  shortDescription      String?                  @map("short_description")
+  fullDescription       String?                  @map("full_description")
+  thumbnail             String?
+  level                 String                   @default("All Levels") // "Beginner" | "Intermediate" | "Advanced" | "All Levels"
+  price                 Float                    @default(0.0)
+  currency              String                   @default("USD")
+  numberOfSessions      Int                      @default(1) @map("number_of_sessions")
+  totalDurationMinutes  Int                      @default(0) @map("total_duration_minutes")
+  status                String                   @default("DRAFT") // "DRAFT" | "PENDING_REVIEW" | "APPROVED" | "REJECTED" | "NEEDS_REVISION"
+  submissionNotes       String?                  @map("submission_notes")
+  adminFeedback         String?                  @map("admin_feedback")
+  rejectionReason       String?                  @map("rejection_reason")
+  suggestedImprovements String?                  @map("suggested_improvements")
+  reviewedBy            String?                  @map("reviewed_by")
+  reviewedAt            DateTime?                @map("reviewed_at")
+  convertedCourseId     String?                  @map("converted_course_id")
+  submittedAt           DateTime?                @map("submitted_at")
+  deletedAt             DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  sessions              TrainerSubmissionSession[]
+
+  @@map("trainer_course_submissions")
+}
+
+model TrainerSubmissionSession {
+  id              String                  @id @default(cuid())
+  submissionId    String                  @map("submission_id")
+  submission      TrainerCourseSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  order           Int                     @default(1)
+  sessionNumber   Int                     @default(1) @map("session_number")
+  durationMinutes Int                     @default(0) @map("duration_minutes")
+  videoProvider   String                  @default("bunny") @map("video_provider") // "bunny" | "upload" | "url"
+  videoId         String?                 @map("video_id")
+  videoUrl        String?                 @map("video_url")
+  fileUrl         String?                 @map("file_url")
+  fileName        String?                 @map("file_name")
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@map("trainer_submission_sessions")
 }
