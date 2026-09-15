@@ -25,6 +25,8 @@ import { StudentDashboard } from './pages/StudentDashboard';
 import { CoursePlayerPage } from './pages/CoursePlayerPage';
 import { QuizPage } from './pages/QuizPage';
 import { StudyPlanPage } from './pages/StudyPlanPage';
+import { KashierCallbackPage } from './pages/KashierCallbackPage';
+import { StudentPurchaseHistoryPage } from './pages/StudentPurchaseHistoryPage';
 
 // Admin Pages
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
@@ -99,8 +101,9 @@ export const App: React.FC = () => {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/set-password/:token" element={<PasswordSetupPage />} />
+            <Route path="/payments/kashier/callback" element={<KashierCallbackPage />} />
 
-            {/* Student Dashboard & Profile */}
+            {/* Student Dashboard, Profile & Purchases */}
             <Route
               path="/dashboard"
               element={
@@ -114,6 +117,22 @@ export const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/purchases"
+              element={
+                <ProtectedRoute>
+                  <StudentPurchaseHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/purchases"
+              element={
+                <ProtectedRoute>
+                  <StudentPurchaseHistoryPage />
                 </ProtectedRoute>
               }
             />

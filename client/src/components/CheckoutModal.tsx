@@ -48,7 +48,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [provider, setProvider] = useState<'INSTAPAY' | 'MOCK' | 'STRIPE'>('INSTAPAY');
+  const [provider, setProvider] = useState<'KASHIER' | 'INSTAPAY' | 'MOCK'>('KASHIER');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +56,45 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [fullName, setFullName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('');
+
+  // Kashier Live Checkout Redirection
+  const handleKashierCheckout = async () => {
+    if (!course) return;
+
+    if (!user) {
+      // Prompt student to log in before purchasing
+      onClose();
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await api.post<{
+        success: boolean;
+        checkoutUrl: string;
+        orderId: string;
+        amount: number;
+        currency: string;
+        message?: string;
+      }>('/payments/kashier/create-session', {
+        courseId: course.id,
+        currency: 'EGP',
+      });
+
+      if (res && res.checkoutUrl) {
+        // Redirect student to Kashier Live Gateway checkout page
+        window.location.href = res.checkoutUrl;
+      } else {
+        throw new Error(res.message || 'Unable to generate Kashier checkout URL.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to initialize Kashier Live payment. Please try again.');
+      setLoading(false);
+    }
+  };
 
   // InstaPay Form State
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -314,62 +353,180 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               Choose Payment Method
             </label>
 
-            <div className="grid grid-cols-2 gap-3">
-              {/* Option 1: InstaPay */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* Option 1: Kashier Live Gateway */}
+              <button
+                type="button"
+                onClick={() => setProvider('KASHIER')}
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                  provider === 'KASHIER'
+                    ? 'border-cyan-400 bg-cyan-500/15 shadow-lg ring-1 ring-cyan-400/40'
+                    : 'border-scalora-blue/20 bg-scalora-navy/40 hover:bg-scalora-navy/70'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard className="w-4 h-4 text-cyan-400" />
+                    <span className="text-xs font-bold text-white">Kashier Live</span>
+                  </div>
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      provider === 'KASHIER' ? 'border-cyan-400 bg-cyan-400' : 'border-slate-500'
+                    }`}
+                  >
+                    {provider === 'KASHIER' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                  </div>
+                </div>
+                <span className="text-[10px] text-cyan-300/90 font-medium block">
+                  Cards & Wallets (Instant)
+                </span>
+              </button>
+
+              {/* Option 2: InstaPay */}
               <button
                 type="button"
                 onClick={() => setProvider('INSTAPAY')}
-                className={`p-3.5 rounded-xl border text-left flex items-start justify-between transition-all ${
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
                   provider === 'INSTAPAY'
                     ? 'border-emerald-500 bg-emerald-500/15 shadow-lg ring-1 ring-emerald-500/30'
                     : 'border-scalora-blue/20 bg-scalora-navy/40 hover:bg-scalora-navy/70'
                 }`}
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-bold text-white">Pay via InstaPay</span>
+                    <span className="text-xs font-bold text-white">InstaPay</span>
                   </div>
-                  <span className="text-[10px] text-emerald-300/80 block font-semibold">
-                    Direct Egyptian Transfer
-                  </span>
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      provider === 'INSTAPAY' ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
+                    }`}
+                  >
+                    {provider === 'INSTAPAY' && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                  </div>
                 </div>
-                <div
-                  className={`w-3.5 h-3.5 rounded-full border mt-0.5 flex items-center justify-center ${
-                    provider === 'INSTAPAY' ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
-                  }`}
-                >
-                  {provider === 'INSTAPAY' && <div className="w-1 h-1 rounded-full bg-black" />}
-                </div>
+                <span className="text-[10px] text-emerald-300/80 font-medium block">
+                  Direct Bank Transfer
+                </span>
               </button>
 
-              {/* Option 2: Instant Sandbox */}
+              {/* Option 3: Instant Sandbox */}
               <button
                 type="button"
                 onClick={() => setProvider('MOCK')}
-                className={`p-3.5 rounded-xl border text-left flex items-start justify-between transition-all ${
+                className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
                   provider === 'MOCK'
                     ? 'border-scalora-blue bg-scalora-blue/15 shadow-glow-blue'
                     : 'border-scalora-blue/20 bg-scalora-navy/40 hover:bg-scalora-navy/70'
                 }`}
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-1.5">
                     <Zap className="w-4 h-4 text-scalora-accent" />
-                    <span className="text-xs font-bold text-white">Instant Sandbox</span>
+                    <span className="text-xs font-bold text-white">Demo Fast</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block">1-Click Test Enrollment</span>
+                  <div
+                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                      provider === 'MOCK' ? 'border-scalora-blue bg-scalora-blue' : 'border-slate-500'
+                    }`}
+                  >
+                    {provider === 'MOCK' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
                 </div>
-                <div
-                  className={`w-3.5 h-3.5 rounded-full border mt-0.5 flex items-center justify-center ${
-                    provider === 'MOCK' ? 'border-scalora-blue bg-scalora-blue' : 'border-slate-500'
-                  }`}
-                >
-                  {provider === 'MOCK' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                </div>
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  1-Click Test Checkout
+                </span>
               </button>
             </div>
           </div>
+
+          {/* ========================================================================= */}
+          {/* KASHIER LIVE PAYMENT GATEWAY WORKFLOW SECTION */}
+          {/* ========================================================================= */}
+          {provider === 'KASHIER' && (
+            <div className="space-y-5 animate-in fade-in-50 duration-200">
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-950/40 via-scalora-navy/80 to-[#04152D] border border-scalora-blue/40 space-y-4 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-scalora-blue/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-scalora-blue/20 text-scalora-accent flex items-center justify-center border border-scalora-blue/30 shadow-md">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white">Kashier Live Gateway</h4>
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          Official Live
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Instant 3D-Secure checkout via Debit/Credit Cards & Mobile Wallets
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-cyan-300 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                    {pricing.formattedEffective}
+                  </span>
+                </div>
+
+                {/* Supported Payment Logos & Methods */}
+                <div className="p-3.5 rounded-xl bg-black/40 border border-scalora-blue/20 space-y-2">
+                  <span className="text-[11px] font-semibold text-slate-300 block">
+                    Supported Payment Methods:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-slate-300">
+                    <span className="px-2 py-1 rounded-md bg-white/10 text-white font-bold">💳 Visa</span>
+                    <span className="px-2 py-1 rounded-md bg-white/10 text-white font-bold">💳 MasterCard</span>
+                    <span className="px-2 py-1 rounded-md bg-white/10 text-emerald-300 font-bold">🇪🇬 Meeza</span>
+                    <span className="px-2 py-1 rounded-md bg-rose-500/20 text-rose-300 font-bold">Vodafone Cash</span>
+                    <span className="px-2 py-1 rounded-md bg-orange-500/20 text-orange-300 font-bold">Orange Cash</span>
+                    <span className="px-2 py-1 rounded-md bg-emerald-500/20 text-emerald-300 font-bold">Etisalat Cash</span>
+                    <span className="px-2 py-1 rounded-md bg-indigo-500/20 text-indigo-300 font-bold">Bank Installments</span>
+                  </div>
+                </div>
+
+                {/* Security & Instant Fulfillment Callouts */}
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-scalora-navy/50 border border-scalora-blue/15">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>256-Bit SSL Encrypted</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-scalora-navy/50 border border-scalora-blue/15">
+                    <Sparkles className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                    <span>Instant Auto-Enrollment</span>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Primary Action Button */}
+              <button
+                type="button"
+                onClick={handleKashierCheckout}
+                disabled={loading}
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-scalora-blue via-cyan-500 to-scalora-accent text-white font-extrabold text-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Redirecting to Kashier Live Checkout...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>Proceed to Kashier Live Checkout ({pricing.formattedEffective}) →</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* ========================================================================= */}
           {/* INSTAPAY DEDICATED WORKFLOW SECTION */}

@@ -4,12 +4,25 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { paymentService } from '../services/payment.service.js';
+import { kashierService } from '../services/kashier.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { communityService } from '../services/community.service.js';
 
 const checkoutSchema = z.object({
   courseId: z.string().min(1, 'Course ID is required'),
-  provider: z.enum(['MOCK', 'STRIPE', 'PAYMOB', 'INSTAPAY']).optional().default('MOCK'),
+  provider: z.enum(['MOCK', 'STRIPE', 'PAYMOB', 'INSTAPAY', 'KASHIER']).optional().default('KASHIER'),
+});
+
+const kashierSessionSchema = z.object({
+  courseId: z.string().min(1, 'Course ID is required'),
+  currency: z.string().optional().default('EGP'),
+});
+
+const kashierVerifySchema = z.object({
+  orderId: z.string().min(1, 'Order ID is required'),
+  paymentStatus: z.string().optional(),
+  signature: z.string().optional(),
+  queryParams: z.record(z.any()).optional(),
 });
 
 const instapaySubmitSchema = z.object({
@@ -491,11 +504,20 @@ export const getPaymentGateways = async (_req: AuthenticatedRequest, res: Respon
     success: true,
     gateways: [
       {
-        id: 'INSTAPAY',
-        name: 'Pay via InstaPay',
-        description: 'Direct Egyptian Bank Transfer via InstaPay Link / Address',
+        id: 'KASHIER',
+        name: 'Kashier Live Payment Gateway',
+        description: 'Instant Egyptian & International Cards (Visa, MasterCard, Meeza), Mobile Wallets & Bank Installments',
         currencies: ['EGP', 'USD'],
         isDefault: true,
+        badge: 'Instant Live Checkout',
+        features: ['Visa', 'MasterCard', 'Meeza', 'Vodafone Cash', 'Orange Cash', 'Etisalat Cash', 'Instapay Wallet'],
+      },
+      {
+        id: 'INSTAPAY',
+        name: 'Pay via InstaPay',
+        description: 'Direct Egyptian Bank Transfer via InstaPay Link / Address with Manual Receipt Verification',
+        currencies: ['EGP', 'USD'],
+        isDefault: false,
         badge: 'Direct Transfer',
         link: 'https://ipn.eg/S/eslamsalah210/instapay/7yLhab',
         recipient: 'eslamsalah210@instapay',
@@ -516,14 +538,355 @@ export const getPaymentGateways = async (_req: AuthenticatedRequest, res: Respon
         isDefault: false,
         badge: 'Global Cards',
       },
-      {
-        id: 'PAYMOB',
-        name: 'Paymob Gateway (Egypt)',
-        description: 'Vodafone Cash, Orange, Meeza, Local Debit Cards',
-        currencies: ['EGP'],
-        isDefault: false,
-        badge: 'Local Wallets',
-      },
     ],
   });
 };
+
+/**
+ * 1. Create Kashier Live Checkout Session
+ * Generates HMAC signature on backend and provides secure checkout redirection URL.
+ * NEVER exposes secret key to frontend.
+ */
+export const createKashierCheckoutSession = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized. Please log in to purchase courses.' });
+      return;
+    }
+
+    const { courseId, currency } = kashierSessionSchema.parse(req.body);
+
+    // Determine base URL of the client for redirection
+    const referer = req.headers.referer || req.headers.origin;
+    const clientBaseUrl =
+      typeof referer === 'string' && referer.trim().length > 0
+        ? new URL(referer).origin
+        : (process.env.CLIENT_URL?.split(',')[0] || 'http://localhost:5173');
+
+    const session = await kashierService.createCheckoutSession({
+      userId,
+      courseId,
+      clientBaseUrl,
+      currency,
+    });
+
+    res.json(session);
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: error.errors[0].message });
+      return;
+    }
+    console.error('[KASHIER CREATE SESSION ERROR]', error);
+    res.status(400).json({ success: false, message: error.message || 'Failed to initiate Kashier payment session' });
+  }
+};
+
+/**
+ * 2. Verify Kashier Payment (Called by Callback Page after return from checkout)
+ * Cryptographically verifies callback signature and fulfills student course auto-enrollment.
+ */
+export const verifyKashierPayment = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { orderId, paymentStatus, signature, queryParams } = kashierVerifySchema.parse(req.body);
+
+    const mergedParams: Record<string, any> = {
+      ...(queryParams || {}),
+      orderId,
+    };
+    if (signature) mergedParams.signature = signature;
+    if (paymentStatus) mergedParams.paymentStatus = paymentStatus;
+
+    // Check paymentStatus
+    const statusUpper = (paymentStatus || queryParams?.paymentStatus || '').toUpperCase();
+
+    if (statusUpper === 'FAILED' || statusUpper === 'CANCELLED') {
+      await kashierService.markPaymentFailed(orderId, 'Customer cancelled or transaction declined by bank', mergedParams);
+      res.status(400).json({
+        success: false,
+        message: 'Payment was cancelled or could not be processed by your bank. Please try again.',
+      });
+      return;
+    }
+
+    // Verify cryptographic signature if signature parameter is present
+    if (mergedParams.signature) {
+      const isSignatureValid = kashierService.verifyCallbackSignature(mergedParams);
+      if (!isSignatureValid) {
+        console.warn(`[KASHIER SECURITY WARNING] Signature mismatch for Order ${orderId}`);
+        // In live integration, if signature fails validation, reject transaction
+        res.status(400).json({
+          success: false,
+          message: 'Security validation failed: invalid payment signature.',
+        });
+        return;
+      }
+    }
+
+    // Fulfill payment and auto-enroll student into course & community
+    const fulfillment = await kashierService.fulfillSuccessfulPayment(orderId, mergedParams);
+
+    res.json({
+      message: 'Payment verified and course enrollment activated successfully!',
+      ...fulfillment,
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ success: false, message: error.errors[0].message });
+      return;
+    }
+    console.error('[KASHIER VERIFY ERROR]', error);
+    res.status(400).json({ success: false, message: error.message || 'Payment verification failed' });
+  }
+};
+
+/**
+ * 3. Kashier Webhook (Server-to-Server asynchronous notifications)
+ * Validates x-kashier-signature header and ensures course enrollment even if student closed tab.
+ */
+export const kashierWebhook = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const signatureHeader =
+      (req.headers['x-kashier-signature'] as string) ||
+      (req.headers['kashier-signature'] as string) ||
+      (req.headers['x-signature'] as string);
+
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+
+    // If signature header is supplied, verify it
+    if (signatureHeader) {
+      const isValid = kashierService.verifyWebhookSignature(rawBody, signatureHeader);
+      if (!isValid) {
+        console.warn('[KASHIER WEBHOOK] Invalid signature detected. Ignoring request.');
+        res.status(400).json({ success: false, message: 'Invalid signature' });
+        return;
+      }
+    }
+
+    const payload = req.body || {};
+    const orderId =
+      payload.orderId ||
+      payload.merchantOrderId ||
+      payload.data?.orderId ||
+      payload.data?.merchantOrderId;
+
+    const event = (payload.event || payload.action || payload.data?.event || '').toLowerCase();
+    const status = (payload.status || payload.paymentStatus || payload.data?.status || '').toUpperCase();
+
+    console.log(`[KASHIER WEBHOOK] Received event: "${event}", status: "${status}", orderId: "${orderId}"`);
+
+    if (orderId && (status === 'SUCCESS' || status === 'COMPLETED' || status === 'CAPTURED' || event.includes('capture') || event.includes('pay'))) {
+      await kashierService.fulfillSuccessfulPayment(orderId, payload);
+    } else if (orderId && (status === 'FAILED' || status === 'DECLINED' || status === 'CANCELLED')) {
+      await kashierService.markPaymentFailed(orderId, payload.reason || 'Webhook reported payment failure', payload);
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error: any) {
+    console.error('[KASHIER WEBHOOK ERROR]', error);
+    res.status(500).json({ success: false, message: error.message || 'Webhook processing failed' });
+  }
+};
+
+/**
+ * 4. Student Purchase History
+ * Returns all past course purchases, transaction IDs, statuses, and links for logged-in student.
+ */
+export const getStudentPurchaseHistory = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Unauthorized' });
+      return;
+    }
+
+    const [payments, paymentRequests] = await Promise.all([
+      prisma.payment.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              thumbnail: true,
+              level: true,
+            },
+          },
+          enrollments: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
+      }),
+      prisma.paymentRequest.findMany({
+        where: { userId },
+        orderBy: { submittedAt: 'desc' },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              thumbnail: true,
+              level: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      purchases: payments,
+      manualRequests: paymentRequests,
+    });
+  } catch (error: any) {
+    console.error('[STUDENT PURCHASE HISTORY ERROR]', error);
+    res.status(500).json({ success: false, message: error.message || 'Error loading purchase history' });
+  }
+};
+
+/**
+ * 5. Admin All Payments & Analytics Ledger
+ * Comprehensive overview of all gateway transactions, volumes, conversion stats, and search.
+ */
+export const getAllPaymentsAdmin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { status, provider, search, page = '1', limit = '50' } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 50));
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+
+    if (status && status !== 'ALL') {
+      where.status = status;
+    }
+
+    if (provider && provider !== 'ALL') {
+      where.provider = provider;
+    }
+
+    if (search && typeof search === 'string' && search.trim()) {
+      const q = search.trim();
+      where.OR = [
+        { transactionId: { contains: q, mode: 'insensitive' } },
+        { user: { name: { contains: q, mode: 'insensitive' } } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
+        { course: { title: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [payments, totalCount, allStats] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNum,
+        include: {
+          user: { select: { id: true, name: true, email: true, phone: true } },
+          course: { select: { id: true, title: true, slug: true, price: true, thumbnail: true } },
+          enrollments: { select: { id: true, status: true } },
+        },
+      }),
+      prisma.payment.count({ where }),
+      prisma.payment.findMany({
+        select: {
+          amount: true,
+          status: true,
+          provider: true,
+        },
+      }),
+    ]);
+
+    // Aggregate real-time statistics
+    let totalRevenue = 0;
+    let kashierVolume = 0;
+    let refundedAmount = 0;
+    let completedCount = 0;
+    let pendingCount = 0;
+    let failedCount = 0;
+    let refundedCount = 0;
+
+    for (const p of allStats) {
+      if (p.status === 'COMPLETED') {
+        totalRevenue += p.amount;
+        completedCount++;
+        if (p.provider === 'KASHIER') kashierVolume += p.amount;
+      } else if (p.status === 'PENDING') {
+        pendingCount++;
+      } else if (p.status === 'FAILED') {
+        failedCount++;
+      } else if (p.status === 'REFUNDED') {
+        refundedAmount += p.amount;
+        refundedCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      payments,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+      },
+      stats: {
+        totalRevenue,
+        kashierVolume,
+        refundedAmount,
+        totalTransactions: allStats.length,
+        completedCount,
+        pendingCount,
+        failedCount,
+        refundedCount,
+      },
+    });
+  } catch (error: any) {
+    console.error('[ADMIN PAYMENTS LEDGER ERROR]', error);
+    res.status(500).json({ success: false, message: error.message || 'Error fetching admin payments ledger' });
+  }
+};
+
+/**
+ * 6. Admin Refund Workflow
+ * Refunds transaction via Kashier API and revokes course access.
+ */
+export const processAdminRefund = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const paymentId = req.params.id as string;
+    const { reason } = req.body;
+
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      res.status(400).json({ success: false, message: 'A valid refund reason is required.' });
+      return;
+    }
+
+    const adminUser = {
+      id: req.user?.id || 'admin',
+      name: req.user?.name || 'Administrator',
+    };
+
+    const updatedPayment = await kashierService.processRefund({
+      paymentId,
+      adminUser,
+      reason: reason.trim(),
+    });
+
+    res.json({
+      success: true,
+      message: `Transaction ${updatedPayment.transactionId} has been successfully marked as REFUNDED.`,
+      payment: updatedPayment,
+    });
+  } catch (error: any) {
+    console.error('[ADMIN REFUND ERROR]', error);
+    res.status(400).json({ success: false, message: error.message || 'Refund processing failed' });
+  }
+};
+

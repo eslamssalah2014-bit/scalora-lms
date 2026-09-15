@@ -196,11 +196,13 @@ model Payment {
   courseId      String
   course        Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   amount        Float        @default(0.0)
-  currency      String       @default("USD") // "USD" | "EGP" | "EUR"
-  status        String       @default("COMPLETED") // "COMPLETED" | "PENDING" | "FAILED" | "REFUNDED"
-  provider      String       // "MOCK" | "STRIPE" | "PAYMOB"
+  currency      String       @default("EGP") // "EGP" | "USD" | "EUR"
+  status        String       @default("PENDING") // "COMPLETED" | "PENDING" | "FAILED" | "REFUNDED"
+  provider      String       @default("KASHIER") // "KASHIER" | "INSTAPAY" | "MOCK" | "STRIPE" | "PAYMOB"
   transactionId String       @unique
-  metadata      String?      // Optional metadata JSON
+  metadata      String?      // Optional metadata JSON (gateway payload, card info, etc.)
+  refundReason  String?      // Optional reason if transaction was refunded
+  refundedAt    DateTime?    // Timestamp when refund was executed
   deletedAt     DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt

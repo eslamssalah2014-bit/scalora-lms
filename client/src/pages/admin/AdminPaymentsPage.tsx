@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Mail,
   Key,
+  Smartphone,
 } from 'lucide-react';
 import { formatCurrency } from '../../lib/currency';
 
@@ -57,7 +58,10 @@ const STATUS_CONFIG: Record<
   },
 };
 
+import { AdminGatewayLedger } from './AdminGatewayLedger';
+
 export const AdminPaymentsPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'GATEWAY' | 'MANUAL'>('GATEWAY');
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
   const [stats, setStats] = useState<PaymentRequestStats>({
     totalRequests: 0,
@@ -320,7 +324,45 @@ export const AdminPaymentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Notification Alert */}
+      {/* Dual Hub Navigation Tabs */}
+      <div className="flex items-center gap-3 border-b border-scalora-blue/20 pb-4">
+        <button
+          type="button"
+          onClick={() => setActiveTab('GATEWAY')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${
+            activeTab === 'GATEWAY'
+              ? 'bg-gradient-to-r from-scalora-blue to-cyan-500 text-white shadow-lg shadow-cyan-500/20'
+              : 'bg-scalora-navy/50 text-slate-400 hover:text-white border border-scalora-blue/15'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          <span>Kashier Live & Gateway Ledger</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('MANUAL')}
+          className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all ${
+            activeTab === 'MANUAL'
+              ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
+              : 'bg-scalora-navy/50 text-slate-400 hover:text-white border border-scalora-blue/15'
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>InstaPay Manual Verification</span>
+          {stats.pendingReview > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-black ml-1">
+              {stats.pendingReview}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'GATEWAY' ? (
+        <AdminGatewayLedger />
+      ) : (
+        <>
+          {/* Action Notification Alert */}
       {actionSuccess && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
@@ -1031,6 +1073,8 @@ export const AdminPaymentsPage: React.FC = () => {
             />
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -59,7 +59,12 @@ app.use((0, cors_1.default)({
     },
     credentials: true,
 }));
-app.use(express_1.default.json({ limit: '25mb' }));
+app.use(express_1.default.json({
+    limit: '25mb',
+    verify: (req, _res, buf) => {
+        req.rawBody = buf;
+    },
+}));
 app.use(express_1.default.urlencoded({ limit: '25mb', extended: true }));
 // Enforce Zero Stale Cache policy across all dynamic API routes
 app.use((req, res, next) => {

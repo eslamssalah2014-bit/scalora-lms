@@ -1,9 +1,22 @@
 export const getApiBase = (): string => {
-  const envUrl = import.meta.env.VITE_API_URL;
+  // 1. Allow local runtime override for diagnostic testing
+  if (typeof window !== 'undefined') {
+    const override = localStorage.getItem('scalora_api_override');
+    if (override && override.trim().length > 0) {
+      return override.trim().replace(/\/$/, '');
+    }
+  }
+
+  // 2. Check environment variables (Vite & Next.js conventions)
+  const envUrl =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.NEXT_PUBLIC_API_URL;
+
   if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
     return envUrl.trim().replace(/\/$/, '');
   }
-  // Default to same-origin /api for seamless Vercel / serverless routing
+
+  // 3. Default to same-origin /api for seamless proxy / serverless routing
   return '/api';
 };
 
@@ -62,16 +75,31 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(targetUrl, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(targetUrl, {
+      ...options,
+      headers,
+    });
+  } catch (err: any) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(
+      `Failed to connect to LMS backend API at ${targetUrl}. Please verify backend service status. (${err.message})`,
+      0
+    );
+  }
 
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.includes('application/json')) {
     const textPreview = await response.text().catch(() => '');
     if (response.status === 413 || textPreview.toLowerCase().includes('too large') || textPreview.toLowerCase().includes('entity')) {
       throw new ApiError('File exceeds the 10 MB upload limit.', 413);
+    }
+    if (response.status === 503 || textPreview.includes('Service Suspended')) {
+      throw new ApiError(
+        'Backend service is temporarily suspended or unavailable. Please verify Render / backend host status.',
+        503
+      );
     }
     throw new ApiError(
       `Received non-JSON response from server (${response.status}): ${textPreview.slice(0, 80) || 'Empty body'}`,

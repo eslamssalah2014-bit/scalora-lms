@@ -34,6 +34,7 @@ import {
   Smartphone,
   Check,
   Lock,
+  ShoppingBag,
 } from 'lucide-react';
 import { usePwa } from '../hooks/usePwa';
 
@@ -215,13 +216,22 @@ export const StudentDashboard: React.FC = () => {
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
               My Learning Progress
             </h3>
-            <Link
-              to="/my-study-plan"
-              className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-            >
-              <Target className="w-3 h-3" />
-              <span>Smart Study Plan</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/purchases"
+                className="text-[10px] font-bold text-slate-300 hover:text-white flex items-center gap-1 bg-scalora-blue/20 hover:bg-scalora-blue/40 px-2 py-0.5 rounded-md border border-scalora-blue/30 transition-all"
+              >
+                <ShoppingBag className="w-3 h-3 text-cyan-400" />
+                <span>Orders</span>
+              </Link>
+              <Link
+                to="/my-study-plan"
+                className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+              >
+                <Target className="w-3 h-3" />
+                <span>Smart Study Plan</span>
+              </Link>
+            </div>
           </div>
 
           {loading ? (
