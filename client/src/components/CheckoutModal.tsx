@@ -85,11 +85,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       });
 
       if (res && res.checkoutUrl) {
+        // Save pending order metadata in session storage for robust callback resolution
+        try {
+          if (res.orderId) {
+            sessionStorage.setItem('scalora_kashier_order_id', res.orderId);
+            sessionStorage.setItem('scalora_kashier_course_id', course.id);
+          }
+        } catch {}
+
         // Redirect student to Kashier Live Gateway checkout page
         window.location.href = res.checkoutUrl;
       } else {
         throw new Error(res.message || 'Unable to generate Kashier checkout URL.');
       }
+
     } catch (err: any) {
       setError(err.message || 'Failed to initialize Kashier Live payment. Please try again.');
       setLoading(false);

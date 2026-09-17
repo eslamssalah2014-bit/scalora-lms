@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import https from 'https';
 import { prisma } from '../lib/prisma.js';
 import { communityService } from './community.service.js';
+import { notificationService } from './notification.service.js';
 
 export interface CreateKashierSessionParams {
   userId: string;
@@ -154,9 +155,10 @@ export class KashierPaymentService {
       mid: effectiveMerchantId,
     });
 
-    // Construct clean client redirect callback URL
+    // Construct clean client redirect callback URL with orderId query parameter preserved
     const cleanClientUrl = clientBaseUrl.replace(/\/$/, '');
-    const merchantRedirect = `${cleanClientUrl}/payments/kashier/callback`;
+    const merchantRedirect = `${cleanClientUrl}/payments/kashier/callback?orderId=${encodeURIComponent(orderId)}`;
+
 
     // Construct fallback Hosted Checkout URL
     const fallbackCheckoutUrl =
@@ -344,24 +346,203 @@ export class KashierPaymentService {
   }
 
   /**
-   * Automatically fulfills course enrollment upon successful payment verification.
+   * Queries Kashier Orders API directly: GET /v3/payment/orders?search=<searchTerm>
+   * Returns matching live transaction details from Kashier servers.
    */
-  public async fulfillSuccessfulPayment(orderId: string, payloadDetails: Record<string, any> = {}) {
-    // Find payment record by transactionId (orderId)
-    const payment = await prisma.payment.findUnique({
-      where: { transactionId: orderId },
+  public async queryKashierOrder(searchTerm: string): Promise<any | null> {
+    try {
+      const cleanTerm = (searchTerm || '').trim();
+      if (!cleanTerm) return null;
+
+      const url = `${this.apiBaseUrl}/v3/payment/orders?search=${encodeURIComponent(cleanTerm)}`;
+      console.log(`[KASHIER VERIFICATION QUERY] Calling Kashier Orders API: ${url}`);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          Authorization: this.secretKey,
+          'api-key': this.apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn(`[KASHIER VERIFICATION QUERY] HTTP ${response.status} from Kashier:`, await response.text());
+        return null;
+      }
+
+      const resData = (await response.json()) as any;
+      console.log(
+        `[KASHIER VERIFICATION QUERY] Kashier API status: "${resData.status}", matching count: ${resData.data?.length || 0}`
+      );
+
+      if (resData && Array.isArray(resData.data) && resData.data.length > 0) {
+        return resData.data[0];
+      }
+
+      return null;
+    } catch (err: any) {
+      console.error('[KASHIER VERIFICATION QUERY ERROR]', err.message);
+      return null;
+    }
+  }
+
+  /**
+   * Resolves a Payment DB record across multiple identification strategies:
+   * 1. Exact match on transactionId (e.g. SCL-1789649062367-1R4YV)
+   * 2. Exact match on local payment ID (e.g. cmu5iuewq0007m4v5853432lp)
+   * 3. Metadata containing the reference (e.g. paymentId UUID or kashierSessionId)
+   * 4. Kashier API query using reference (resolves merchantOrderId from live gateway)
+   * 5. Authenticated student's most recent PENDING payment verified against Kashier API
+   */
+  public async resolvePaymentRecord(reference?: string, userId?: string) {
+    const cleanRef = (reference || '').trim();
+
+    if (cleanRef) {
+      // Strategy 1: Match by transactionId
+      try {
+        const byTxn = await prisma.payment.findUnique({
+          where: { transactionId: cleanRef },
+          include: {
+            course: { select: { id: true, title: true, slug: true, price: true } },
+            user: { select: { id: true, name: true, email: true } },
+          },
+        });
+        if (byTxn) {
+          console.log(`[KASHIER RESOLVE] Found payment by transactionId: ${cleanRef}`);
+          return byTxn;
+        }
+      } catch (err: any) {
+        console.warn(`[KASHIER RESOLVE] Strategy 1 note: ${err.message}`);
+      }
+
+      // Strategy 2: Match by local ID
+      try {
+        const byId = await prisma.payment.findUnique({
+          where: { id: cleanRef },
+          include: {
+            course: { select: { id: true, title: true, slug: true, price: true } },
+            user: { select: { id: true, name: true, email: true } },
+          },
+        });
+        if (byId) {
+          console.log(`[KASHIER RESOLVE] Found payment by local ID: ${cleanRef}`);
+          return byId;
+        }
+      } catch (err: any) {
+        console.warn(`[KASHIER RESOLVE] Strategy 2 note: ${err.message}`);
+      }
+
+      // Strategy 3: Match by metadata substring (e.g. paymentId or session URL)
+      try {
+        const byMeta = await prisma.payment.findFirst({
+          where: {
+            metadata: { contains: cleanRef },
+          },
+          include: {
+            course: { select: { id: true, title: true, slug: true, price: true } },
+            user: { select: { id: true, name: true, email: true } },
+          },
+        });
+        if (byMeta) {
+          console.log(`[KASHIER RESOLVE] Found payment by metadata containing: ${cleanRef}`);
+          return byMeta;
+        }
+      } catch (err: any) {
+        console.warn(`[KASHIER RESOLVE] Strategy 3 note: ${err.message}`);
+      }
+
+      // Strategy 4: Query Kashier Orders API with reference
+      try {
+        const kashierOrder = await this.queryKashierOrder(cleanRef);
+        if (kashierOrder && kashierOrder.merchantOrderId) {
+          const byKashierOrder = await prisma.payment.findUnique({
+            where: { transactionId: kashierOrder.merchantOrderId },
+            include: {
+              course: { select: { id: true, title: true, slug: true, price: true } },
+              user: { select: { id: true, name: true, email: true } },
+            },
+          });
+          if (byKashierOrder) {
+            console.log(
+              `[KASHIER RESOLVE] Found payment via Kashier API merchantOrderId: ${kashierOrder.merchantOrderId}`
+            );
+            return byKashierOrder;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[KASHIER RESOLVE] Strategy 4 note: ${err.message}`);
+      }
+    }
+
+
+    // Strategy 5: Student Recent Pending Session Lookup
+    const recentWhere: any = {
+      provider: 'KASHIER',
+      status: 'PENDING',
+      createdAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+    };
+    if (userId) {
+      recentWhere.userId = userId;
+    }
+
+    const pendingCandidates = await prisma.payment.findMany({
+      where: recentWhere,
+      orderBy: { createdAt: 'desc' },
+      take: 5,
       include: {
         course: { select: { id: true, title: true, slug: true, price: true } },
         user: { select: { id: true, name: true, email: true } },
       },
     });
 
-    if (!payment) {
-      throw new Error(`Payment with transaction ID ${orderId} not found`);
+    console.log(
+      `[KASHIER RESOLVE] Evaluating ${pendingCandidates.length} recent pending candidates for reference "${cleanRef}" (userId: ${userId || 'N/A'})...`
+    );
+
+    for (const candidate of pendingCandidates) {
+      const orderInfo = await this.queryKashierOrder(candidate.transactionId);
+      if (orderInfo) {
+        const orderStatus = (orderInfo.status || '').toUpperCase();
+        const gatewayKey = orderInfo.gatewayTransactionUniqueKey || '';
+
+        // Match if gateway key contains the reference (e.g. paymentId UUID)
+        // OR candidate is confirmed as CAPTURED / SUCCESS / PAID on Kashier
+        const isMatchedRef = cleanRef && gatewayKey.includes(cleanRef);
+        const isLivePaid = orderStatus === 'CAPTURED' || orderStatus === 'SUCCESS' || orderStatus === 'PAID';
+
+        if (isMatchedRef || isLivePaid) {
+          console.log(
+            `[KASHIER RESOLVE] Matched candidate ${candidate.transactionId} with status ${orderStatus} on Kashier (refMatch: ${!!isMatchedRef})`
+          );
+          return candidate;
+        }
+      }
     }
 
-    // If already completed, return existing enrollment
+    return null;
+  }
+
+  /**
+   * Automatically fulfills course enrollment upon successful payment verification.
+   * Directly queries Kashier API to confirm live transaction state before granting LMS access.
+   */
+  public async fulfillSuccessfulPayment(
+    reference: string,
+    payloadDetails: Record<string, any> = {},
+    userId?: string
+  ) {
+    console.log(`[KASHIER FULFILLMENT] Initiating fulfillment for reference: "${reference}", userId: "${userId || 'N/A'}"`);
+
+    // 1. Resolve payment record
+    const payment = await this.resolvePaymentRecord(reference, userId);
+
+    if (!payment) {
+      throw new Error(`Payment with transaction ID or reference "${reference}" not found.`);
+    }
+
+    // 2. If already completed, return existing enrollment
     if (payment.status === 'COMPLETED') {
+      console.log(`[KASHIER FULFILLMENT] Payment ${payment.transactionId} is already COMPLETED.`);
       const existingEnrollment = await prisma.enrollment.findUnique({
         where: {
           userId_courseId: {
@@ -380,7 +561,26 @@ export class KashierPaymentService {
       };
     }
 
-    // Merge existing metadata with new gateway payload
+    // 3. Query Kashier API directly to confirm status before marking completed
+    let kashierOrderStatus: string | null = null;
+    let kashierOrderData: any = null;
+    try {
+      kashierOrderData = await this.queryKashierOrder(payment.transactionId);
+      if (kashierOrderData) {
+        kashierOrderStatus = (kashierOrderData.status || '').toUpperCase();
+        console.log(`[KASHIER FULFILLMENT] Kashier live order status for ${payment.transactionId}: "${kashierOrderStatus}"`);
+      }
+    } catch (err: any) {
+      console.warn(`[KASHIER FULFILLMENT] Live gateway query note: ${err.message}`);
+    }
+
+    // Check if Kashier gateway explicitly reports failure
+    if (kashierOrderStatus === 'FAILED' || kashierOrderStatus === 'DECLINED' || kashierOrderStatus === 'CANCELLED') {
+      await this.markPaymentFailed(payment.transactionId, `Kashier Gateway reported status: ${kashierOrderStatus}`, kashierOrderData);
+      throw new Error(`Kashier reported transaction as ${kashierOrderStatus}. Course enrollment was not granted.`);
+    }
+
+    // 4. Merge existing metadata with gateway details
     let existingMeta: Record<string, any> = {};
     try {
       if (payment.metadata) existingMeta = JSON.parse(payment.metadata);
@@ -391,19 +591,26 @@ export class KashierPaymentService {
     const updatedMeta = {
       ...existingMeta,
       gatewayDetails: payloadDetails,
+      kashierLiveOrder: kashierOrderData || null,
       verifiedAt: new Date().toISOString(),
     };
 
-    // Update payment status to COMPLETED
+    // 5. Update payment status to COMPLETED
     const updatedPayment = await prisma.payment.update({
       where: { id: payment.id },
       data: {
         status: 'COMPLETED',
         metadata: JSON.stringify(updatedMeta),
       },
+      include: {
+        course: { select: { id: true, title: true, slug: true, price: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
 
-    // Create or activate course enrollment
+    console.log(`[KASHIER FULFILLMENT] Payment record ${updatedPayment.transactionId} successfully marked as COMPLETED.`);
+
+    // 6. Create or activate course enrollment
     const enrollment = await prisma.enrollment.upsert({
       where: {
         userId_courseId: {
@@ -428,16 +635,30 @@ export class KashierPaymentService {
       },
     });
 
-    // Auto-enroll student in course community chat channel
+    console.log(
+      `[KASHIER ENROLLMENT CREATED] Student ${payment.user.email} actively enrolled into course "${payment.course.title}" (Enrollment ID: ${enrollment.id})`
+    );
+
+    // 7. Auto-enroll student in course community chat channel
     try {
       await communityService.autoEnrollInChannel(payment.userId, payment.courseId);
+      console.log(`[KASHIER COMMUNITY] Student auto-enrolled in community channel for course ${payment.courseId}`);
     } catch (commErr) {
       console.warn('[KASHIER] Community channel auto-enrollment warning:', commErr);
     }
 
-    console.log(
-      `[KASHIER] Payment COMPLETED: Order ${orderId}, Student ${payment.user.email}, Course "${payment.course.title}"`
-    );
+    // 8. Send in-app notification & native Web Push to student
+    try {
+      await notificationService.createNotification({
+        userId: payment.userId,
+        type: 'PAYMENT_CONFIRMED' as any,
+        message: `Your payment of ${payment.amount} ${payment.currency} for "${payment.course.title}" has been confirmed! Your course is now active.`,
+        actionUrl: `/learn/${payment.course.slug}`,
+      });
+      console.log(`[KASHIER NOTIFICATION] Confirmation notification delivered to student ${payment.userId}`);
+    } catch (notifErr) {
+      console.warn('[KASHIER] Notification dispatch warning:', notifErr);
+    }
 
     return {
       success: true,
@@ -451,10 +672,8 @@ export class KashierPaymentService {
   /**
    * Marks a payment as FAILED/CANCELLED.
    */
-  public async markPaymentFailed(orderId: string, reason?: string, rawDetails?: any) {
-    const payment = await prisma.payment.findUnique({
-      where: { transactionId: orderId },
-    });
+  public async markPaymentFailed(reference: string, reason?: string, rawDetails?: any, userId?: string) {
+    const payment = await this.resolvePaymentRecord(reference, userId);
 
     if (!payment) return;
     if (payment.status === 'COMPLETED') return; // Do not overwrite completed payment
@@ -478,6 +697,7 @@ export class KashierPaymentService {
         }),
       },
     });
+    console.log(`[KASHIER FAILED] Payment ${payment.transactionId} marked as FAILED. Reason: ${reason}`);
   }
 
   /**

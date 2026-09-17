@@ -58,13 +58,23 @@ export const KashierCallbackPage: React.FC = () => {
       queryParams[key] = value;
     });
 
+    // Check sessionStorage fallback if redirect query stripped orderId
+    let storedOrderId: string | null = null;
+    try {
+      storedOrderId = sessionStorage.getItem('scalora_kashier_order_id');
+    } catch {}
+
     const orderId =
       searchParams.get('orderId') ||
       searchParams.get('merchantOrderId') ||
       searchParams.get('merchant_order_id') ||
       searchParams.get('order') ||
       searchParams.get('order_id') ||
-      searchParams.get('paymentId');
+      storedOrderId ||
+      searchParams.get('paymentId') ||
+      '';
+
+    const paymentId = searchParams.get('paymentId') || undefined;
 
     const paymentStatus =
       searchParams.get('paymentStatus') ||
@@ -73,15 +83,10 @@ export const KashierCallbackPage: React.FC = () => {
 
     const signature = searchParams.get('signature') || undefined;
 
-    if (!orderId) {
-      setErrorMessage('No valid order identifier received from payment gateway callback.');
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await api.post<VerificationResult>('/payments/kashier/verify', {
-        orderId,
+        orderId: orderId || undefined,
+        paymentId: paymentId || undefined,
         paymentStatus,
         signature,
         queryParams,
@@ -89,6 +94,10 @@ export const KashierCallbackPage: React.FC = () => {
 
       if (res && res.success) {
         setResult(res);
+        try {
+          sessionStorage.removeItem('scalora_kashier_order_id');
+        } catch {}
+
         // Trigger celebration confetti
         confetti({
           particleCount: 100,
@@ -99,6 +108,7 @@ export const KashierCallbackPage: React.FC = () => {
       } else {
         setErrorMessage(res.message || 'Payment could not be verified by the banking gateway.');
       }
+
     } catch (err: any) {
       console.error('[KASHIER CALLBACK ERROR]', err);
       setErrorMessage(

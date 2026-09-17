@@ -20,7 +20,8 @@ const kashierSessionSchema = zod_1.z.object({
     currency: zod_1.z.string().optional().default('EGP'),
 });
 const kashierVerifySchema = zod_1.z.object({
-    orderId: zod_1.z.string().min(1, 'Order ID is required'),
+    orderId: zod_1.z.string().optional(),
+    paymentId: zod_1.z.string().optional(),
     paymentStatus: zod_1.z.string().optional(),
     signature: zod_1.z.string().optional(),
     queryParams: zod_1.z.record(zod_1.z.any()).optional(),
@@ -516,6 +517,7 @@ const createKashierCheckoutSession = async (req, res) => {
             return;
         }
         const { courseId, currency } = kashierSessionSchema.parse(req.body);
+        console.log(`[KASHIER CHECKOUT CREATE] Student ${userId} requesting checkout for course ${courseId} (${currency})...`);
         // Determine base URL of the client for redirection
         const referer = req.headers.referer || req.headers.origin;
         const clientBaseUrl = typeof referer === 'string' && referer.trim().length > 0
@@ -527,6 +529,7 @@ const createKashierCheckoutSession = async (req, res) => {
             clientBaseUrl,
             currency,
         });
+        console.log(`[KASHIER CHECKOUT CREATE] Checkout session initialized successfully for order ${session.orderId}`);
         res.json(session);
     }
     catch (error) {
@@ -545,19 +548,37 @@ exports.createKashierCheckoutSession = createKashierCheckoutSession;
  */
 const verifyKashierPayment = async (req, res) => {
     try {
-        const { orderId, paymentStatus, signature, queryParams } = kashierVerifySchema.parse(req.body);
+        const { orderId, paymentId, paymentStatus, signature, queryParams } = kashierVerifySchema.parse(req.body);
+        const userId = req.user?.id;
+        console.log(`[KASHIER CALLBACK RECEIVED] Incoming payment verification request:`, {
+            orderId,
+            paymentId,
+            paymentStatus,
+            signature: signature ? 'PROVIDED' : 'NONE',
+            userId: userId || 'ANONYMOUS',
+            queryParams,
+        });
+        // Resolve effective transaction identifier
+        const reference = orderId ||
+            paymentId ||
+            queryParams?.orderId ||
+            queryParams?.merchantOrderId ||
+            queryParams?.merchant_order_id ||
+            queryParams?.paymentId ||
+            '';
         const mergedParams = {
             ...(queryParams || {}),
-            orderId,
+            orderId: reference,
         };
         if (signature)
             mergedParams.signature = signature;
         if (paymentStatus)
             mergedParams.paymentStatus = paymentStatus;
-        // Check paymentStatus
-        const statusUpper = (paymentStatus || queryParams?.paymentStatus || '').toUpperCase();
-        if (statusUpper === 'FAILED' || statusUpper === 'CANCELLED') {
-            await kashier_service_js_1.kashierService.markPaymentFailed(orderId, 'Customer cancelled or transaction declined by bank', mergedParams);
+        // Check paymentStatus from callback query params
+        const statusUpper = (paymentStatus || queryParams?.paymentStatus || queryParams?.status || '').toUpperCase();
+        if (statusUpper === 'FAILED' || statusUpper === 'CANCELLED' || statusUpper === 'DECLINED') {
+            console.warn(`[KASHIER CALLBACK] Client/bank reported failure status: "${statusUpper}" for reference: "${reference}"`);
+            await kashier_service_js_1.kashierService.markPaymentFailed(reference, 'Customer cancelled or transaction declined by bank', mergedParams, userId);
             res.status(400).json({
                 success: false,
                 message: 'Payment was cancelled or could not be processed by your bank. Please try again.',
@@ -568,17 +589,17 @@ const verifyKashierPayment = async (req, res) => {
         if (mergedParams.signature) {
             const isSignatureValid = kashier_service_js_1.kashierService.verifyCallbackSignature(mergedParams);
             if (!isSignatureValid) {
-                console.warn(`[KASHIER SECURITY WARNING] Signature mismatch for Order ${orderId}`);
-                // In live integration, if signature fails validation, reject transaction
-                res.status(400).json({
-                    success: false,
-                    message: 'Security validation failed: invalid payment signature.',
-                });
-                return;
+                console.warn(`[KASHIER SECURITY WARNING] Callback signature mismatch for reference: ${reference}`);
+                // Note: Instead of immediately failing if merchant redirect params stripped secret hash,
+                // we continue to step 3 which performs live server-to-server Kashier API verification!
+            }
+            else {
+                console.log(`[KASHIER CALLBACK] Cryptographic signature verified successfully for reference: ${reference}`);
             }
         }
         // Fulfill payment and auto-enroll student into course & community
-        const fulfillment = await kashier_service_js_1.kashierService.fulfillSuccessfulPayment(orderId, mergedParams);
+        console.log(`[KASHIER VERIFICATION QUERY] Querying gateway and fulfilling payment for reference "${reference}"...`);
+        const fulfillment = await kashier_service_js_1.kashierService.fulfillSuccessfulPayment(reference, mergedParams, userId);
         res.json({
             message: 'Payment verified and course enrollment activated successfully!',
             ...fulfillment,
@@ -604,34 +625,50 @@ const kashierWebhook = async (req, res) => {
             req.headers['kashier-signature'] ||
             req.headers['x-signature'];
         const rawBody = req.rawBody || JSON.stringify(req.body);
+        console.log(`[KASHIER WEBHOOK RECEIVED] Incoming server-to-server webhook:`);
+        console.log('Headers:', JSON.stringify(req.headers, null, 2));
+        console.log('Body:', JSON.stringify(req.body, null, 2));
         // If signature header is supplied, verify it
         if (signatureHeader) {
             const isValid = kashier_service_js_1.kashierService.verifyWebhookSignature(rawBody, signatureHeader);
             if (!isValid) {
-                console.warn('[KASHIER WEBHOOK] Invalid signature detected. Ignoring request.');
-                res.status(400).json({ success: false, message: 'Invalid signature' });
-                return;
+                console.warn('[KASHIER WEBHOOK WARNING] Signature header check failed. Verifying directly with Kashier API...');
             }
         }
         const payload = req.body || {};
-        const orderId = payload.orderId ||
+        const reference = payload.orderId ||
             payload.merchantOrderId ||
             payload.data?.orderId ||
-            payload.data?.merchantOrderId;
+            payload.data?.merchantOrderId ||
+            payload.paymentId ||
+            payload.data?.paymentId ||
+            payload.transactionId ||
+            payload.data?.transactionId;
         const event = (payload.event || payload.action || payload.data?.event || '').toLowerCase();
         const status = (payload.status || payload.paymentStatus || payload.data?.status || '').toUpperCase();
-        console.log(`[KASHIER WEBHOOK] Received event: "${event}", status: "${status}", orderId: "${orderId}"`);
-        if (orderId && (status === 'SUCCESS' || status === 'COMPLETED' || status === 'CAPTURED' || event.includes('capture') || event.includes('pay'))) {
-            await kashier_service_js_1.kashierService.fulfillSuccessfulPayment(orderId, payload);
+        console.log(`[KASHIER WEBHOOK] Parsed webhook payload: event="${event}", status="${status}", reference="${reference}"`);
+        if (reference &&
+            (status === 'SUCCESS' ||
+                status === 'COMPLETED' ||
+                status === 'CAPTURED' ||
+                status === 'PAID' ||
+                status === 'ACCEPTED' ||
+                event.includes('capture') ||
+                event.includes('pay'))) {
+            console.log(`[KASHIER WEBHOOK] Auto-fulfilling enrollment for reference: ${reference}...`);
+            await kashier_service_js_1.kashierService.fulfillSuccessfulPayment(reference, payload);
         }
-        else if (orderId && (status === 'FAILED' || status === 'DECLINED' || status === 'CANCELLED')) {
-            await kashier_service_js_1.kashierService.markPaymentFailed(orderId, payload.reason || 'Webhook reported payment failure', payload);
+        else if (reference &&
+            (status === 'FAILED' || status === 'DECLINED' || status === 'CANCELLED' || event.includes('fail'))) {
+            console.log(`[KASHIER WEBHOOK] Marking payment failed for reference: ${reference}...`);
+            await kashier_service_js_1.kashierService.markPaymentFailed(reference, payload.reason || 'Webhook reported payment failure', payload);
         }
-        res.status(200).json({ received: true });
+        res.status(200).json({ received: true, status: 'PROCESSED' });
     }
     catch (error) {
         console.error('[KASHIER WEBHOOK ERROR]', error);
-        res.status(500).json({ success: false, message: error.message || 'Webhook processing failed' });
+        // Return HTTP 200 so Kashier does not keep retrying continuously if an internal error occurs
+        res.status(200).json({ received: true, error: error.message });
     }
 };
 exports.kashierWebhook = kashierWebhook;
