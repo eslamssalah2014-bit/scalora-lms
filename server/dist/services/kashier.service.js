@@ -20,10 +20,10 @@ class KashierPaymentService {
         this.secretKey =
             process.env.KASHIER_SECRET_KEY ||
                 '9d87ac572bac0c3baa7f98d1cdda3fa2$0dda7a2099a6b41a096438e613ba03c38906c3cbe1de3aff6d87e12c3752f5ce6f05ec8cdf934bd08bb5750f9e5305bc';
-        this.merchantId = process.env.KASHIER_MERCHANT_ID || 'MID-2026-SCALORA';
+        this.merchantId = process.env.KASHIER_MERCHANT_ID || 'MID-50393-317';
         this.mode = (process.env.KASHIER_MODE || 'live').toLowerCase();
         this.checkoutBaseUrl = 'https://checkout.kashier.io';
-        this.apiBaseUrl = 'https://api.kashier.io';
+        this.apiBaseUrl = this.mode === 'test' ? 'https://test-api.kashier.io' : 'https://api.kashier.io';
     }
     /**
      * Generates HMAC-SHA256 order signature for Kashier Hosted Checkout / iFrame.
@@ -38,6 +38,7 @@ class KashierPaymentService {
     }
     /**
      * Creates an official Kashier payment session and returns secure checkout URL.
+     * Calls Kashier V3 Sessions API (server-to-server) and logs full response.
      * Never leaks Secret Key to frontend.
      */
     async createCheckoutSession(params) {
@@ -86,6 +87,80 @@ class KashierPaymentService {
             currency,
             mid: this.merchantId,
         });
+        // Construct clean client redirect callback URL
+        const cleanClientUrl = clientBaseUrl.replace(/\/$/, '');
+        const merchantRedirect = `${cleanClientUrl}/payments/kashier/callback`;
+        // Construct fallback Hosted Checkout URL
+        const fallbackCheckoutUrl = `${this.checkoutBaseUrl}/?merchantId=${encodeURIComponent(this.merchantId)}` +
+            `&orderId=${encodeURIComponent(orderId)}` +
+            `&amount=${encodeURIComponent(amountStr)}` +
+            `&currency=${encodeURIComponent(currency)}` +
+            `&hash=${encodeURIComponent(hash)}` +
+            `&merchantRedirect=${encodeURIComponent(merchantRedirect)}` +
+            `&mode=${encodeURIComponent(this.mode)}` +
+            `&allowedMethods=card,wallet,bank_installments` +
+            `&display=en`;
+        // 1. Call official Kashier V3 Payment Sessions API
+        const sessionApiEndpoint = `${this.apiBaseUrl}/v3/payment/sessions`;
+        const sessionPayload = {
+            amount: amountStr,
+            currency,
+            order: orderId,
+            merchantId: this.merchantId,
+            merchantRedirect,
+            display: 'en',
+            allowedMethods: 'card,wallet,bank_installments',
+            customer: {
+                reference: user.id,
+                email: user.email,
+                name: user.name || 'Student',
+            },
+        };
+        console.log(`[KASHIER SESSION REQUEST] Calling ${sessionApiEndpoint} for Order ${orderId}...`);
+        console.log('[KASHIER SESSION PAYLOAD]', JSON.stringify(sessionPayload, null, 2));
+        let finalCheckoutUrl = fallbackCheckoutUrl;
+        let kashierApiResponse = null;
+        try {
+            const response = await fetch(sessionApiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': this.secretKey,
+                    'api-key': this.apiKey,
+                },
+                body: JSON.stringify(sessionPayload),
+            });
+            const responseText = await response.text();
+            try {
+                kashierApiResponse = JSON.parse(responseText);
+            }
+            catch {
+                kashierApiResponse = { raw: responseText };
+            }
+            // Log the full Kashier API response before redirecting (Requirement #7)
+            console.log(`[KASHIER SESSION RESPONSE] HTTP Status ${response.status}:`);
+            console.log(JSON.stringify(kashierApiResponse, null, 2));
+            if (!response.ok) {
+                const errorDetail = kashierApiResponse?.message ||
+                    kashierApiResponse?.error ||
+                    kashierApiResponse?.error?.explanation ||
+                    responseText;
+                console.error(`[KASHIER API ERROR] ${response.status}: ${errorDetail}`);
+                throw new Error(`Kashier Gateway Error: ${errorDetail}`);
+            }
+            if (kashierApiResponse?.sessionUrl) {
+                finalCheckoutUrl = kashierApiResponse.sessionUrl;
+                console.log(`[KASHIER SESSION READY] Generated Official Session URL: ${finalCheckoutUrl}`);
+            }
+            else {
+                console.warn('[KASHIER WARNING] No sessionUrl in response, using signed fallback URL.');
+            }
+        }
+        catch (apiErr) {
+            console.error('[KASHIER SESSION CREATION FAILED]', apiErr.message);
+            // Re-throw the exact error so the user is not shown a blank checkout page
+            throw new Error(apiErr.message || 'Failed to initialize Kashier payment session');
+        }
         // Create persistent payment record in Supabase/Postgres with status PENDING
         await prisma_js_1.prisma.payment.create({
             data: {
@@ -105,25 +180,14 @@ class KashierPaymentService {
                     studentName: user.name,
                     courseTitle: course.title,
                     initiatedAt: new Date().toISOString(),
+                    kashierSessionId: kashierApiResponse?._id || null,
+                    sessionUrl: finalCheckoutUrl,
                 }),
             },
         });
-        // Construct clean client redirect callback URL
-        const cleanClientUrl = clientBaseUrl.replace(/\/$/, '');
-        const merchantRedirect = `${cleanClientUrl}/payments/kashier/callback`;
-        // Construct full Kashier Live Checkout URL
-        const checkoutUrl = `${this.checkoutBaseUrl}/?merchantId=${encodeURIComponent(this.merchantId)}` +
-            `&orderId=${encodeURIComponent(orderId)}` +
-            `&amount=${encodeURIComponent(amountStr)}` +
-            `&currency=${encodeURIComponent(currency)}` +
-            `&hash=${encodeURIComponent(hash)}` +
-            `&merchantRedirect=${encodeURIComponent(merchantRedirect)}` +
-            `&mode=${encodeURIComponent(this.mode)}` +
-            `&allowedMethods=card,wallet,bank_installments` +
-            `&display=en`;
         return {
             success: true,
-            checkoutUrl,
+            checkoutUrl: finalCheckoutUrl,
             orderId,
             amount,
             currency,

@@ -62,6 +62,8 @@ export const KashierCallbackPage: React.FC = () => {
       searchParams.get('orderId') ||
       searchParams.get('merchantOrderId') ||
       searchParams.get('merchant_order_id') ||
+      searchParams.get('order') ||
+      searchParams.get('order_id') ||
       searchParams.get('paymentId');
 
     const paymentStatus =

@@ -5,7 +5,7 @@ function runKashierVerificationTests() {
   console.log('🧪 [KASHIER TESTS] Starting Automated Signature & Webhook Verification Suite...');
 
   const testSecret = '9d87ac572bac0c3baa7f98d1cdda3fa2$0dda7a2099a6b41a096438e613ba03c38906c3cbe1de3aff6d87e12c3752f5ce6f05ec8cdf934bd08bb5750f9e5305bc';
-  const testMid = 'MID-2026-SCALORA';
+  const testMid = 'MID-50393-317';
   const testOrderId = 'SCL-TEST-12345';
   const testAmount = 500;
   const testCurrency = 'EGP';
