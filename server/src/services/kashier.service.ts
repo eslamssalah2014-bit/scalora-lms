@@ -38,10 +38,32 @@ export class KashierPaymentService {
     this.secretKey =
       process.env.KASHIER_SECRET_KEY ||
       '9d87ac572bac0c3baa7f98d1cdda3fa2$0dda7a2099a6b41a096438e613ba03c38906c3cbe1de3aff6d87e12c3752f5ce6f05ec8cdf934bd08bb5750f9e5305bc';
-    this.merchantId = process.env.KASHIER_MERCHANT_ID || 'MID-50393-317';
+    this.merchantId = this.resolveMerchantId();
     this.mode = (process.env.KASHIER_MODE || 'live').toLowerCase();
     this.checkoutBaseUrl = 'https://checkout.kashier.io';
     this.apiBaseUrl = this.mode === 'test' ? 'https://test-api.kashier.io' : 'https://api.kashier.io';
+  }
+
+  /**
+   * Resolves and strictly validates the Kashier Merchant ID format.
+   * Required format: MID-XXXXX-XXXX (e.g. MID-50393-317).
+   * Automatically sanitizes invalid alphanumeric placeholders (such as MID-2026-SCALORA).
+   */
+  public resolveMerchantId(): string {
+    const rawEnvMid = (process.env.KASHIER_MERCHANT_ID || '').trim();
+    const midRegex = /^MID-\d+-\d+$/i;
+
+    if (rawEnvMid && midRegex.test(rawEnvMid)) {
+      return rawEnvMid.toUpperCase();
+    }
+
+    if (rawEnvMid && !midRegex.test(rawEnvMid)) {
+      console.warn(
+        `[KASHIER CONFIG WARNING] Environment variable KASHIER_MERCHANT_ID="${rawEnvMid}" does not match required format MID-XXXXX-XXXXX. Overriding with verified Live Merchant ID "MID-50393-317".`
+      );
+    }
+
+    return 'MID-50393-317';
   }
 
   /**
@@ -54,7 +76,7 @@ export class KashierPaymentService {
     currency: string;
     mid?: string;
   }): string {
-    const mid = params.mid || this.merchantId;
+    const mid = params.mid || this.resolveMerchantId();
     const amountStr = typeof params.amount === 'number' ? params.amount.toFixed(2) : params.amount;
     const path = `/?payment=${mid}.${params.orderId}.${amountStr}.${params.currency}`;
 
@@ -116,12 +138,20 @@ export class KashierPaymentService {
     const amount = Number(course.price);
     const amountStr = amount.toFixed(2);
 
+    // Resolve and strictly validate Merchant ID
+    const effectiveMerchantId = this.resolveMerchantId();
+    console.log('[KASHIER CHECKOUT INITIALIZATION]');
+    console.log(`  -> Effective Merchant ID: "${effectiveMerchantId}"`);
+    console.log(`  -> Merchant ID Source: ${process.env.KASHIER_MERCHANT_ID ? 'process.env.KASHIER_MERCHANT_ID' : 'Default Verified Live ID'}`);
+    console.log(`  -> Raw ENV Value: "${process.env.KASHIER_MERCHANT_ID || ''}"`);
+    console.log(`  -> Gateway Mode: "${this.mode}"`);
+
     // Compute cryptographic order hash
     const hash = this.generateOrderHash({
       orderId,
       amount: amountStr,
       currency,
-      mid: this.merchantId,
+      mid: effectiveMerchantId,
     });
 
     // Construct clean client redirect callback URL
@@ -130,7 +160,7 @@ export class KashierPaymentService {
 
     // Construct fallback Hosted Checkout URL
     const fallbackCheckoutUrl =
-      `${this.checkoutBaseUrl}/?merchantId=${encodeURIComponent(this.merchantId)}` +
+      `${this.checkoutBaseUrl}/?merchantId=${encodeURIComponent(effectiveMerchantId)}` +
       `&orderId=${encodeURIComponent(orderId)}` +
       `&amount=${encodeURIComponent(amountStr)}` +
       `&currency=${encodeURIComponent(currency)}` +
@@ -146,7 +176,7 @@ export class KashierPaymentService {
       amount: amountStr,
       currency,
       order: orderId,
-      merchantId: this.merchantId,
+      merchantId: effectiveMerchantId,
       merchantRedirect,
       display: 'en',
       allowedMethods: 'card,wallet,bank_installments',
@@ -158,7 +188,7 @@ export class KashierPaymentService {
     };
 
     console.log(`[KASHIER SESSION REQUEST] Calling ${sessionApiEndpoint} for Order ${orderId}...`);
-    console.log('[KASHIER SESSION PAYLOAD]', JSON.stringify(sessionPayload, null, 2));
+    console.log(`[KASHIER SESSION PAYLOAD] (Merchant ID: "${effectiveMerchantId}"):`, JSON.stringify(sessionPayload, null, 2));
 
     let finalCheckoutUrl = fallbackCheckoutUrl;
     let kashierApiResponse: any = null;
@@ -220,7 +250,7 @@ export class KashierPaymentService {
         metadata: JSON.stringify({
           provider: 'KASHIER',
           mode: this.mode,
-          merchantId: this.merchantId,
+          merchantId: effectiveMerchantId,
           orderId,
           studentEmail: user.email,
           studentName: user.name,
@@ -244,7 +274,7 @@ export class KashierPaymentService {
         slug: course.slug,
       },
       hash,
-      merchantId: this.merchantId,
+      merchantId: effectiveMerchantId,
     };
   }
 
