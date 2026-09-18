@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { AssetStorageService } from '../services/asset-storage.service.js';
 
 // ============================================================================
 // RICH ENTERPRISE CMS DEFAULT DATA (BUILT-IN FALLBACKS)
@@ -1027,37 +1028,28 @@ export const uploadMedia = async (req: AuthenticatedRequest, res: Response): Pro
 
     const buffer = Buffer.from(base64Content, 'base64');
     const targetFolder = (folder && typeof folder === 'string' ? folder.toLowerCase().replace(/[^a-z0-9_-]/g, '') : 'general') || 'general';
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.get('host') || 'scalora-lms.onrender.com';
 
-    // Create uploads directory
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'cms', targetFolder);
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const safeFileName = `cms_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-    const filePath = path.join(uploadsDir, safeFileName);
-    fs.writeFileSync(filePath, buffer);
-
-    const publicUrl = `/uploads/cms/${targetFolder}/${safeFileName}`;
-    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
-    const host = req.get('host') || 'localhost:5000';
-    const absoluteUrl = `${protocol}://${host}${publicUrl}`;
-
-    // Format human readable size
-    const sizeFormatted =
-      sizeInBytes > 1024 * 1024
-        ? `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`
-        : `${Math.round(sizeInBytes / 1024)} KB`;
+    // Persist to dual local cache + PostgreSQL database storage
+    const savedAsset = await AssetStorageService.saveAsset({
+      buffer,
+      fileName: fileName || `cms_${Date.now()}.${ext}`,
+      mimeType,
+      folder: `cms/${targetFolder}`,
+      protocol,
+      host,
+    });
 
     // Save record to DB
     const media = await prisma.cmsMedia.create({
       data: {
-        name: (fileName || safeFileName).replace(/\.[^/.]+$/, ''),
-        fileName: safeFileName,
-        fileUrl: absoluteUrl,
+        name: (fileName || savedAsset.fileName).replace(/\.[^/.]+$/, ''),
+        fileName: savedAsset.fileName,
+        fileUrl: savedAsset.url,
         fileType,
         mimeType,
-        fileSize: sizeFormatted,
+        fileSize: savedAsset.sizeFormatted,
         folder: targetFolder,
         altText: altText || '',
         uploadedBy: req.user?.name || 'Admin',
@@ -1068,7 +1060,8 @@ export const uploadMedia = async (req: AuthenticatedRequest, res: Response): Pro
       success: true,
       message: 'File uploaded successfully to media library',
       media,
-      url: absoluteUrl,
+      url: savedAsset.url,
+      relativeUrl: savedAsset.relativeUrl,
     });
   } catch (error: any) {
     console.error('[CMS] Error uploading media file:', error);

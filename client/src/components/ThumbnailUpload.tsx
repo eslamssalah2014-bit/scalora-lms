@@ -229,7 +229,7 @@ export const ThumbnailUpload: React.FC<ThumbnailUploadProps> = ({
 
       // 2. If Supabase storage is unreachable or bucket not yet configured, use backend upload endpoint
       if (!finalUrl) {
-        const res = await api.post<{ success: boolean; url: string; message?: string }>(
+        const res = await api.post<{ success: boolean; url: string; relativeUrl?: string; message?: string }>(
           '/courses/upload-thumbnail',
           {
             imageBase64: dataUrl,
@@ -238,8 +238,8 @@ export const ThumbnailUpload: React.FC<ThumbnailUploadProps> = ({
           }
         );
 
-        if (res.success && res.url) {
-          finalUrl = res.url;
+        if (res.success && (res.relativeUrl || res.url)) {
+          finalUrl = res.relativeUrl || res.url;
         } else {
           // Direct base64 fallback
           finalUrl = dataUrl;

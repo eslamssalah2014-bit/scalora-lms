@@ -9,6 +9,7 @@ import { auditService } from '../services/audit.service.js';
 import { coursePricingService } from '../services/course-pricing.service.js';
 import { realtimeService } from '../services/realtime.service.js';
 import { webPushService } from '../services/webpush.service.js';
+import { AssetStorageService } from '../services/asset-storage.service.js';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -1076,29 +1077,27 @@ export const uploadCourseThumbnail = async (req: AuthenticatedRequest, res: Resp
     }
 
     const buffer = Buffer.from(base64Content, 'base64');
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.get('host') || 'scalora-lms.onrender.com';
 
-    // Create uploads directory if not existing
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'thumbnails');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    const safeFileName = `course_thumb_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-    const filePath = path.join(uploadsDir, safeFileName);
-    fs.writeFileSync(filePath, buffer);
-
-    const publicUrl = `/uploads/thumbnails/${safeFileName}`;
-    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'http';
-    const host = req.get('host') || 'localhost:5000';
-    const absoluteUrl = `${protocol}://${host}${publicUrl}`;
+    // Persist to dual local cache + PostgreSQL database storage
+    const savedAsset = await AssetStorageService.saveAsset({
+      buffer,
+      fileName: fileName || `course_thumb_${Date.now()}.${ext}`,
+      mimeType: ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg',
+      folder: 'thumbnails',
+      protocol,
+      host,
+    });
 
     res.json({
       success: true,
-      url: absoluteUrl,
-      path: publicUrl,
-      thumbnail: absoluteUrl,
-      thumbnail_url: absoluteUrl,
-      fileName: safeFileName,
+      url: savedAsset.url,
+      path: savedAsset.path,
+      relativeUrl: savedAsset.relativeUrl,
+      thumbnail: savedAsset.url,
+      thumbnail_url: savedAsset.url,
+      fileName: savedAsset.fileName,
       message: 'Course thumbnail uploaded successfully',
     });
   } catch (error: any) {

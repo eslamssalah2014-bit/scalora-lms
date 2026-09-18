@@ -6,6 +6,7 @@ import { getCoursePricing } from '../lib/currency';
 import { useAuth } from '../context/AuthContext';
 import { api, resolveMediaUrl } from '../lib/api';
 import confetti from 'canvas-confetti';
+import { ScaloraImage } from './common/ScaloraImage';
 
 interface CourseCardProps {
   course: Course;
@@ -107,25 +108,15 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
           to={`/courses/${course.slug}`}
           className="relative aspect-[4/5] w-full overflow-hidden block bg-slate-100 flex items-center justify-center"
         >
-          {/* Subtle ambient blur backdrop for non-4:5 legacy images */}
-          <img
-            src={
-              resolveMediaUrl(course.thumbnail) ||
-              'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-            }
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover blur-md opacity-25 scale-110 pointer-events-none"
-          />
-
-          {/* Main 4:5 image (complete full image visible without cropping) */}
-          <img
-            src={
-              resolveMediaUrl(course.thumbnail) ||
-              'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-            }
+          {/* Resilient 4:5 image with ambient backdrop blur and auto-fallback */}
+          <ScaloraImage
+            src={course.thumbnail}
             alt={course.title}
-            className="relative z-[1] w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
+            category={course.category}
+            fallbackType="course"
+            withBackdropBlur
+            containerClassName="w-full h-full"
+            className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
           />
 
           {/* Glowing Top COMING SOON Badge */}
@@ -219,25 +210,15 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onEnrollClick, i
         to={enrolled ? `/learn/${course.slug}` : `/courses/${course.slug}`}
         className="relative aspect-[4/5] w-full overflow-hidden block bg-slate-100 flex items-center justify-center"
       >
-        {/* Subtle ambient blur backdrop for non-4:5 legacy images */}
-        <img
-          src={
-            resolveMediaUrl(course.thumbnail) ||
-            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-          }
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover blur-md opacity-25 scale-110 pointer-events-none"
-        />
-
-        {/* Main 4:5 image (complete full image visible without cropping) */}
-        <img
-          src={
-            resolveMediaUrl(course.thumbnail) ||
-            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-          }
+        {/* Resilient 4:5 image with ambient backdrop blur and auto-fallback */}
+        <ScaloraImage
+          src={course.thumbnail}
           alt={course.title}
-          className="relative z-[1] w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
+          category={course.category}
+          fallbackType="course"
+          withBackdropBlur
+          containerClassName="w-full h-full"
+          className="w-full h-full object-contain group-hover:scale-[1.02] transition-transform duration-500"
         />
 
         {/* Category Tag (Top Right) */}

@@ -79,9 +79,76 @@ app.use((req, res, next) => {
     }
     next();
 });
-// Serve static uploaded assets with CORS
+const asset_storage_service_js_1 = require("./services/asset-storage.service.js");
+// Serve static uploaded assets with CORS from disk cache first
 app.use('/uploads', (0, cors_1.default)(), express_1.default.static(path_1.default.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
 app.use('/api/uploads', (0, cors_1.default)(), express_1.default.static(path_1.default.join(process.cwd(), 'uploads'), { maxAge: '7d' }));
+// Persistent Dynamic Asset Serving with Database Fallback & Auto-Recaching
+const handleDynamicAsset = async (req, res) => {
+    try {
+        const rawPath = req.params[0] || '';
+        const parts = rawPath.split('/').filter(Boolean);
+        const fileName = parts.pop() || '';
+        const folder = parts.join('/') || 'general';
+        const asset = await asset_storage_service_js_1.AssetStorageService.getAsset(folder, fileName);
+        if (asset) {
+            res.setHeader('Content-Type', asset.mimeType);
+            res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.send(asset.buffer);
+            return;
+        }
+        // Fallback: If not found, return sleek SVG placeholder for course/avatar rather than broken 404
+        if (folder.includes('thumb') || fileName.includes('thumb') || fileName.includes('course')) {
+            const svg = asset_storage_service_js_1.AssetStorageService.getPlaceholderSvg('course', 'Scalora Course');
+            res.setHeader('Content-Type', 'image/svg+xml');
+            res.setHeader('Cache-Control', 'public, max-age=3600');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.send(svg);
+            return;
+        }
+        res.status(404).json({ success: false, message: 'Asset not found' });
+    }
+    catch (err) {
+        console.error('[AssetServer] Error serving asset:', err);
+        res.status(500).json({ success: false, message: 'Error retrieving asset' });
+    }
+};
+app.get('/uploads/*', (0, cors_1.default)(), handleDynamicAsset);
+app.get('/api/uploads/*', (0, cors_1.default)(), handleDynamicAsset);
+// Centralized Universal Upload Endpoint for all assets (avatars, community, courses, media)
+app.post(['/api/upload', '/upload'], (0, cors_1.default)(), async (req, res) => {
+    try {
+        const { imageBase64, fileBase64, fileName, folder = 'general', mimeType } = req.body;
+        const base64Data = imageBase64 || fileBase64;
+        if (!base64Data) {
+            res.status(400).json({ success: false, message: 'No file/image data provided' });
+            return;
+        }
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.get('host') || 'scalora-lms.onrender.com';
+        const saved = await asset_storage_service_js_1.AssetStorageService.saveAsset({
+            base64: base64Data,
+            fileName,
+            mimeType,
+            folder,
+            protocol,
+            host,
+        });
+        res.json({
+            success: true,
+            url: saved.url,
+            relativeUrl: saved.relativeUrl,
+            path: saved.path,
+            fileName: saved.fileName,
+            size: saved.sizeFormatted,
+        });
+    }
+    catch (err) {
+        console.error('[UploadAPI] Error saving asset:', err);
+        res.status(500).json({ success: false, message: err.message || 'Error saving uploaded asset' });
+    }
+});
 // Health Check
 app.get('/api/health', (_req, res) => {
     res.json({

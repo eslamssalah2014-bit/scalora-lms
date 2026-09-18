@@ -1,18 +1,14 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uploadCourseThumbnail = exports.getUpcomingCourses = exports.removeCourseInterest = exports.registerCourseInterest = exports.deleteCategory = exports.createCategory = exports.getCategories = exports.togglePublishCourse = exports.deleteCourse = exports.updateCoursePricing = exports.updateCourse = exports.createCourse = exports.getCourseBySlug = exports.getAllCoursesAdmin = exports.getPublishedCourses = void 0;
 const zod_1 = require("zod");
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
 const prisma_js_1 = require("../lib/prisma.js");
 const community_service_js_1 = require("../services/community.service.js");
 const audit_service_js_1 = require("../services/audit.service.js");
 const course_pricing_service_js_1 = require("../services/course-pricing.service.js");
 const realtime_service_js_1 = require("../services/realtime.service.js");
 const webpush_service_js_1 = require("../services/webpush.service.js");
+const asset_storage_service_js_1 = require("../services/asset-storage.service.js");
 const courseSchema = zod_1.z.object({
     title: zod_1.z.string().min(3, 'Title must be at least 3 characters'),
     slug: zod_1.z.string().optional(),
@@ -982,25 +978,25 @@ const uploadCourseThumbnail = async (req, res) => {
             }
         }
         const buffer = Buffer.from(base64Content, 'base64');
-        // Create uploads directory if not existing
-        const uploadsDir = path_1.default.join(process.cwd(), 'uploads', 'thumbnails');
-        if (!fs_1.default.existsSync(uploadsDir)) {
-            fs_1.default.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const safeFileName = `course_thumb_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const filePath = path_1.default.join(uploadsDir, safeFileName);
-        fs_1.default.writeFileSync(filePath, buffer);
-        const publicUrl = `/uploads/thumbnails/${safeFileName}`;
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        const host = req.get('host') || 'localhost:5000';
-        const absoluteUrl = `${protocol}://${host}${publicUrl}`;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.get('host') || 'scalora-lms.onrender.com';
+        // Persist to dual local cache + PostgreSQL database storage
+        const savedAsset = await asset_storage_service_js_1.AssetStorageService.saveAsset({
+            buffer,
+            fileName: fileName || `course_thumb_${Date.now()}.${ext}`,
+            mimeType: ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg',
+            folder: 'thumbnails',
+            protocol,
+            host,
+        });
         res.json({
             success: true,
-            url: absoluteUrl,
-            path: publicUrl,
-            thumbnail: absoluteUrl,
-            thumbnail_url: absoluteUrl,
-            fileName: safeFileName,
+            url: savedAsset.url,
+            path: savedAsset.path,
+            relativeUrl: savedAsset.relativeUrl,
+            thumbnail: savedAsset.url,
+            thumbnail_url: savedAsset.url,
+            fileName: savedAsset.fileName,
             message: 'Course thumbnail uploaded successfully',
         });
     }

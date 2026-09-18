@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { api, resolveMediaUrl } from '../../lib/api';
+import { ScaloraImage } from '../../components/common/ScaloraImage';
 import {
   BookOpen,
   Users,
@@ -98,12 +99,11 @@ export const TrainerDashboardPage: React.FC = () => {
         <div className="absolute -top-10 -right-10 w-60 h-60 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-center gap-4 relative z-10">
-          <img
-            src={
-              user?.avatar ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Trainer')}&background=0284C7&color=fff`
-            }
-            alt={user?.name}
+          <ScaloraImage
+            src={user?.avatar}
+            alt={user?.name || 'Trainer'}
+            fallbackType="avatar"
+            fallbackName={user?.name}
             className="w-16 h-16 rounded-2xl object-cover border-2 border-cyan-400 shadow-glow-accent"
           />
           <div>
@@ -218,12 +218,11 @@ export const TrainerDashboardPage: React.FC = () => {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0">
-                        <img
-                          src={
-                            resolveMediaUrl(c.thumbnail) ||
-                            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-                          }
+                        <ScaloraImage
+                          src={c.thumbnail}
                           alt={c.title}
+                          category={c.category}
+                          fallbackType="course"
                           className="w-16 h-16 rounded-2xl object-cover border border-cyan-500/30 flex-shrink-0"
                         />
                         <div className="min-w-0">
@@ -312,12 +311,11 @@ export const TrainerDashboardPage: React.FC = () => {
                     className="p-3 rounded-2xl bg-[#091324] border border-white/5 flex items-center justify-between gap-3 hover:border-cyan-500/30 transition-all"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <img
-                        src={
-                          student.avatar ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=0284C7&color=fff`
-                        }
+                      <ScaloraImage
+                        src={student.avatar}
                         alt={student.name}
+                        fallbackType="avatar"
+                        fallbackName={student.name}
                         className="w-8 h-8 rounded-xl object-cover border border-white/10 flex-shrink-0"
                       />
                       <div className="min-w-0">

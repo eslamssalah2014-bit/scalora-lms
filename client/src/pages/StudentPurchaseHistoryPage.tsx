@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api, resolveMediaUrl } from '../lib/api';
+import { ScaloraImage } from '../components/common/ScaloraImage';
 import { useAuth } from '../context/AuthContext';
 import {
   CreditCard,
@@ -328,12 +329,10 @@ export const StudentPurchaseHistoryPage: React.FC = () => {
                   <tr key={purchase.id} className="hover:bg-scalora-navy/30 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={
-                            resolveMediaUrl(purchase.course?.thumbnail) ||
-                            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-                          }
-                          alt={purchase.course?.title}
+                        <ScaloraImage
+                          src={purchase.course?.thumbnail}
+                          alt={purchase.course?.title || 'Course'}
+                          fallbackType="course"
                           className="w-10 h-10 rounded-lg object-cover border border-scalora-blue/30 flex-shrink-0"
                         />
                         <div className="min-w-0 max-w-[200px] sm:max-w-xs">

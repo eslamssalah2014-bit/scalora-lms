@@ -6,6 +6,7 @@ import { api, resolveMediaUrl } from '../lib/api';
 import { CertificateModal } from '../components/CertificateModal';
 import { NotificationPreferencesModal } from '../components/NotificationPreferencesModal';
 import { Modal } from '../components/Modal';
+import { ScaloraImage } from '../components/common/ScaloraImage';
 import {
   BookOpen,
   Award,
@@ -137,14 +138,11 @@ export const StudentDashboard: React.FC = () => {
 
           <div className="relative z-10 flex items-center gap-3">
             <div className="relative flex-shrink-0">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    user?.name || 'Student'
-                  )}&background=0284C7&color=fff`
-                }
-                alt={user?.name}
+              <ScaloraImage
+                src={user?.avatar}
+                alt={user?.name || 'Student'}
+                fallbackType="avatar"
+                fallbackName={user?.name}
                 className="w-12 h-12 rounded-xl object-cover border border-cyan-400/50 shadow-md"
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#04152D] rounded-full" />
@@ -441,14 +439,11 @@ export const StudentDashboard: React.FC = () => {
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              <img
-                src={
-                  user?.avatar ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    user?.name || 'Student'
-                  )}&background=2D8CFF&color=fff`
-                }
-                alt={user?.name}
+              <ScaloraImage
+                src={user?.avatar}
+                alt={user?.name || 'Student'}
+                fallbackType="avatar"
+                fallbackName={user?.name}
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-scalora-blue/40 shadow-xl"
               />
               <div className="space-y-1">
@@ -609,24 +604,16 @@ export const StudentDashboard: React.FC = () => {
               {enrollments.map((enr) => (
                 <div key={enr.enrollmentId} className="glass-card rounded-2xl overflow-hidden flex flex-col justify-between">
                   <div>
-                    {/* Thumbnail with fixed 4:5 aspect ratio (1080x1350) */}
+                    {/* Thumbnail with fixed 4:5 aspect ratio (1080x1350) and resilient fallback */}
                     <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#020A17] flex items-center justify-center">
-                      <img
-                        src={
-                          resolveMediaUrl(enr.course.thumbnail) ||
-                          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-                        }
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute inset-0 w-full h-full object-cover blur-md opacity-20 scale-110 pointer-events-none"
-                      />
-                      <img
-                        src={
-                          resolveMediaUrl(enr.course.thumbnail) ||
-                          'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-                        }
+                      <ScaloraImage
+                        src={enr.course.thumbnail}
                         alt={enr.course.title}
-                        className="relative z-[1] w-full h-full object-contain"
+                        category={enr.course.category}
+                        fallbackType="course"
+                        withBackdropBlur
+                        containerClassName="w-full h-full"
+                        className="w-full h-full object-contain"
                       />
                     </div>
 

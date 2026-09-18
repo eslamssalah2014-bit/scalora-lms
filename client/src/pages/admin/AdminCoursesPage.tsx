@@ -29,6 +29,7 @@ import { formatCurrency, getCoursePricing, calculateDiscountPercent } from '../.
 import { formatLaunchDate } from '../../components/CourseCard';
 import { ThumbnailUpload } from '../../components/ThumbnailUpload';
 import { Calendar, Bell, Rocket } from 'lucide-react';
+import { ScaloraImage } from '../../components/common/ScaloraImage';
 
 export const AdminCoursesPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -403,12 +404,11 @@ export const AdminCoursesPage: React.FC = () => {
                     {/* Course Title + Thumbnail */}
                     <td className="py-4 px-4 font-bold text-white max-w-xs">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={
-                            resolveMediaUrl(c.thumbnail) ||
-                            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-                          }
+                        <ScaloraImage
+                          src={c.thumbnail}
                           alt={c.title}
+                          category={c.category}
+                          fallbackType="course"
                           className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-scalora-blue/30"
                         />
                         <div className="min-w-0">
@@ -852,12 +852,11 @@ export const AdminCoursesPage: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <img
-                          src={
-                            t.avatar ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0284C7&color=fff`
-                          }
+                        <ScaloraImage
+                          src={t.avatar}
                           alt={t.name}
+                          fallbackType="avatar"
+                          fallbackName={t.name}
                           className="w-6 h-6 rounded-lg object-cover border border-white/10"
                         />
                         <div>

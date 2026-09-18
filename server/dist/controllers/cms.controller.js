@@ -1,12 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteMedia = exports.updateMedia = exports.uploadMedia = exports.getMediaLibrary = exports.resetAdminToDefaults = exports.restoreAdminRevision = exports.revertAdminDraft = exports.publishAdminDraft = exports.saveAdminDraft = exports.getAdminDocumentByKey = exports.getAdminDocuments = exports.getSitemapXml = exports.getTheme = exports.getAllPublished = exports.getPublishedDocument = exports.DEFAULT_CMS_DATA = void 0;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
 const prisma_js_1 = require("../lib/prisma.js");
+const asset_storage_service_js_1 = require("../services/asset-storage.service.js");
 // ============================================================================
 // RICH ENTERPRISE CMS DEFAULT DATA (BUILT-IN FALLBACKS)
 // ============================================================================
@@ -993,31 +989,26 @@ const uploadMedia = async (req, res) => {
         }
         const buffer = Buffer.from(base64Content, 'base64');
         const targetFolder = (folder && typeof folder === 'string' ? folder.toLowerCase().replace(/[^a-z0-9_-]/g, '') : 'general') || 'general';
-        // Create uploads directory
-        const uploadsDir = path_1.default.join(process.cwd(), 'uploads', 'cms', targetFolder);
-        if (!fs_1.default.existsSync(uploadsDir)) {
-            fs_1.default.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const safeFileName = `cms_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const filePath = path_1.default.join(uploadsDir, safeFileName);
-        fs_1.default.writeFileSync(filePath, buffer);
-        const publicUrl = `/uploads/cms/${targetFolder}/${safeFileName}`;
-        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-        const host = req.get('host') || 'localhost:5000';
-        const absoluteUrl = `${protocol}://${host}${publicUrl}`;
-        // Format human readable size
-        const sizeFormatted = sizeInBytes > 1024 * 1024
-            ? `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`
-            : `${Math.round(sizeInBytes / 1024)} KB`;
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.get('host') || 'scalora-lms.onrender.com';
+        // Persist to dual local cache + PostgreSQL database storage
+        const savedAsset = await asset_storage_service_js_1.AssetStorageService.saveAsset({
+            buffer,
+            fileName: fileName || `cms_${Date.now()}.${ext}`,
+            mimeType,
+            folder: `cms/${targetFolder}`,
+            protocol,
+            host,
+        });
         // Save record to DB
         const media = await prisma_js_1.prisma.cmsMedia.create({
             data: {
-                name: (fileName || safeFileName).replace(/\.[^/.]+$/, ''),
-                fileName: safeFileName,
-                fileUrl: absoluteUrl,
+                name: (fileName || savedAsset.fileName).replace(/\.[^/.]+$/, ''),
+                fileName: savedAsset.fileName,
+                fileUrl: savedAsset.url,
                 fileType,
                 mimeType,
-                fileSize: sizeFormatted,
+                fileSize: savedAsset.sizeFormatted,
                 folder: targetFolder,
                 altText: altText || '',
                 uploadedBy: req.user?.name || 'Admin',
@@ -1027,7 +1018,8 @@ const uploadMedia = async (req, res) => {
             success: true,
             message: 'File uploaded successfully to media library',
             media,
-            url: absoluteUrl,
+            url: savedAsset.url,
+            relativeUrl: savedAsset.relativeUrl,
         });
     }
     catch (error) {

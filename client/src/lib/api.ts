@@ -20,32 +20,77 @@ export const getApiBase = (): string => {
   return '/api';
 };
 
+export const getDefaultCourseImage = (category?: string): string => {
+  const cat = (category || '').toLowerCase();
+  if (cat.includes('business') || cat.includes('operation')) {
+    return 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1080&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('communication') || cat.includes('soft') || cat.includes('lead')) {
+    return 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1080&auto=format&fit=crop&q=80';
+  }
+  if (cat.includes('ai') || cat.includes('tech') || cat.includes('cloud') || cat.includes('auto')) {
+    return 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=1080&auto=format&fit=crop&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1080&auto=format&fit=crop&q=80';
+};
+
+export const getDefaultAvatar = (name?: string): string => {
+  const cleanName = name ? encodeURIComponent(name.trim()) : 'User';
+  return `https://ui-avatars.com/api/?name=${cleanName}&background=0284C7&color=fff&bold=true`;
+};
+
 export const resolveMediaUrl = (url: string | null | undefined): string => {
   if (!url || typeof url !== 'string' || !url.trim()) return '';
-  const trimmed = url.trim();
+  let trimmed = url.trim();
+
+  // Rewrite obsolete / decommissioned ephemeral hostnames
+  if (trimmed.includes('scalora-lms-3.onrender.com')) {
+    trimmed = trimmed.replace('https://scalora-lms-3.onrender.com', '').replace('http://scalora-lms-3.onrender.com', '');
+    if (!trimmed.startsWith('/')) trimmed = `/${trimmed}`;
+  }
+
+  // Handle data URIs and blob URIs directly
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
+  // Handle absolute external CDN URLs (e.g. Unsplash, UI Avatars, Supabase Storage)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // Handle client-side public assets like /courses/... or /logo.png
   if (
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:') ||
-    trimmed.startsWith('blob:')
+    trimmed.startsWith('/courses/') ||
+    trimmed.startsWith('/icons/') ||
+    trimmed.startsWith('/clients/') ||
+    trimmed.startsWith('/logo') ||
+    trimmed.startsWith('/scalora-')
   ) {
     return trimmed;
   }
 
+  // Handle uploaded assets via backend API
   const apiBase = getApiBase();
   if (apiBase.startsWith('http://') || apiBase.startsWith('https://')) {
     const origin = apiBase.replace(/\/api\/?$/, '');
     const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-    return `${origin}${cleanPath}`;
+    // If path is /uploads/..., ensure it maps through /api/uploads/...
+    const finalPath = cleanPath.startsWith('/uploads/') ? `/api${cleanPath}` : cleanPath;
+    return `${origin}${finalPath}`;
   }
 
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
     const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-    return `http://localhost:5000${cleanPath}`;
+    const finalPath = cleanPath.startsWith('/uploads/') ? `/api${cleanPath}` : cleanPath;
+    return `http://localhost:5000${finalPath}`;
   }
 
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return cleanPath;
+  return cleanPath.startsWith('/uploads/') ? `/api${cleanPath}` : cleanPath;
 };
 
 export class ApiError extends Error {

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { CheckoutModal } from '../components/CheckoutModal';
 import { formatLaunchDate } from '../components/CourseCard';
 import confetti from 'canvas-confetti';
+import { ScaloraImage } from '../components/common/ScaloraImage';
 import {
   BookOpen,
   Video,
@@ -426,12 +427,13 @@ export const CourseDetailsPage: React.FC = () => {
           <div className="sticky top-28 rounded-3xl bg-white p-6 border border-slate-200 space-y-6 shadow-xl">
             {/* Thumbnail Preview (4:5 Aspect Ratio, 1080x1350) */}
             <div className="relative aspect-[4/5] w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 shadow-inner flex items-center justify-center">
-              <img
-                src={
-                  resolveMediaUrl(course.thumbnail) ||
-                  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80'
-                }
+              <ScaloraImage
+                src={course.thumbnail}
                 alt={course.title}
+                category={course.category}
+                fallbackType="course"
+                withBackdropBlur
+                containerClassName="w-full h-full"
                 className="w-full h-full object-contain"
               />
               {course.isComingSoon && (

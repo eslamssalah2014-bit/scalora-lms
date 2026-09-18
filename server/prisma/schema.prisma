@@ -725,3 +725,22 @@ model TrainerSubmissionSession {
 
   @@map("trainer_submission_sessions")
 }
+
+// ============================================================================
+// PERSISTENT ASSET STORAGE (ZERO DATA LOSS CLUSTER STORAGE)
+// ============================================================================
+
+model StoredAsset {
+  id         String   @id @default(cuid())
+  fileName   String   @unique @map("file_name")
+  mimeType   String   @default("image/jpeg") @map("mime_type")
+  size       Int      @default(0)
+  folder     String   @default("general")
+  dataBase64 String   @map("data_base64")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([fileName], map: "idx_stored_assets_file_name")
+  @@index([folder], map: "idx_stored_assets_folder")
+  @@map("stored_assets")
+}

@@ -15,3 +15,7 @@ server/node_modules
 *.db
 *.db-journal
 server/prisma/dev.db
+
+# Uploads cache
+uploads/
+server/uploads/

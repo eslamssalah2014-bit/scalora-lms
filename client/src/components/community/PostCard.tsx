@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api';
 import { CommunityPost, CommunityComment, CommentReply } from '../../types';
 import { CommentItem } from './CommentItem';
+import { ScaloraImage } from '../common/ScaloraImage';
 import {
   Heart,
   MessageSquare,
@@ -263,12 +264,11 @@ export const PostCard: React.FC<PostCardProps> = ({
             onClick={() => onUserClick && onUserClick(post.author.id)}
             className="flex-shrink-0 focus:outline-none relative group/avatar"
           >
-            <img
-              src={
-                post.author.avatar ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name)}&background=2563EB&color=fff`
-              }
+            <ScaloraImage
+              src={post.author.avatar}
               alt={post.author.name}
+              fallbackType="avatar"
+              fallbackName={post.author.name}
               className={`w-10 h-10 rounded-full object-cover border-2 transition-transform group-hover/avatar:scale-105 shadow-sm ${
                 post.author.role === 'ADMIN' ? 'border-amber-400' : 'border-blue-100'
               }`}
@@ -396,9 +396,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Attached Media Image with Lightbox */}
       {post.mediaUrl && (
         <div className="rounded-2xl overflow-hidden border border-slate-200 max-h-[460px] bg-slate-50">
-          <img
+          <ScaloraImage
             src={post.mediaUrl}
             alt={post.title || 'Attached media'}
+            fallbackType="community"
             onClick={() => setLightboxImage(post.mediaUrl || null)}
             className="w-full h-full object-cover max-h-[460px] cursor-pointer hover:opacity-95 transition-opacity"
           />
