@@ -86,7 +86,7 @@ export function getDefaultBunnyLibraryId(): string {
   if (envLibraryId && typeof envLibraryId === 'string' && envLibraryId.trim().length > 0) {
     return envLibraryId.trim();
   }
-  return '740117'; // Scalora Default Bunny Library ID (Expected: 740117)
+  return '780183'; // Scalora Default Bunny Library ID (Expected: 780183)
 }
 
 /**

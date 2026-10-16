@@ -25,7 +25,7 @@ export class BunnyService {
   private allowedDomains: string[];
 
   constructor() {
-    this.defaultLibraryId = process.env.BUNNY_STREAM_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID || '740117';
+    this.defaultLibraryId = process.env.BUNNY_STREAM_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID || '780183';
     this.tokenSecurityKey = process.env.BUNNY_STREAM_TOKEN_KEY || process.env.BUNNY_TOKEN_AUTH_KEY;
     this.allowedDomains = ['scaloraa.online', 'www.scaloraa.online', 'localhost'];
   }
@@ -33,8 +33,8 @@ export class BunnyService {
   /**
    * Extracts a clean Bunny Video ID (UUID format) from:
    * - Raw UUID: "e6f4d9c1-8451-419b-a01c-3be08761ba10"
-   * - Embed URL: "https://iframe.mediadelivery.net/embed/740117/e6f4d9c1-8451-419b-a01c-3be08761ba10"
-   * - Play URL: "https://player.mediadelivery.net/play/740117/e6f4d9c1-8451-419b-a01c-3be08761ba10"
+   * - Embed URL: "https://iframe.mediadelivery.net/embed/780183/e6f4d9c1-8451-419b-a01c-3be08761ba10"
+   * - Play URL: "https://player.mediadelivery.net/play/780183/e6f4d9c1-8451-419b-a01c-3be08761ba10"
    * - Direct URL or query format
    */
   public extractVideoId(input?: string | null): string | null {
